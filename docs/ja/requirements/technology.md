@@ -34,5 +34,6 @@ cumin-trace で使う技術と、それを選んだ理由を記述する。具�
 
 ## 決めていないこと
 
+- 製品リポジトリの GitHub Actions が、`cumin-trace` のコマンドをどう入手するか (`go install` か、リリースのバイナリか) と、そのバージョンをどう固定するか。
 - サイトのテンプレートで、Astro、Starlight、Node.js のバージョンをどう固定し、どう更新するか。
 - GitHub Actions の `GITHUB_TOKEN` で、sub-issue とマイルストーンを読めるか ([GitHub との対応づけ](trace/index.md) の未決事項)。
