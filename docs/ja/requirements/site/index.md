@@ -18,7 +18,7 @@ Starlight は、すべてのページの frontmatter に `title` を求める (S
 
 cumin-trace は、Astro + Starlight のサイトのテンプレートを、製品リポジトリに生成する。見た目は Starlight の既定のままとする。
 
-- 検証: `demo` finance-v2 で、生成したテンプレートをビルドできる
+- 検証: `demo` 新しい製品リポジトリで、生成したテンプレートをビルドできる
 
 ---
 

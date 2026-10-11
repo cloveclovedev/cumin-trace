@@ -22,14 +22,14 @@ Maintainer が母国語で書いた要件文書を正本にしたまま、要件
 ## 位置づけ
 
 - cumin-trace は、cumin-works 本体とは別のツールである。cumin-works との接点は GitHub だけで、要求Issueのラベルと sub-issue を読む。cumin-works を使っていないリポジトリでも動く。
-- 要件文書の管理の仕方は、人によって違う。まずは Maintainer 自身のやり方に合うように作る。そのうえで、保守運用の支援の一部として、ほかの人にも提供できる形にしておく。
-- このリポジトリは private とする。
+- 要件文書の管理の仕方は、人によって違う。まずは Maintainer 自身のやり方に合うように作る。そのうえで、ほかの人にも提供できる形にしておく。
+- このリポジトリは public とする。
 
 ## 登場人物
 
 - Maintainer: 要件文書と要求Issueを書く人。cumin-works の Maintainer と同じ
 - Agent: Maintainer と一緒に要件文書を書く AI。Claude Code など
-- 製品リポジトリ: 要件文書を置くリポジトリ。finance-v2、cumin-works、peppercheck-next など
+- 製品リポジトリ: 要件文書を置くリポジトリ。cumin-works など
 
 ## 全体の構成
 
@@ -63,7 +63,7 @@ Maintainer が母国語で書いた要件文書を正本にしたまま、要件
 | SysML v2 | 考え方だけを借りる。記法とパーサは使わない | 要件の木 (contain)、要件を実現するIssue (satisfy)、要件を確かめるテスト (verify) の3つの関係で足りる。SysML v2 の仕様書はまだ確認していない。取り入れる範囲を広げるときに確認する |
 | 図 | 人が描く図は PlantUML に統一する | cumin-works と同じやり方にする。要件の木や進み具合の表示は、cumin-trace が生成する |
 | ダッシュボード | サイトの中の静的なページにする | サーバを持たずに済む。画面から操作したくなったら見直す ([backlog](backlog.md)) |
-| 技術 | Go で書いたコマンド、GitHub Actions、Astro + Starlight | Go は cumin-works と同じである。サイトは Starlight の既定の見た目を使う |
+| 技術 | Go で書いたコマンド、GitHub Actions、Astro + Starlight | [技術要素](technology.md) に、選んだ理由とともに書く |
 
 ## 名前
 
@@ -82,8 +82,8 @@ Maintainer が母国語で書いた要件文書を正本にしたまま、要件
 
 | バージョン | 目標 |
 |---|---|
-| v0.1 | finance-v2 の要件を、この書式で書き始められる。要件 → 要求Issue → 実装Issue の状態を、1ページで見られる |
-| v0.2 | cumin-works と peppercheck-next の要件を載せる。要件を変えたあとの起票の漏れに気付ける |
+| v0.1 | 新しい製品の要件を、この書式で書き始められる。要件 → 要求Issue → 実装Issue の状態を、1ページで見られる |
+| v0.2 | cumin-works など、すでにある製品の要件を載せる。要件を変えたあとの起票の漏れに気付ける |
 | v0.3 | ほかの人に提供できる |
 
 要件のページにあるのは、今のフェーズまでに作ると決めたことである。v0.2 と v0.3 の候補は [backlog](backlog.md) にある。

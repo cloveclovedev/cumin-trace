@@ -1,0 +1,30 @@
+@startuml technology
+left to right direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+package "product repository" {
+  file "requirement documents\n<b>Markdown</b>" as docs
+  file "settings\n<b>TOML</b>" as settings
+  file "diagrams\n<b>PlantUML</b> (.puml + .svg)" as diagrams
+}
+
+rectangle "cumin-trace command\n<b>Go</b>, one binary" as cmd
+cloud "GitHub\n<b>REST and GraphQL API</b>\n(read only)" as gh
+file "structured data\n<b>JSON</b>" as data
+rectangle "site and dashboard\n<b>Astro + Starlight</b>\n(static, built with Node.js)" as site
+rectangle "automation\n<b>GitHub Actions</b>" as actions
+rectangle "writing with an agent\n<b>Claude Code skill</b>" as skill
+
+docs --> cmd
+settings --> cmd
+gh --> cmd
+cmd --> data
+data --> site
+docs --> site
+diagrams --> site
+actions ..> cmd : runs
+actions ..> site : builds
+skill ..> cmd : calls
+skill ..> docs : writes
+@enduml
