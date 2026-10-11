@@ -8,11 +8,9 @@ database "requirement\ndocuments" as docs
 
 Maintainer -> agent : say what is wanted
 agent -> docs : read the format and the glossary
-agent -> ct : ask the next number of area TASK
-ct --> agent : 005
-agent -> docs : write PC-TASK-005\n(heading, text, verification)
+agent -> docs : write PC-TASK-005, the number after\nthe last one of area TASK\n(heading, text, verification)
 agent -> ct : run the check
-ct --> agent : no error
+ct --> agent : no error\n(no duplicate, no gap)
 agent --> Maintainer : draft on a branch
 Maintainer -> docs : review and merge
 @enduml
