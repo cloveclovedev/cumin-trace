@@ -23,6 +23,7 @@ protected_paths = [
   "CLAUDE.md",
   "AGENTS.md",
   ".claude/",
+  "/docs/ja/requirements/",
 ]
 
 # Labels that order the work, highest priority first. cumin starts a ready
