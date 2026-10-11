@@ -1,0 +1,43 @@
+@startuml overview
+left to right direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+actor Maintainer
+
+package "product repository" {
+  file "docs/ja/requirements/*.md\n(source of truth)" as docs
+  file "tracker settings\n(TOML)" as settings
+}
+
+package "GitHub" {
+  rectangle "requirement issues" as req
+  rectangle "implementation issues\n(sub-issues)" as impl
+  rectangle "pull requests" as pr
+}
+
+package "cumin-trace" {
+  rectangle "templates and skill" as tpl
+  rectangle "check" as check
+  rectangle "export\n(requirements.json)" as export
+  rectangle "trace\n(read only)" as trace
+  rectangle "site and dashboard\n(Starlight, static)" as site
+}
+
+Maintainer --> tpl : write with
+tpl --> docs : new documents, next ID
+docs --> check
+settings --> check
+check --> export
+export --> trace
+req --> trace : IDs in the body
+impl --> trace : state
+pr --> trace : merged or not
+req -- impl
+impl -- pr
+export --> site
+trace --> site
+docs --> site
+site --> Maintainer : whole picture, progress
+
+@enduml
