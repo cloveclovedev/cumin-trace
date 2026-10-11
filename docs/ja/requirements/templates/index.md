@@ -59,7 +59,7 @@ cumin-trace は、Agent が Maintainer と要件文書を書くための Claude 
 - 新しい要件の番号は、cumin-trace に尋ねて決める
 - 書いたあとに検査を実行し、エラーを直す
 
-- 検証: `demo` skill を使って finance-v2 の要件を1つの領域ぶん書き、検査が通る
+- 検証: `demo` skill を使って、新しい製品の要件を1つの領域ぶん書き、検査が通る
 
 ---
 
