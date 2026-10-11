@@ -63,7 +63,7 @@ Maintainer が母国語で書いた要件文書を正本にしたまま、要件
 | SysML v2 | 考え方だけを借りる。記法とパーサは使わない | 要件の木 (contain)、要件を実現するIssue (satisfy)、要件を確かめるテスト (verify) の3つの関係で足りる。SysML v2 の仕様書はまだ確認していない。取り入れる範囲を広げるときに確認する |
 | 図 | 人が描く図は PlantUML に統一する | cumin-works と同じやり方にする。要件の木や進み具合の表示は、cumin-trace が生成する |
 | ダッシュボード | サイトの中の静的なページにする | サーバを持たずに済む。画面から操作したくなったら見直す ([backlog](backlog.md)) |
-| 技術 | Go で書いたコマンド、GitHub Actions、Astro + Starlight | Go は cumin-works と同じである。サイトは Starlight の既定の見た目を使う |
+| 技術 | Go で書いたコマンド、GitHub Actions、Astro + Starlight | [技術要素](technology.md) に、選んだ理由とともに書く |
 
 ## 名前
 

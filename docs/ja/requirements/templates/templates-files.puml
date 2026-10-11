@@ -7,6 +7,7 @@ salt
  ++ docs/ja/requirements/ | requirement documents
  +++ index.md | entry page and the list of areas
  +++ overview.md | problem, goal, metrics, people, out of scope, phases
+ +++ technology.md | technologies and why they were chosen
  +++ glossary.md | terms
  +++ <area>/ | one directory for each area
  ++++ index.md | overview with diagrams, requirements, open questions
