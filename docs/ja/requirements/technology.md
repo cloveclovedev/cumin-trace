@@ -34,6 +34,5 @@ cumin-trace で使う技術と、それを選んだ理由を記述する。具�
 
 ## 決めていないこと
 
-- `cumin-trace` のバイナリを、製品リポジトリの GitHub Actions にどう渡すか。このリポジトリが private の間は、公開のリリースから取得できない。
 - サイトのテンプレートで、Astro、Starlight、Node.js のバージョンをどう固定し、どう更新するか。
 - GitHub Actions の `GITHUB_TOKEN` で、sub-issue とマイルストーンを読めるか ([GitHub との対応づけ](trace/index.md) の未決事項)。
