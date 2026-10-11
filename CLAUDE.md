@@ -4,7 +4,7 @@ cumin-trace keeps the requirement documents of a product as the source of truth 
 
 The product name and the command name are both `cumin-trace`. It works beside cumin-works and meets it only on GitHub: it reads the label of requirement issues and their sub-issues.
 
-The first goal (v0.1) is that the requirements of the `finance-v2` product can be written in this format, and that one page shows the state of each requirement, its requirement issues, and its implementation issues.
+The first goal (v0.1) is that the requirements of a new product can be written in this format, and that one page shows the state of each requirement, its requirement issues, and its implementation issues.
 
 ## Read first
 
@@ -19,7 +19,7 @@ All documents are in Japanese under `docs/ja/`. Start at `docs/ja/index.md` and 
 - Do not change anything under `docs/ja/requirements/` without a Maintainer's approval in the conversation. If the implementation needs a requirement change, stop and ask first.
 - Do not commit to `main`. Create a branch from `main` for every change.
 - Do not read or print secret values: tokens, private keys, `.env` files. Tests generate what they need.
-- Do not write employer information, personal circumstances, or local absolute paths in documents, code, tests, fixtures, commit messages, or pull requests. This repository is private today, and may become public.
+- Do not write employer information, personal circumstances, or local absolute paths in documents, code, tests, fixtures, commit messages, or pull requests. This repository is public.
 
 ## How we work
 
