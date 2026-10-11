@@ -127,4 +127,4 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 
 ## 未決事項
 
-- sub-issue とマイルストーンを、GitHub Actions の `GITHUB_TOKEN` で読めるか。設計のときに、GitHub の公式文書で確かめる。
+- sub-issue とマイルストーンを、GitHub Actions の `GITHUB_TOKEN` で読めるか。GitHub の公式文書 (Permissions required for GitHub Apps) では、どちらも Issue の読み取りの権限で読める。実装のときに、実際に呼んで確かめる。
