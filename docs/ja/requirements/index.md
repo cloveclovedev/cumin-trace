@@ -9,17 +9,17 @@ cumin-trace の要求と要件をまとめた文書の入口。
 
 ## 領域ごとの要件
 
-IDの接頭辞は `CTR` である。1つの領域を1ページに書いている。
+IDの接頭辞は `CTR` である。領域ごとにディレクトリを分け、要件のページ (`index.md`) と図を置いている。
 
 | 領域 | ページ | 内容 |
 |---|---|---|
-| `FMT` | [要件文書の書式](format.md) | IDの形式、要件の書き方、フィールド、廃止の扱い |
-| `TPL` | [テンプレートと skill](templates.md) | 要件文書のテンプレート、Agent と書くための skill、図の描画 |
-| `CHK` | [検査](check.md) | 書式に沿っているかの確認 |
-| `EXP` | [構造化データの出力](export.md) | 要件を JSON で出力する |
-| `TRC` | [GitHub との対応づけ](trace.md) | 要件と要求Issue、実装Issueの結び付きと、進み具合の決め方 |
-| `SITE` | [サイト](site.md) | 要件文書をサイトとして表示する |
-| `DASH` | [ダッシュボード](dashboard.md) | 要件の全体像と進み具合を1ページで見る |
+| `FMT` | [要件文書の書式](format/index.md) | IDの形式、要件の書き方、フィールド、廃止の扱い |
+| `TPL` | [テンプレートと skill](templates/index.md) | 要件文書のテンプレート、Agent と書くための skill、図の描画 |
+| `CHK` | [検査](check/index.md) | 書式に沿っているかの確認 |
+| `EXP` | [構造化データの出力](export/index.md) | 要件を JSON で出力する |
+| `TRC` | [GitHub との対応づけ](trace/index.md) | 要件と要求Issue、実装Issueの結び付きと、進み具合の決め方 |
+| `SITE` | [サイト](site/index.md) | 要件文書をサイトとして表示する |
+| `DASH` | [ダッシュボード](dashboard/index.md) | 要件の全体像と進み具合を1ページで見る |
 
 ## 受け入れのシナリオ
 

@@ -8,7 +8,9 @@ salt
  +++ index.md | entry page and the list of areas
  +++ overview.md | problem, goal, metrics, people, out of scope, phases
  +++ glossary.md | terms
- +++ <area>.md | one page for each area: overview with diagrams, requirements, open questions
+ +++ <area>/ | one directory for each area
+ ++++ index.md | overview with diagrams, requirements, open questions
+ ++++ *.puml, *.svg | diagrams of the area
  +++ backlog.md | what is put off, with the reason and the trigger
  ++ scripts/render-diagrams.sh | renders .puml to .svg
  ++ .github/workflows/ | check of the format on pull requests

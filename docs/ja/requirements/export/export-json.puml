@@ -10,7 +10,7 @@ json "one requirement in requirements.json" as r {
   },
   "status": "active",
   "replaced_by": null,
-  "file": "docs/ja/requirements/task.md",
+  "file": "docs/ja/requirements/task/index.md",
   "line": 42
 }
 @enduml
