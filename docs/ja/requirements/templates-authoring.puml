@@ -10,7 +10,7 @@ Maintainer -> agent : say what is wanted
 agent -> docs : read the format and the glossary
 agent -> ct : ask the next number of area TASK
 ct --> agent : 005
-agent -> docs : write PC-TASK-005\n(heading, text, verification, target)
+agent -> docs : write PC-TASK-005\n(heading, text, verification)
 agent -> ct : run the check
 ct --> agent : no error
 agent --> Maintainer : draft on a branch

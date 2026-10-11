@@ -8,7 +8,6 @@ json "one requirement in requirements.json" as r {
     "method": "test",
     "how": "..."
   },
-  "target": "v0.1",
   "status": "active",
   "replaced_by": null,
   "file": "docs/ja/requirements/task.md",
