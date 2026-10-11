@@ -7,11 +7,11 @@ salt
   ==
   <b>Summary
   {#
-    milestone of the requirement issue | not started | in progress | done
-    v0.1 | 5 | 20 | 12
-    v0.2 | 3 | 0 | 0
-    (no milestone) | 1 | 0 | 0
-    <b>not filed (no requirement issue) | <b>10 | . | .
+    milestone of the requirement issue | in progress | done
+    v0.1 | 25 | 12
+    v0.2 | 3 | 0
+    (no milestone) | 1 | 0
+    <b>not filed (no requirement issue): 10 | . | .
   }
   ==
   <b>File next: no requirement issue exists

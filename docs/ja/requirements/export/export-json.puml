@@ -4,10 +4,10 @@ json "one requirement in requirements.json" as r {
   "parent": "PC-TASK-003",
   "title": "...",
   "text": "...",
-  "verification": {
-    "method": "test",
-    "how": "..."
-  },
+  "verifications": [
+    {"method": "test", "how": "..."},
+    {"method": "demo", "how": "..."}
+  ],
   "status": "active",
   "replaced_by": null,
   "file": "docs/ja/requirements/task/index.md",

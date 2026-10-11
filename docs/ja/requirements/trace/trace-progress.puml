@@ -3,11 +3,7 @@ skinparam shadowing false
 
 start
 if (an open requirement issue\nnames the ID?) then (yes)
-  if (one of them has a sub-issue?) then (yes)
-    #FFF3E0:in progress;
-  else (no)
-    #E3F2FD:not started;
-  endif
+  #FFF3E0:in progress;
 else (no)
   if (a requirement issue that names the ID\nis closed as completed?) then (yes)
     #E8F5E9:done;
