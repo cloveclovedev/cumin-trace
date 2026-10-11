@@ -40,12 +40,22 @@ cumin-works の `issue-states.md` の遷移や「上位要件のテスト」、p
 
 ---
 
-### 要求Issueの下書き
+### 要求Issueを書くための skill
 
-IDを選ぶと、cumin-works の `requirement-issue.md` の形に、要件の本文を並べた下書きを出力する。英語にするのは Agent が受け持つ。
+Agent が Maintainer と要求Issueを書くための skill を提供する。要件を書くための skill (CTR-TPL-005) の続きにあたる。cumin-trace は事実を答え、判断は Agent と Maintainer が行う。
 
-- 後回しにした理由: 並べるだけなら、skill の指示で足りるかもしれない
-- 見直すきっかけ: 要求Issueを書く手間のうち、要件の書き写しが目立ってきたとき
+skill は Agent に次の手順を指示する。
+
+1. cumin-trace に、未起票の要件の一覧を尋ねる。これを出発点にする
+2. 要件を、要求Issueの単位にまとめる。cumin-works を使うリポジトリでは、要求Issueの分割基準 (`requirement-sizing.md`) の基準と1つずつ突き合わせ、結果を Maintainer に示す
+3. cumin-works の `requirement-issue.md` の形で下書きを書く。Requirements の各行の先頭にIDを書き、要件の本文を英語にする
+4. Maintainer の確認のあとで起票する。`cumin/status/ready` は付けない
+5. 起票のあとで cumin-trace に尋ね、未起票の要件が残っていないことと、存在しないIDを書いていないことを確かめる
+
+v0.1 の要求Issue (#2 〜 #6) は、この手順を手で行って書いた。そのとき、2の突き合わせを省いたために、大きすぎる要求Issueを1つ書いた。5は、手元のコマンドでIDを比べて確かめた。
+
+- 後回しにした理由: 1と5には、GitHub との対応づけ (CTR-TRC) が要る。v0.1 でそれができてから作る
+- 見直すきっかけ: v0.1 が完了したとき。または、v0.2 の要求Issueを書き始めるとき
 
 ---
 
