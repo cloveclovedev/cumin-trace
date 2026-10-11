@@ -1,0 +1,18 @@
+@startuml templates-authoring
+skinparam shadowing false
+
+actor Maintainer
+participant "Agent\n(with the skill)" as agent
+participant "cumin-trace" as ct
+database "requirement\ndocuments" as docs
+
+Maintainer -> agent : say what is wanted
+agent -> docs : read the format and the glossary
+agent -> ct : ask the next number of area TASK
+ct --> agent : 005
+agent -> docs : write PC-TASK-005\n(heading, text, verification)
+agent -> ct : run the check
+ct --> agent : no error
+agent --> Maintainer : draft on a branch
+Maintainer -> docs : review and merge
+@enduml

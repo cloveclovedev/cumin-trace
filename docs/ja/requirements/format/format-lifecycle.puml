@@ -1,0 +1,17 @@
+@startuml format-lifecycle
+skinparam shadowing false
+hide empty description
+
+state "draft\n(on a branch)" as draft
+state "active\n(on main)" as active
+state "deprecated\n(stays in the document)" as deprecated
+
+[*] --> draft : write with the next free number
+draft --> active : merge the pull request
+active --> active : edit the text (same ID)
+active --> deprecated : write the status "廃止"
+note right of deprecated
+  The number is never used again.
+  A replacement gets a new ID.
+end note
+@enduml

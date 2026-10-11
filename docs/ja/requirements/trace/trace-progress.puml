@@ -1,0 +1,15 @@
+@startuml trace-progress
+skinparam shadowing false
+
+start
+if (an open requirement issue\nnames the ID?) then (yes)
+  #FFF3E0:in progress;
+else (no)
+  if (a requirement issue that names the ID\nis closed as completed?) then (yes)
+    #E8F5E9:done;
+  else (no)
+    #FFEBEE:not filed;
+  endif
+endif
+stop
+@enduml
