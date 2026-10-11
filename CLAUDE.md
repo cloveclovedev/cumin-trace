@@ -12,6 +12,8 @@ All documents are in Japanese under `docs/ja/`. Start at `docs/ja/index.md` and 
 
 - `docs/ja/requirements/index.md` lists the areas. Each area has one directory with its page (`index.md`) and its diagrams.
 - `docs/ja/requirements/format/index.md` is the source of truth for how a requirement is written. The documents of this repository follow it too.
+- `docs/ja/requirements/overview.md` holds the principles of the tool (fixed rules only, read-only on GitHub, the documents are the source of truth). They bind the code too.
+- `docs/ja/requirements/technology.md` names each technology and the reason for the choice.
 - `docs/ja/requirements/backlog.md` lists what is decided to be out of scope for now. Do not build those things.
 
 ## Rules that you must not break
@@ -28,19 +30,6 @@ All documents are in Japanese under `docs/ja/`. Start at `docs/ja/index.md` and 
 - Document first. Documents stay current with the code, so that another person can read what works today.
 - Test first. Each requirement names how it is verified (`test`, `demo`, `inspection`, `analysis`). A requirement with `test` gets a test that proves it. Prefer a few tests that prove a requirement over many unit tests.
 - Verify external APIs and tools in the official documentation before you use them: the GitHub REST and GraphQL API, Astro, Starlight, Go libraries. Do not rely on memory. Say which page you checked. Separate verified facts from your own reasoning.
-
-## Design constraints
-
-These come from the principles in `docs/ja/requirements/overview.md`.
-
-- cumin-trace follows fixed rules only. It contains no AI judgment. The same input always gives the same output. Reading the meaning of a requirement is the work of an agent or of a Maintainer.
-- The requirement documents are the source of truth. Structured data (`requirements.json`, the trace result) is generated and never edited by hand. The tool never changes a source document.
-- cumin-trace only reads GitHub. It creates no issue, changes no label, and writes no comment.
-- The progress of a requirement and the version that it belongs to are never written in a requirement document. They follow from the issues and the milestones on GitHub.
-- The check and the export need no network and no token.
-- The token for GitHub comes from an environment variable. Never store it and never log it.
-- Configuration of a product repository is TOML (`.cumin-trace.toml`).
-- The site and the dashboard are static. Nothing needs a server.
 
 ## Code
 
@@ -60,7 +49,7 @@ These come from the principles in `docs/ja/requirements/overview.md`.
 ## Tests
 
 - Tests run with `go test ./...` and need no network and no token. Tests of the trace use a fake GitHub (`httptest`) behind the real client.
-- Name each test by what it proves, and name the requirement that it proves in the test name or in a comment, by its ID.
+- Name each test by what it proves, in plain words. Do not put a requirement ID in a test name. Name the requirement that the test proves in a comment above the test, by its ID.
 - Make every test give the same result on any machine, at any time, and in any order.
 
 ## Commands
