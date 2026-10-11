@@ -1,0 +1,21 @@
+@startuml check-flow
+skinparam shadowing false
+
+start
+:read the settings and\nevery requirement document;
+:collect every error\n(do not stop at the first one);
+if (any error?) then (yes)
+  :print each error\nwith its file and line;
+  :exit code 1;
+else (no)
+  :exit code 0;
+endif
+stop
+
+note right
+  Runs in three places, without network:
+  * on the machine of the Maintainer
+  * by the agent, after it writes
+  * as a check of a pull request
+end note
+@enduml

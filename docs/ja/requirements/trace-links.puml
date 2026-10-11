@@ -1,0 +1,28 @@
+@startuml trace-links
+left to right direction
+skinparam shadowing false
+
+package "requirement documents" {
+  rectangle "PC-TASK-003" as r3
+  rectangle "PC-TASK-004" as r4
+  rectangle "PC-TASK-005" as r5
+}
+
+package "GitHub" {
+  rectangle "requirement issue #12\nlabel: cumin/type/requirement\nbody names PC-TASK-003, PC-TASK-004" as i12
+  rectangle "implementation issue #13\n(sub-issue, closed)" as i13
+  rectangle "implementation issue #14\n(sub-issue, open)" as i14
+  rectangle "pull request #15\n(merged)" as pr15
+}
+
+r3 <.. i12 : ID in the body
+r4 <.. i12 : ID in the body
+i12 --> i13 : sub-issue
+i12 --> i14 : sub-issue
+i13 --> pr15 : closed by
+
+note bottom of r5
+  No requirement issue names it:
+  "not filed"
+end note
+@enduml

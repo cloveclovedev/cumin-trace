@@ -1,0 +1,23 @@
+@startuml dashboard-update
+skinparam shadowing false
+
+actor Maintainer
+participant "GitHub Actions\n(push to main, schedule)" as actions
+participant "cumin-trace" as ct
+participant "GitHub API" as gh
+participant "Starlight build" as build
+database "static site" as site
+
+actions -> ct : export and trace
+ct -> gh : read the requirement issues,\nsub-issues, pull requests (read only)
+gh --> ct
+ct --> actions : requirements and trace result,\nwith the time of the read
+actions -> build : build
+build -> site : documents + dashboard
+Maintainer -> site : open the dashboard
+
+note over Maintainer, ct
+  On the own machine, one command does the same
+  and starts the preview.
+end note
+@enduml

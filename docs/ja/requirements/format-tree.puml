@@ -1,0 +1,21 @@
+@startuml format-tree
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+rectangle "product PC" as pc
+rectangle "area TASK\n(task.md)" as task
+rectangle "area PAY\n(pay.md)" as pay
+rectangle "PC-TASK-003\nparent: verified by its children" as r3
+rectangle "PC-TASK-004\nleaf: verification required" as r4 #E8F5E9
+rectangle "PC-TASK-003.1\nleaf: verification required" as r31 #E8F5E9
+rectangle "PC-TASK-003.2\nleaf: verification required" as r32 #E8F5E9
+rectangle "PC-PAY-001\nleaf: verification required" as p1 #E8F5E9
+
+pc --> task
+pc --> pay
+task --> r3
+task --> r4
+r3 --> r31
+r3 --> r32
+pay --> p1
+@enduml

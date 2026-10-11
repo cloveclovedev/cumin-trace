@@ -1,0 +1,19 @@
+@startuml templates-files
+salt
+{
+{T
+ + <b>product repository | <b>what it is
+ ++ .cumin-trace.toml | settings: product prefix, areas, label of requirement issues
+ ++ docs/ja/requirements/ | requirement documents
+ +++ index.md | entry page and the list of areas
+ +++ overview.md | problem, goal, metrics, people, out of scope, phases
+ +++ glossary.md | terms
+ +++ <area>.md | one page for each area: overview with diagrams, requirements, open questions
+ +++ backlog.md | what is put off, with the reason and the trigger
+ ++ scripts/render-diagrams.sh | renders .puml to .svg
+ ++ .github/workflows/ | check of the format on pull requests
+ ++ .claude/skills/ | skill for writing requirements with an agent
+ ++ site/ | Starlight site
+}
+}
+@enduml

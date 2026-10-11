@@ -1,0 +1,15 @@
+@startuml format-id
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+rectangle "<size:18><b>PC-TASK-003.1</b></size>" as id
+rectangle "<b>PC</b>\nproduct prefix" as p
+rectangle "<b>TASK</b>\narea" as a
+rectangle "<b>003</b>\nserial number\n(never used again)" as n
+rectangle "<b>.1</b>\nchild of PC-TASK-003" as c
+
+id --> p
+id --> a
+id --> n
+id --> c
+@enduml
