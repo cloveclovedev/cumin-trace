@@ -1,0 +1,2 @@
+# The binary that `go build -o cumin-trace ./cmd/cumin-trace` writes.
+/cumin-trace
