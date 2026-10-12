@@ -1,0 +1,19 @@
+@startuml trace-json
+json "result of the trace (example)" as r {
+  "read_at": "2026-10-20T09:00:00Z",
+  "requirements": [
+    {
+      "id": "PC-TASK-003.1",
+      "progress": "in progress",
+      "requirement_issues": [
+        {"number": 12, "state": "open", "milestone": "v0.1"}
+      ],
+      "implementation_issues": {"closed": 1, "total": 3}
+    }
+  ],
+  "discrepancies": [
+    {"kind": "unknown ID", "issue": 31, "id": "PC-TASK-099"},
+    {"kind": "open issue for a deprecated requirement", "issue": 18, "id": "PC-TASK-002"}
+  ]
+}
+@enduml

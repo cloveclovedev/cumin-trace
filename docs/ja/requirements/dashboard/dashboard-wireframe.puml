@@ -21,6 +21,12 @@ salt
     PC-PAY-002 | (title)
   }
   ==
+  <b>Discrepancies
+  {#
+    kind | requirement issue | ID
+    unknown ID | ~#31 | PC-TASK-099
+  }
+  ==
   <b>Requirement tree
   {T
     + <b>requirement | <b>progress | <b>requirement issues | <b>milestone | <b>implementation issues
