@@ -11,10 +11,13 @@ package "internal/check" {
   [domain.go\nthe ten rules of CTR-CHK-001\n(pure)] as rules
 }
 
+package "internal/requirement" {
+  [markdown.go\nread the requirement documents] as markdown
+  [domain.go\nmodel of a requirement,\nform of an ID (pure)] as model
+}
+
 package "internal/core" {
   [settings.go\nread .cumin-trace.toml] as settings
-  [markdown.go\nread the requirement documents] as markdown
-  [requirement.go\nmodel of a requirement,\nform of an ID (pure)] as model
 }
 
 [BurntSushi/toml] as toml
@@ -31,6 +34,6 @@ markdown --> model
 
 note bottom of model
   cumin-trace export (CTR-EXP-001)
-  uses the same model later
+  and the trace use this package later
 end note
 @enduml

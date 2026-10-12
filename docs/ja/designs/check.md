@@ -2,7 +2,7 @@
 
 `cumin-trace check` (書式検査) の設計を記述する。要件は [書式検査](../requirements/check/index.md) (`CTR-CHK-001` 〜 `CTR-CHK-004`) と [要件文書の書式](../requirements/format/index.md) (`CTR-FMT-001` 〜 `CTR-FMT-012`) にある。この文書は、要件が決めていない「どう作るか」だけを決める。
 
-書式検査が読み取った要件は、あとで `cumin-trace export` (`CTR-EXP-001`) がそのまま使う。そのため、読み取りと要件のモデルは `internal/core/` に置く。
+書式検査が読み取った要件は、あとで `cumin-trace export` (`CTR-EXP-001`) がそのまま使う。対応づけも同じものを使う。要件のモデルと要件文書の読み取りはプロダクトの中心なので、それ自身の機能のパッケージ `internal/requirement/` に置く。`internal/core/` には、プロダクトを知らない共通の土台である、設定の読み取りだけを置く。
 
 ## パッケージとファイル
 
@@ -15,11 +15,12 @@
 | `cmd/cumin-trace/main.go` | 引数からコマンドを選び、結果を終了コードにする |
 | `internal/check/service.go` | 設定と要件文書を読み、ルールを適用し、エラーを出力する |
 | `internal/check/domain.go` | `CTR-CHK-001` の10個のルールと、エラーの並べ方。純粋な関数で、I/O を持たない |
+| `internal/requirement/domain.go` | 要件のモデルと、IDの形式。純粋な関数で、I/O を持たない |
+| `internal/requirement/markdown.go` | 要件文書のファイルを集め、Markdown を読んで、要件のモデルにする |
 | `internal/core/settings.go` | `.cumin-trace.toml` を読み、値を確かめる |
-| `internal/core/markdown.go` | 要件文書のファイルを集め、Markdown を読んで、要件のモデルにする |
-| `internal/core/requirement.go` | 要件のモデルと、IDの形式。純粋な関数で、I/O を持たない |
 
-- ライブラリの型 (`toml`、`goldmark`) は、`settings.go` と `markdown.go` の外に出さない。
+- ライブラリの型は、それを使う1ファイルの外に出さない。`toml` の型は `internal/core/settings.go` で、`goldmark` の型は `internal/requirement/markdown.go` で止める。
+- `internal/check/` は、`internal/requirement/` と `internal/core/` を使う。`internal/requirement/` は `internal/core/` を import しない。読み取りは、リポジトリの最上位、要件文書のディレクトリ、接頭辞を引数で受け取り、`service.go` が設定から渡す。
 - interface は作らない。テストは、一時ディレクトリに書いた文書と設定を、本物の読み取りで読む。
 - `internal/check/` は `net/http` を import せず、環境変数も読まない (`CTR-CHK-004`)。
 - `check.Run(root string, stdout io.Writer) (int, error)` が入口である。`root` はリポジトリの最上位のディレクトリ、戻り値はエラーの件数である。`main.go` は `root` に `.` を渡す。
@@ -97,7 +98,7 @@ goldmark には v2 がある (v2.1.6、2026-09-27 公開)。v1.8.6 を選ぶ理�
 | v1 は、バグとセキュリティの修正を受け続ける。修正の対象は、最新のメジャーバージョンと、その1つ前までである | v2 の公式ページ |
 | v2 では、この設計が使う API が変わっている。`Parse` の引数、`Text.Segment`、`Lines()`、`CodeSpan` の子がない。上の「手元の実行で確かめたこと」は v1 だけで確かめた | v2 の公式ページ |
 
-確かめた公式ページ: <https://pkg.go.dev/github.com/yuin/goldmark/v2>。v2 に移るのは、v1 が修正の対象から外れるときである。ライブラリの型は `markdown.go` の外に出ないので、変えるのはこの1ファイルで済む。
+確かめた公式ページ: <https://pkg.go.dev/github.com/yuin/goldmark/v2>。v2 に移るのは、v1 が修正の対象から外れるときである。ライブラリの型は `internal/requirement/markdown.go` の外に出ないので、変えるのはこの1ファイルで済む。
 
 ### 読むファイル
 
@@ -162,7 +163,7 @@ P-[A-Z0-9]+-[0-9]{3}(\.[1-9][0-9]*)?
 
 ## 要件のモデル
 
-`internal/core/requirement.go` に置く。`CTR-EXP-001` が挙げる値を、すべて持つ。
+`internal/requirement/domain.go` に置く。`CTR-EXP-001` が挙げる値を、すべて持つ。
 
 | 値 (`CTR-EXP-001`) | フィールド | 型 | 中身 |
 |---|---|---|---|
