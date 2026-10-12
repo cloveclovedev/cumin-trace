@@ -24,7 +24,7 @@
 | in progress | 進行中 | 開いた要求Issueがある |
 | done | 完了 | 要求Issueが受け入れられて閉じた |
 
-要求Issueがあれば、あとは cumin-works の流れか、Maintainer の作業で進む。そこで、起票したあとの状態は細かく分けない。
+要求Issueがあれば、あとは cumin-works の流れか、Maintainer の作業で進む。そこで、起票したあとの状態は細かく分けない。`cumin/status/*` のラベルは読まない。
 
 GitHub は、cumin-trace が API を直接呼んで読む。GitHub App は使わない。token は、GitHub Actions では workflow に渡される `GITHUB_TOKEN` を、手元では `gh auth token` で得られるものを、環境変数で渡す。手元で動かすのは Maintainer で、Maintainer 自身のアカウントの権限で読む。cumin-works を動かす Host のアカウントで cumin-trace を動かす必要はない。
 
@@ -101,15 +101,7 @@ GitHub は、cumin-trace が API を直接呼んで読む。GitHub App は使わ
 
 ---
 
-### `CTR-TRC-007` cumin-works を使わないリポジトリ
-
-進み具合を決めるのに使うのは、要求Issueが開いているかと、閉じた理由の2つだけである。`cumin/status/*` のラベルがなく、sub-issue を使わないリポジトリでも、同じ進み具合になる。
-
-- 検証: `test` `cumin/status/*` のラベルも sub-issue もない偽の GitHub で、同じ進み具合になる
-
----
-
-### `CTR-TRC-008` GitHub には書き込まない
+### `CTR-TRC-007` GitHub には書き込まない
 
 cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントのどれも変更しない。token は環境変数で受け取り、ファイルに保存せず、ログにも出さない。必要な権限は、Issue と Pull Request の読み取りだけである。
 
@@ -117,11 +109,17 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 
 ---
 
-### `CTR-TRC-009` 結果の出力
+### `CTR-TRC-008` 結果の出力
 
-対応づけの結果を、GitHub を読んだ時刻とともに JSON で出力する。要件ごとに、進み具合、対応する要求Issueとそのマイルストーン、実装Issueの数 (閉じた数と全体の数) を持つ。
+対応づけの結果を、GitHub を読んだ時刻とともに JSON で出力する。要件ごとに、進み具合、対応する要求Issueとそのマイルストーン、実装Issueの数 (閉じた数と全体の数) を持つ。食い違い (`CTR-TRC-006`) の一覧も持つ。食い違いごとに、種類、要求Issueの番号、IDを持つ。
 
-- 検証: `test` 偽の GitHub で、出力を確かめる
+![出力するデータ](trace-json.svg)
+
+図の元ファイル: [trace-json.puml](trace-json.puml)
+
+キーの名前は、設計で決める。図は、持つ内容を示す例である。
+
+- 検証: `test` 偽の GitHub で、出力を確かめる。食い違いを1つ含む状態で、一覧に出る
 
 ---
 

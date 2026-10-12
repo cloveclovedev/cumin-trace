@@ -21,7 +21,7 @@ Maintainer が母国語で書いた要件文書を正本にしたまま、要件
 
 ## 位置づけ
 
-- cumin-trace は、cumin-works 本体とは別のツールである。cumin-works との接点は GitHub だけで、要求Issueのラベルと sub-issue を読む。cumin-works を使っていないリポジトリでも動く。
+- cumin-trace は、cumin-works 本体とは別のツールである。cumin-works との接点は GitHub だけで、要求Issueのラベルと sub-issue を読む。まずは、cumin-works を使うリポジトリを対象にする。
 - 要件文書の管理の仕方は、人によって違う。まずは Maintainer 自身のやり方に合うように作る。そのうえで、ほかの人にも提供できる形にしておく。
 - このリポジトリは public とする。
 
