@@ -23,10 +23,16 @@ The documents are in Japanese. Start at [docs/ja/index.md](docs/ja/index.md).
    requirements_dir = "docs/ja/requirements"
    ```
 
-2. Run the check at the top of the repository.
+2. Build the command in a clone of cumin-trace.
 
    ```sh
-   go run github.com/cloveclovedev/cumin-trace/cmd/cumin-trace@latest check
+   go build -o cumin-trace ./cmd/cumin-trace
+   ```
+
+3. Run the built command at the top of the repository that holds the requirement documents.
+
+   ```sh
+   cumin-trace check
    ```
 
 The check prints one line for each error: file, line, ID, and message.
