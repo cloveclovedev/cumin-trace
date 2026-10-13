@@ -65,8 +65,20 @@ func markdownFiles(root, dir string) ([]string, error) {
 	return files, nil
 }
 
-// readDocument adds the requirement headings of one document to docs. A
-// heading inside a code block is no heading for the parser, so it is not read.
+// openHeading is a heading whose range is not at its end.
+type openHeading struct {
+	Heading
+	// isRequirement is true for a requirement heading, also for one whose ID
+	// has a wrong form.
+	isRequirement bool
+	// index is the place of the requirement in docs.Requirements. It counts
+	// only when the ID is not empty.
+	index int
+}
+
+// readDocument adds the requirement headings of one document to docs, with
+// the fields of each requirement (CTR-FMT-005). A heading inside a code block
+// is no heading for the parser, so it is not read.
 func readDocument(docs *Documents, file string, source []byte, prefix string, form IDForm) {
 	source = blankFrontmatter(source)
 	root := goldmark.New().Parser().Parse(text.NewReader(source))
@@ -74,8 +86,22 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 	// level down. The range of a heading ends at the next heading of the same
 	// or a higher level (CTR-FMT-003). A heading that is no requirement
 	// heading with an ID of the right form has an empty ID.
-	var open []Heading
+	var open []openHeading
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if list, ok := node.(*ast.List); ok && entering && list.Parent() == root && !list.IsOrdered() {
+			// The fields belong to the nearest requirement heading above. A
+			// heading whose ID has a wrong form takes no field.
+			for i := len(open) - 1; i >= 0; i-- {
+				if !open[i].isRequirement {
+					continue
+				}
+				if open[i].ID != "" {
+					readFields(&docs.Requirements[open[i].index], list, source, form)
+				}
+				break
+			}
+			return ast.WalkContinue, nil
+		}
 		heading, ok := node.(*ast.Heading)
 		if !ok || !entering {
 			return ast.WalkContinue, nil
@@ -85,9 +111,9 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 		}
 		var above Heading
 		if len(open) > 0 && open[len(open)-1].ID != "" {
-			above = open[len(open)-1]
+			above = open[len(open)-1].Heading
 		}
-		open = append(open, Heading{Level: heading.Level})
+		open = append(open, openHeading{Heading: Heading{Level: heading.Level}})
 		span, ok := heading.FirstChild().(*ast.CodeSpan)
 		if !ok {
 			return ast.WalkSkipChildren, nil
@@ -97,8 +123,10 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 			return ast.WalkSkipChildren, nil
 		}
 		line := lineAt(source, heading.Lines().At(0).Start)
+		open[len(open)-1].isRequirement = true
 		if form.Valid(id) {
 			open[len(open)-1].ID = id
+			open[len(open)-1].index = len(docs.Requirements)
 			docs.Requirements = append(docs.Requirements, Requirement{
 				ID:       id,
 				ParentID: ParentID(id),
@@ -112,6 +140,38 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 		}
 		return ast.WalkSkipChildren, nil
 	})
+}
+
+// readFields adds the fields of a list to the requirement: each item whose
+// first line starts with "検証:" or "状態:" (CTR-FMT-005). An item with
+// another name is body text.
+func readFields(req *Requirement, list *ast.List, source []byte, form IDForm) {
+	for item := list.FirstChild(); item != nil; item = item.NextSibling() {
+		block := item.FirstChild()
+		switch block.(type) {
+		case *ast.TextBlock, *ast.Paragraph:
+		default:
+			continue
+		}
+		if block.Lines().Len() == 0 {
+			continue
+		}
+		first := block.Lines().At(0)
+		line := lineAt(source, first.Start)
+		if value, ok := strings.CutPrefix(string(first.Value(source)), "検証:"); ok {
+			method, description := ParseVerification(strings.TrimSpace(value))
+			req.Verifications = append(req.Verifications, Verification{Method: method, Description: description, Line: line})
+		}
+		if value, ok := strings.CutPrefix(string(first.Value(source)), "状態:"); ok {
+			value = strings.TrimSpace(value)
+			req.Statuses = append(req.Statuses, Status{Value: value, Line: line})
+			// The replacement comes from the first line of the right form.
+			if replacedBy, ok := form.Deprecation(value); ok && !req.Deprecated {
+				req.Deprecated = true
+				req.ReplacedBy = replacedBy
+			}
+		}
+	}
 }
 
 // codeSpanText returns the content of a code span.

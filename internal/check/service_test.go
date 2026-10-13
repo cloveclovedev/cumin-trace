@@ -49,9 +49,9 @@ func TestReadsDocumentWithoutFrontmatterInTheDefaultDirectory(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
 		"docs/ja/requirements/format/index.md": "# Format\n\n" +
-			"### `CTR-FMT-001` A good requirement\n\n" +
-			"### `CTR-OTHER-001` A requirement that proves the reading\n",
-		"docs/elsewhere/index.md": "### `CTR-NOWHERE-001` Outside the directory\n",
+			"### `CTR-FMT-001` A good requirement\n- 検証: `test` It works\n" +
+			"### `CTR-OTHER-001` A requirement that proves the reading\n- 検証: `test` It works\n",
+		"docs/elsewhere/index.md": "### `CTR-NOWHERE-001` Outside the directory\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -66,8 +66,8 @@ func TestReadsDocumentWithoutFrontmatterInTheDefaultDirectory(t *testing.T) {
 func TestReadsTheDirectoryThatTheSettingsName(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml":              settings + "requirements_dir = \"requirements\"\n",
-		"requirements/deep/down/page.md": "## `CTR-OTHER-001` In the named directory\n",
-		"docs/ja/requirements/index.md":  "## `CTR-NOWHERE-001` In the default directory\n",
+		"requirements/deep/down/page.md": "## `CTR-OTHER-001` In the named directory\n- 検証: `test` It works\n",
+		"docs/ja/requirements/index.md":  "## `CTR-NOWHERE-001` In the default directory\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -84,8 +84,8 @@ func TestReportsAnIDWithAWrongForm(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
 		"docs/ja/requirements/index.md": "# Requirements\n\n" +
-			"### `CTR-FMT-001` A good requirement\n\n" +
-			"#### `CTR-FMT-001.1` A good child\n\n" +
+			"### `CTR-FMT-001` A good requirement\n- 検証: `test` It works\n" +
+			"#### `CTR-FMT-001.1` A good child\n- 検証: `test` It works\n" +
 			"### `CTR-FMT-02` Two digits\n",
 	})
 
@@ -103,8 +103,8 @@ func TestReportsAnAreaThatIsNotInTheSettings(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
 		"docs/ja/requirements/index.md": "# Requirements\n\n" +
-			"### `CTR-CHK-001` A good requirement\n\n" +
-			"### `CTR-SITE-001` An area outside the settings\n",
+			"### `CTR-CHK-001` A good requirement\n- 検証: `test` It works\n" +
+			"### `CTR-SITE-001` An area outside the settings\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -122,7 +122,7 @@ func TestReportsBothErrorsOfADocumentWithTwoErrors(t *testing.T) {
 		".cumin-trace.toml": settings,
 		"docs/ja/requirements/index.md": "### `CTR-FMT-1` One digit\n\n" +
 			"text\n\n" +
-			"### `CTR-SITE-001` An area outside the settings\n",
+			"### `CTR-SITE-001` An area outside the settings\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -170,9 +170,9 @@ func TestReadsNoHeadingInACodeBlockOrInTheFrontmatter(t *testing.T) {
 func TestGivesTheSameOutputForTheSameInput(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml":               settings,
-		"docs/ja/requirements/b/index.md": "## `CTR-X-001` One\n\n## `CTR-FMT-1` Two\n",
-		"docs/ja/requirements/a/index.md": "## `CTR-Y-001` One\n",
-		"docs/ja/requirements/a-b.md":     "## `CTR-Z-001` One\n",
+		"docs/ja/requirements/b/index.md": "## `CTR-X-001` One\n- 検証: `test` It works\n## `CTR-FMT-1` Two\n",
+		"docs/ja/requirements/a/index.md": "## `CTR-Y-001` One\n- 検証: `test` It works\n",
+		"docs/ja/requirements/a-b.md":     "## `CTR-Z-001` One\n- 検証: `test` It works\n",
 	})
 
 	_, first := runCheck(t, root)
@@ -227,7 +227,7 @@ func TestImportsNoHTTPClient(t *testing.T) {
 
 // CTR-FMT-011: the check cannot run without right settings, and says why.
 func TestRefusesWrongSettings(t *testing.T) {
-	document := "### `CTR-FMT-001` A good requirement\n"
+	document := "### `CTR-FMT-001` A good requirement\n- 検証: `test` It works\n"
 	tests := []struct {
 		name     string
 		settings string
@@ -266,11 +266,11 @@ func TestReadsRequirementsAtDifferentLevelsWithAndWithoutHorizontalRules(t *test
 		"## `CTR-X-001` At level 2\n\n" +
 		"text\n\n" +
 		"---\n\n" +
-		"### `CTR-X-001.1` A child after a horizontal rule\n\n" +
+		"### `CTR-X-001.1` A child after a horizontal rule\n- 検証: `test` It works\n" +
 		"---\n\n" +
-		"#### `CTR-Y-001` At level 4\n\n" +
+		"#### `CTR-Y-001` At level 4\n- 検証: `test` It works\n" +
 		"---\n\n" +
-		"## `CTR-FMT-001` After the range of the first requirement\n\n" +
+		"## `CTR-FMT-001` After the range of the first requirement\n- 検証: `test` It works\n" +
 		"---\n"
 	withoutRules := strings.ReplaceAll(withRules, "---\n", "\n")
 	want := "docs/ja/requirements/index.md:3: CTR-X-001: area X is not in .cumin-trace.toml\n" +
@@ -298,12 +298,12 @@ func TestReportsTheSameIDOnTwoPages(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
 		"docs/ja/requirements/check/index.md": "# Check\n\n" +
-			"### `CTR-CHK-001` A good requirement\n\n" +
-			"### `CTR-FMT-002` The same ID as on the other page\n",
+			"### `CTR-CHK-001` A good requirement\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-002` The same ID as on the other page\n- 検証: `test` It works\n",
 		"docs/ja/requirements/format/index.md": "# Format\n\n" +
-			"### `CTR-FMT-001` A good requirement\n\n" +
+			"### `CTR-FMT-001` A good requirement\n- 検証: `test` It works\n" +
 			"---\n\n" +
-			"### `CTR-FMT-002` The same ID as on the other page\n",
+			"### `CTR-FMT-002` The same ID as on the other page\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -319,9 +319,9 @@ func TestReportsTheSameIDOnTwoPages(t *testing.T) {
 func TestNamesEveryOtherPlaceOfAnIDInThreePlaces(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
-		"docs/ja/requirements/index.md": "## `CTR-FMT-001` One\n\n" +
-			"## `CTR-FMT-001` Two\n\n" +
-			"## `CTR-FMT-001` Three\n",
+		"docs/ja/requirements/index.md": "## `CTR-FMT-001` One\n- 検証: `test` It works\n" +
+			"## `CTR-FMT-001` Two\n- 検証: `test` It works\n" +
+			"## `CTR-FMT-001` Three\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -340,9 +340,9 @@ func TestReportsAChildOutsideTheHeadingOfItsParent(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
 		"docs/ja/requirements/index.md": "# Requirements\n\n" +
-			"### `CTR-FMT-001` A parent\n\n" +
-			"### `CTR-FMT-002` Another requirement\n\n" +
-			"#### `CTR-FMT-001.1` A child under another requirement\n",
+			"### `CTR-FMT-001` A parent\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-002` Another requirement\n- 検証: `test` It works\n" +
+			"#### `CTR-FMT-001.1` A child under another requirement\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -363,26 +363,26 @@ func TestReportsAChildThatIsNotOneLevelBelowItsParent(t *testing.T) {
 		want  string
 	}{
 		{"one level deeper", map[string]string{
-			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\ntext\n\n### `CTR-FMT-001.1` A child\n",
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\ntext\n\n### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n",
 		}, ""},
 		{"two levels deeper", map[string]string{
-			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n#### `CTR-FMT-001.1` A child\n",
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n- 検証: `test` It works\n#### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/index.md:3" + message},
 		{"the same level as the parent", map[string]string{
-			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n## `CTR-FMT-001.1` A child\n",
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n- 検証: `test` It works\n## `CTR-FMT-001.1` A child\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/index.md:3" + message},
 		{"before the parent", map[string]string{
-			"docs/ja/requirements/index.md": "### `CTR-FMT-001.1` A child\n\n## `CTR-FMT-001` A parent\n",
+			"docs/ja/requirements/index.md": "### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n## `CTR-FMT-001` A parent\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/index.md:1" + message},
 		{"under a heading with no ID below the parent", map[string]string{
-			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n### Grouping heading\n\n#### `CTR-FMT-001.1` A child\n",
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n- 検証: `test` It works\n### Grouping heading\n\n#### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/index.md:5" + message},
 		{"on another page", map[string]string{
-			"docs/ja/requirements/a.md": "## `CTR-FMT-001` A parent\n",
-			"docs/ja/requirements/b.md": "### `CTR-FMT-001.1` A child\n",
+			"docs/ja/requirements/a.md": "## `CTR-FMT-001` A parent\n- 検証: `test` It works\n",
+			"docs/ja/requirements/b.md": "### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/b.md:1" + message},
 		{"with no parent in the documents", map[string]string{
-			"docs/ja/requirements/index.md": "## `CTR-FMT-002` Another requirement\n\n### `CTR-FMT-001.1` A child\n\n## `CTR-FMT-001` A parent\n",
+			"docs/ja/requirements/index.md": "## `CTR-FMT-002` Another requirement\n- 検証: `test` It works\n### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n## `CTR-FMT-001` A parent\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/index.md:3" + message},
 	}
 	for _, test := range tests {
@@ -405,9 +405,9 @@ func TestReportsAGapInTheNumbersOfAnArea(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
 		"docs/ja/requirements/index.md": "# Requirements\n\n" +
-			"### `CTR-FMT-001` The first requirement\n\n" +
-			"### `CTR-FMT-003` The third requirement\n\n" +
-			"### `CTR-CHK-001` Another area with no gap\n",
+			"### `CTR-FMT-001` The first requirement\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-003` The third requirement\n- 検証: `test` It works\n" +
+			"### `CTR-CHK-001` Another area with no gap\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -422,11 +422,11 @@ func TestReportsAGapInTheNumbersOfAnArea(t *testing.T) {
 func TestReportsAGapInTheNumbersOfChildren(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
-		"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n" +
-			"### `CTR-FMT-001.1` The first child\n\n" +
-			"### `CTR-FMT-001.3` The third child\n\n" +
-			"## `CTR-FMT-002` Another parent\n\n" +
-			"### `CTR-FMT-002.1` The first child of another parent\n",
+		"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-001.1` The first child\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-001.3` The third child\n- 検証: `test` It works\n" +
+			"## `CTR-FMT-002` Another parent\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-002.1` The first child of another parent\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -442,11 +442,11 @@ func TestReportsAGapInTheNumbersOfChildren(t *testing.T) {
 func TestReportsEachGapWithTheMissingNumbers(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
-		"docs/ja/requirements/index.md": "## `CTR-FMT-004` Three numbers are missing before it\n\n" +
-			"### `CTR-FMT-004.2` The first child is missing\n\n" +
-			"## `CTR-FMT-006` One number is missing before it\n\n" +
-			"## `CTR-CHK-000` A number below 001\n\n" +
-			"## `CTR-CHK-001` A good requirement\n",
+		"docs/ja/requirements/index.md": "## `CTR-FMT-004` Three numbers are missing before it\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-004.2` The first child is missing\n- 検証: `test` It works\n" +
+			"## `CTR-FMT-006` One number is missing before it\n- 検証: `test` It works\n" +
+			"## `CTR-CHK-000` A number below 001\n- 検証: `test` It works\n" +
+			"## `CTR-CHK-001` A good requirement\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -465,16 +465,207 @@ func TestReportsEachGapWithTheMissingNumbers(t *testing.T) {
 func TestAcceptsRequirementsThatDoNotFollowTheOrderOfTheNumbers(t *testing.T) {
 	root := writeRepository(t, map[string]string{
 		".cumin-trace.toml": settings,
-		"docs/ja/requirements/a.md": "## `CTR-FMT-003` The third requirement\n\n" +
-			"### `CTR-FMT-003.2` The second child\n\n" +
-			"### `CTR-FMT-003.1` The first child\n\n" +
-			"## `CTR-FMT-001` The first requirement\n",
-		"docs/ja/requirements/b.md": "## `CTR-FMT-002` The second requirement\n",
+		"docs/ja/requirements/a.md": "## `CTR-FMT-003` The third requirement\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-003.2` The second child\n- 検証: `test` It works\n" +
+			"### `CTR-FMT-003.1` The first child\n- 検証: `test` It works\n" +
+			"## `CTR-FMT-001` The first requirement\n- 検証: `test` It works\n",
+		"docs/ja/requirements/b.md": "## `CTR-FMT-002` The second requirement\n- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
 
 	if count != 0 || output != "" {
 		t.Errorf("got %d errors and output:\n%s\nwant no error and no output", count, output)
+	}
+}
+
+// CTR-FMT-005: a list item with another name than the two fields is body
+// text, and gives no error. A field in a nested list, in a numbered list, or
+// in a quote is body text too.
+func TestTakesAListItemWithAnotherNameAsBodyText(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "### `CTR-FMT-001` A good requirement\n\n" +
+			"- 備考: `nothing` A list item with another name\n" +
+			"- 状態について: 有効\n" +
+			"- A list item\n" +
+			"  - 状態: 有効\n\n" +
+			"1. 検証: `wrong` In a numbered list\n\n" +
+			"> - 状態: 有効\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 廃止\n\n" +
+			"---\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	if count != 0 || output != "" {
+		t.Errorf("got %d errors and output:\n%s\nwant no error and no output", count, output)
+	}
+}
+
+// CTR-FMT-006, CTR-CHK-001: a verification that starts with another word than
+// the four methods is an error. The document holds only this error.
+func TestReportsAVerificationThatStartsWithNoMethodOfTheFour(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"### `CTR-FMT-001` A good requirement\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 検証: `demo` A person sees it\n" +
+			"- 検証: `inspection` A person reads it\n" +
+			"- 検証: `analysis` A person counts it\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-002` A requirement with a wrong method\n\n" +
+			"- 検証: `review` A person reads it\n\n" +
+			"---\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:14: CTR-FMT-002: verification must start with `test`, `demo`, `inspection`, or `analysis` in a code span\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-006: the method stands first, in a code span, and is one of the
+// four words as they are written. Every other start is an error.
+func TestReportsEveryVerificationThatDoesNotStartWithAMethodInACodeSpan(t *testing.T) {
+	const message = ": CTR-FMT-001: verification must start with `test`, `demo`, `inspection`, or `analysis` in a code span\n"
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "### `CTR-FMT-001` A requirement\n\n" +
+			"- 検証: test The method outside a code span\n" +
+			"- 検証: The method `test` after other words\n" +
+			"- 検証: `Test` The method in upper case\n" +
+			"- 検証:\n" +
+			"- 検証:`test` No space after the colon\n" +
+			"- 検証: ``demo`` Two backticks\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:3" + message +
+		"docs/ja/requirements/index.md:4" + message +
+		"docs/ja/requirements/index.md:5" + message +
+		"docs/ja/requirements/index.md:6" + message
+	if count != 4 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 4 errors and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-007, CTR-CHK-001: a requirement without children and without a
+// verification is an error. A parent without one is no error. The document
+// holds only this error.
+func TestReportsARequirementWithoutChildrenAndWithoutVerification(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"### `CTR-FMT-001` A parent without a verification\n\n" +
+			"- 備考: A list item with another name\n\n" +
+			"#### `CTR-FMT-001.1` A child with a verification\n\n" +
+			"- 検証: `test` It works\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-002` A requirement without children\n\n" +
+			"It has body text only.\n\n" +
+			"- 備考: A list item with another name\n\n" +
+			"---\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:13: CTR-FMT-002: no verification: a requirement without children needs a 検証 line\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-007: a verification belongs to the nearest requirement heading
+// above it. The verification of a child does not count for a requirement
+// without children, and a child without one is an error also when its parent
+// has one. A deprecated requirement needs a verification too.
+func TestCountsAVerificationOnlyForTheRequirementThatHoldsIt(t *testing.T) {
+	const message = ": no verification: a requirement without children needs a 検証 line\n"
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent with a verification\n\n" +
+			"- 検証: `test` It works\n\n" +
+			"### `CTR-FMT-001.1` A child without a verification\n\n" +
+			"#### Grouping heading\n\n" +
+			"- 検証: `test` Under a heading with no ID, for the child above\n\n" +
+			"### `CTR-FMT-001.2` A child without a verification\n\n" +
+			"## `CTR-FMT-002` A deprecated requirement without a verification\n\n" +
+			"- 状態: 廃止\n\n" +
+			"## `CTR-FMT-003` A requirement with a wrong method only\n\n" +
+			"- 検証: `review` A person reads it\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:11: CTR-FMT-001.2" + message +
+		"docs/ja/requirements/index.md:13: CTR-FMT-002" + message +
+		"docs/ja/requirements/index.md:19: CTR-FMT-003: verification must start with `test`, `demo`, `inspection`, or `analysis` in a code span\n"
+	if count != 3 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 3 errors and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-008, CTR-CHK-001: a state that says another thing than deprecated
+// is an error. The document holds only this error.
+func TestReportsAStateThatSaysAnotherThingThanDeprecated(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"### `CTR-FMT-001` A deprecated requirement\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 廃止\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-002` A replaced requirement\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 廃止。`CTR-FMT-003` に置き換え\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-003` A requirement with a wrong state\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 下書き\n\n" +
+			"---\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:20: CTR-FMT-003: invalid status: want 廃止, or 廃止。<ID> に置き換え\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-008: the state is 廃止, or 廃止 with a replacement ID of the right
+// form. Every other text is an error.
+func TestReportsEveryStateThatIsNotOneOfTheTwoForms(t *testing.T) {
+	const message = ": CTR-FMT-001: invalid status: want 廃止, or 廃止。<ID> に置き換え\n"
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "### `CTR-FMT-001` A requirement\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 廃止。CTR-FMT-002に置き換え\n" +
+			"- 状態: 廃止。 `CTR-FMT-002.1`  に置き換え\n" +
+			"- 状態: 廃止予定\n" +
+			"- 状態: 廃止。\n" +
+			"- 状態: 廃止。CTR-FMT-02 に置き換え\n" +
+			"- 状態: 廃止。PC-TASK-001 に置き換え\n" +
+			"- 状態: 廃止。`CTR-FMT-002 に置き換え\n" +
+			"- 状態:\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:6" + message +
+		"docs/ja/requirements/index.md:7" + message +
+		"docs/ja/requirements/index.md:8" + message +
+		"docs/ja/requirements/index.md:9" + message +
+		"docs/ja/requirements/index.md:10" + message +
+		"docs/ja/requirements/index.md:11" + message
+	if count != 6 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 6 errors and output:\n%s", count, output, want)
 	}
 }

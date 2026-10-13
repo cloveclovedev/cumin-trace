@@ -21,7 +21,7 @@ func Run(root string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	errs := Find(docs, settings.Areas)
+	errs := Find(docs, requirement.NewIDForm(settings.Prefix), settings.Areas)
 	for _, e := range errs {
 		if _, err := fmt.Fprintln(stdout, e); err != nil {
 			return 0, err

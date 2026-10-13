@@ -25,6 +25,35 @@ type Requirement struct {
 	// with an ID of the right form. Otherwise it is empty. Only the check
 	// uses it.
 	Above Heading
+	// Verifications holds the 検証 lines of the requirement, in the order of
+	// the document (CTR-FMT-005).
+	Verifications []Verification
+	// Deprecated is true when a 状態 line of the right form says 廃止
+	// (CTR-FMT-008).
+	Deprecated bool
+	// ReplacedBy is the replacement ID of the first 状態 line of the right
+	// form. It is empty when that line names none.
+	ReplacedBy string
+	// Statuses holds every 状態 line of the requirement. Only the check uses
+	// it.
+	Statuses []Status
+}
+
+// Verification is one 検証 line of a requirement.
+type Verification struct {
+	// Method is the content of the code span that the value starts with. It
+	// is empty when the value starts with no code span (CTR-FMT-006).
+	Method string
+	// Description is the value after the method.
+	Description string
+	// Line is the line of the 検証 line. Only the check uses it.
+	Line int
+}
+
+// Status is one 状態 line of a requirement, as it is written.
+type Status struct {
+	Value string
+	Line  int
 }
 
 // Heading is a requirement heading with an ID of the right form, as another
@@ -54,16 +83,62 @@ type Documents struct {
 // CTR-FMT-004).
 type IDForm struct {
 	pattern *regexp.Regexp
+	// deprecation matches the two right values of a 状態 line (CTR-FMT-008).
+	deprecation *regexp.Regexp
 }
 
 // NewIDForm returns the form of the IDs of the product with the prefix.
 func NewIDForm(prefix string) IDForm {
-	return IDForm{pattern: regexp.MustCompile(`\A` + regexp.QuoteMeta(prefix) + `-[A-Z0-9]+-[0-9]{3}(\.[1-9][0-9]*)?\z`)}
+	id := regexp.QuoteMeta(prefix) + `-[A-Z0-9]+-[0-9]{3}(?:\.[1-9][0-9]*)?`
+	return IDForm{
+		pattern:     regexp.MustCompile(`\A` + id + `\z`),
+		deprecation: regexp.MustCompile(`\A廃止(?:。\s*(?:` + "`(" + id + ")`|(" + id + `))\s*に置き換え)?\z`),
+	}
 }
 
 // Valid reports whether the whole text is a right ID.
 func (f IDForm) Valid(text string) bool {
 	return f.pattern.MatchString(text)
+}
+
+// Deprecation reports whether the value of a 状態 line has one of the two
+// right forms: "廃止", or "廃止。<ID> に置き換え" (CTR-FMT-008). It returns
+// the replacement ID, which is empty for the first form. The ID stands in a
+// code span or not.
+func (f IDForm) Deprecation(value string) (replacedBy string, ok bool) {
+	match := f.deprecation.FindStringSubmatch(value)
+	if match == nil {
+		return "", false
+	}
+	return match[1] + match[2], true
+}
+
+// ParseVerification splits the value of a 検証 line into the method and the
+// description (CTR-FMT-006). The method is the content of the code span that
+// the value starts with. Without that code span, the method is empty and the
+// whole value is the description.
+func ParseVerification(value string) (method, description string) {
+	rest := strings.TrimLeft(value, "`")
+	ticks := len(value) - len(rest)
+	if ticks == 0 {
+		return "", value
+	}
+	// A code span ends at the next run of backticks of the same length.
+	for i := 0; i < len(rest); {
+		if rest[i] != '`' {
+			i++
+			continue
+		}
+		end := i
+		for end < len(rest) && rest[end] == '`' {
+			end++
+		}
+		if end-i == ticks {
+			return strings.TrimSpace(rest[:i]), strings.TrimSpace(rest[end:])
+		}
+		i = end
+	}
+	return "", value
 }
 
 // Area returns the area of a right ID: the part between the prefix and the
