@@ -257,3 +257,224 @@ func TestRefusesWrongSettings(t *testing.T) {
 		})
 	}
 }
+
+// CTR-FMT-003: requirements at different heading levels are both read, and a
+// horizontal rule changes nothing. The child after a horizontal rule stays
+// under its parent, and the requirement after the child is under no parent.
+func TestReadsRequirementsAtDifferentLevelsWithAndWithoutHorizontalRules(t *testing.T) {
+	withRules := "# Requirements\n\n" +
+		"## `CTR-X-001` At level 2\n\n" +
+		"text\n\n" +
+		"---\n\n" +
+		"### `CTR-X-001.1` A child after a horizontal rule\n\n" +
+		"---\n\n" +
+		"#### `CTR-Y-001` At level 4\n\n" +
+		"---\n\n" +
+		"## `CTR-FMT-001` After the range of the first requirement\n\n" +
+		"---\n"
+	withoutRules := strings.ReplaceAll(withRules, "---\n", "\n")
+	want := "docs/ja/requirements/index.md:3: CTR-X-001: area X is not in .cumin-trace.toml\n" +
+		"docs/ja/requirements/index.md:9: CTR-X-001.1: area X is not in .cumin-trace.toml\n" +
+		"docs/ja/requirements/index.md:13: CTR-Y-001: area Y is not in .cumin-trace.toml\n"
+	for name, document := range map[string]string{"with horizontal rules": withRules, "without horizontal rules": withoutRules} {
+		t.Run(name, func(t *testing.T) {
+			root := writeRepository(t, map[string]string{
+				".cumin-trace.toml":             settings,
+				"docs/ja/requirements/index.md": document,
+			})
+
+			count, output := runCheck(t, root)
+
+			if count != 3 || output != want {
+				t.Errorf("got %d errors and output:\n%s\nwant 3 errors and output:\n%s", count, output, want)
+			}
+		})
+	}
+}
+
+// CTR-FMT-003, CTR-CHK-001: the same ID on two pages is an error that names
+// both places. The documents hold only this error.
+func TestReportsTheSameIDOnTwoPages(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/check/index.md": "# Check\n\n" +
+			"### `CTR-CHK-001` A good requirement\n\n" +
+			"### `CTR-FMT-002` The same ID as on the other page\n",
+		"docs/ja/requirements/format/index.md": "# Format\n\n" +
+			"### `CTR-FMT-001` A good requirement\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-002` The same ID as on the other page\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/check/index.md:5: CTR-FMT-002: duplicate ID: also at docs/ja/requirements/format/index.md:7\n" +
+		"docs/ja/requirements/format/index.md:7: CTR-FMT-002: duplicate ID: also at docs/ja/requirements/check/index.md:5\n"
+	if count != 2 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 2 errors and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-003: an ID in three places names the two other places on each line.
+func TestNamesEveryOtherPlaceOfAnIDInThreePlaces(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "## `CTR-FMT-001` One\n\n" +
+			"## `CTR-FMT-001` Two\n\n" +
+			"## `CTR-FMT-001` Three\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:1: CTR-FMT-001: duplicate ID: also at docs/ja/requirements/index.md:3, docs/ja/requirements/index.md:5\n" +
+		"docs/ja/requirements/index.md:3: CTR-FMT-001: duplicate ID: also at docs/ja/requirements/index.md:1, docs/ja/requirements/index.md:5\n" +
+		"docs/ja/requirements/index.md:5: CTR-FMT-001: duplicate ID: also at docs/ja/requirements/index.md:1, docs/ja/requirements/index.md:3\n"
+	if count != 3 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 3 errors and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-004, CTR-CHK-001: a child outside the heading of its parent is an
+// error. The document holds only this error.
+func TestReportsAChildOutsideTheHeadingOfItsParent(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"### `CTR-FMT-001` A parent\n\n" +
+			"### `CTR-FMT-002` Another requirement\n\n" +
+			"#### `CTR-FMT-001.1` A child under another requirement\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:7: CTR-FMT-001.1: child requirement is not under its parent: put it one level below the heading of CTR-FMT-001\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-004: a child stands under the heading of its parent, one level
+// deeper. Every other place is an error.
+func TestReportsAChildThatIsNotOneLevelBelowItsParent(t *testing.T) {
+	const message = ": CTR-FMT-001.1: child requirement is not under its parent: put it one level below the heading of CTR-FMT-001\n"
+	tests := []struct {
+		name  string
+		files map[string]string
+		want  string
+	}{
+		{"one level deeper", map[string]string{
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\ntext\n\n### `CTR-FMT-001.1` A child\n",
+		}, ""},
+		{"two levels deeper", map[string]string{
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n#### `CTR-FMT-001.1` A child\n",
+		}, "docs/ja/requirements/index.md:3" + message},
+		{"the same level as the parent", map[string]string{
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n## `CTR-FMT-001.1` A child\n",
+		}, "docs/ja/requirements/index.md:3" + message},
+		{"before the parent", map[string]string{
+			"docs/ja/requirements/index.md": "### `CTR-FMT-001.1` A child\n\n## `CTR-FMT-001` A parent\n",
+		}, "docs/ja/requirements/index.md:1" + message},
+		{"under a heading with no ID below the parent", map[string]string{
+			"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n### Grouping heading\n\n#### `CTR-FMT-001.1` A child\n",
+		}, "docs/ja/requirements/index.md:5" + message},
+		{"on another page", map[string]string{
+			"docs/ja/requirements/a.md": "## `CTR-FMT-001` A parent\n",
+			"docs/ja/requirements/b.md": "### `CTR-FMT-001.1` A child\n",
+		}, "docs/ja/requirements/b.md:1" + message},
+		{"with no parent in the documents", map[string]string{
+			"docs/ja/requirements/index.md": "## `CTR-FMT-002` Another requirement\n\n### `CTR-FMT-001.1` A child\n\n## `CTR-FMT-001` A parent\n",
+		}, "docs/ja/requirements/index.md:3" + message},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.files[".cumin-trace.toml"] = settings
+			root := writeRepository(t, test.files)
+
+			_, output := runCheck(t, root)
+
+			if output != test.want {
+				t.Errorf("got output:\n%s\nwant output:\n%s", output, test.want)
+			}
+		})
+	}
+}
+
+// CTR-FMT-012, CTR-CHK-001: a gap in the numbers of an area is an error. The
+// document holds only this error.
+func TestReportsAGapInTheNumbersOfAnArea(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"### `CTR-FMT-001` The first requirement\n\n" +
+			"### `CTR-FMT-003` The third requirement\n\n" +
+			"### `CTR-CHK-001` Another area with no gap\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:5: CTR-FMT-003: number gap: CTR-FMT-002 is missing\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-012: a gap in the numbers of the children of one parent is an error.
+func TestReportsAGapInTheNumbersOfChildren(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "## `CTR-FMT-001` A parent\n\n" +
+			"### `CTR-FMT-001.1` The first child\n\n" +
+			"### `CTR-FMT-001.3` The third child\n\n" +
+			"## `CTR-FMT-002` Another parent\n\n" +
+			"### `CTR-FMT-002.1` The first child of another parent\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:5: CTR-FMT-001.3: number gap: CTR-FMT-001.2 is missing\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-012: the numbers of an area start at 001, and the numbers of
+// children start at .1. Each gap gives one error that names what is missing.
+func TestReportsEachGapWithTheMissingNumbers(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "## `CTR-FMT-004` Three numbers are missing before it\n\n" +
+			"### `CTR-FMT-004.2` The first child is missing\n\n" +
+			"## `CTR-FMT-006` One number is missing before it\n\n" +
+			"## `CTR-CHK-000` A number below 001\n\n" +
+			"## `CTR-CHK-001` A good requirement\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:1: CTR-FMT-004: number gap: CTR-FMT-001 to CTR-FMT-003 are missing\n" +
+		"docs/ja/requirements/index.md:3: CTR-FMT-004.2: number gap: CTR-FMT-004.1 is missing\n" +
+		"docs/ja/requirements/index.md:5: CTR-FMT-006: number gap: CTR-FMT-005 is missing\n" +
+		"docs/ja/requirements/index.md:7: CTR-CHK-000: number gap: numbers start at 001\n"
+	if count != 4 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 4 errors and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-012: requirements that do not follow the order of the numbers, on
+// one page or across pages, give no error.
+func TestAcceptsRequirementsThatDoNotFollowTheOrderOfTheNumbers(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/a.md": "## `CTR-FMT-003` The third requirement\n\n" +
+			"### `CTR-FMT-003.2` The second child\n\n" +
+			"### `CTR-FMT-003.1` The first child\n\n" +
+			"## `CTR-FMT-001` The first requirement\n",
+		"docs/ja/requirements/b.md": "## `CTR-FMT-002` The second requirement\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	if count != 0 || output != "" {
+		t.Errorf("got %d errors and output:\n%s\nwant no error and no output", count, output)
+	}
+}

@@ -12,10 +12,26 @@ import (
 type Requirement struct {
 	// ID is the content of the code span of the heading.
 	ID string
+	// ParentID is the ID of the parent of a child. It is empty for a
+	// requirement that is no child.
+	ParentID string
 	// File is the path from the top of the repository, with "/" as the separator.
 	File string
 	// Line is the line of the heading. The first line of a file is 1.
 	Line int
+	// Level is the level of the heading.
+	Level int
+	// Above is the heading above, when that heading is a requirement heading
+	// with an ID of the right form. Otherwise it is empty. Only the check
+	// uses it.
+	Above Heading
+}
+
+// Heading is a requirement heading with an ID of the right form, as another
+// requirement sees it above itself.
+type Heading struct {
+	ID    string
+	Level int
 }
 
 // InvalidHeading is one requirement heading whose ID has a wrong form.
@@ -58,4 +74,15 @@ func Area(id string) string {
 		return ""
 	}
 	return parts[1]
+}
+
+// ParentID returns the ID of the parent of a right ID of a child: the ID
+// without ".<child number>" (CTR-FMT-004). It returns "" for an ID of a
+// requirement that is no child.
+func ParentID(id string) string {
+	parent, _, found := strings.Cut(id, ".")
+	if !found {
+		return ""
+	}
+	return parent
 }

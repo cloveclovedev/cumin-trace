@@ -5,6 +5,8 @@ package check
 import (
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/cloveclovedev/cumin-trace/internal/requirement"
 )
@@ -12,8 +14,11 @@ import (
 // The numbers of the errors in the table of the design note
 // (docs/ja/designs/check.md). They are the third key of the order.
 const (
-	ruleInvalidID   = 1
-	ruleUnknownArea = 9
+	ruleInvalidID          = 1
+	ruleDuplicateID        = 2
+	ruleChildOutsideParent = 3
+	ruleUnknownArea        = 9
+	ruleNumberGap          = 10
 )
 
 // Error is one format error (CTR-CHK-002).
@@ -35,7 +40,10 @@ func (e Error) String() string {
 func Find(docs requirement.Documents, areas []string) []Error {
 	var errs []Error
 	errs = append(errs, invalidIDs(docs.InvalidHeadings)...)
+	errs = append(errs, duplicateIDs(docs.Requirements)...)
+	errs = append(errs, childrenOutsideParent(docs.Requirements)...)
 	errs = append(errs, unknownAreas(docs.Requirements, areas)...)
+	errs = append(errs, numberGaps(docs.Requirements)...)
 	sortErrors(errs)
 	return errs
 }
@@ -52,6 +60,112 @@ func invalidIDs(headings []requirement.InvalidHeading) []Error {
 			ID:      heading.Text,
 			Message: "invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>",
 		})
+	}
+	return errs
+}
+
+// duplicateIDs reports each place of an ID that two or more requirement
+// headings have, and names the other places (CTR-FMT-003).
+func duplicateIDs(requirements []requirement.Requirement) []Error {
+	places := map[string][]requirement.Requirement{}
+	for _, req := range requirements {
+		places[req.ID] = append(places[req.ID], req)
+	}
+	var errs []Error
+	for _, req := range requirements {
+		if len(places[req.ID]) < 2 {
+			continue
+		}
+		var others []string
+		for _, other := range places[req.ID] {
+			if other.File != req.File || other.Line != req.Line {
+				others = append(others, fmt.Sprintf("%s:%d", other.File, other.Line))
+			}
+		}
+		errs = append(errs, Error{
+			File:    req.File,
+			Line:    req.Line,
+			Rule:    ruleDuplicateID,
+			ID:      req.ID,
+			Message: "duplicate ID: also at " + strings.Join(others, ", "),
+		})
+	}
+	return errs
+}
+
+// childrenOutsideParent reports each child whose heading above is not the
+// heading of its parent, or that is not one level deeper than its parent
+// (CTR-FMT-004).
+func childrenOutsideParent(requirements []requirement.Requirement) []Error {
+	var errs []Error
+	for _, req := range requirements {
+		if req.ParentID == "" {
+			continue
+		}
+		if req.Above.ID == req.ParentID && req.Level == req.Above.Level+1 {
+			continue
+		}
+		errs = append(errs, Error{
+			File:    req.File,
+			Line:    req.Line,
+			Rule:    ruleChildOutsideParent,
+			ID:      req.ID,
+			Message: fmt.Sprintf("child requirement is not under its parent: put it one level below the heading of %s", req.ParentID),
+		})
+	}
+	return errs
+}
+
+// numberGaps reports each gap in the numbers of an area, and in the numbers
+// of the children of one parent (CTR-FMT-012). The numbers must be complete
+// from 1 to the largest one. The order of the requirements does not matter.
+func numberGaps(requirements []requirement.Requirement) []Error {
+	// A series is the numbers that follow one base: "<prefix>-<area>-" for
+	// the requirements of an area, and "<parent ID>." for the children of a
+	// parent. It keeps the first requirement of each number.
+	series := map[string]map[int]requirement.Requirement{}
+	format := map[string]string{}
+	for _, req := range requirements {
+		base, form := req.ID[:len(req.ID)-3], "%s%03d"
+		if req.ParentID != "" {
+			base, form = req.ParentID+".", "%s%d"
+		}
+		// A number that is too large for an int becomes the largest int.
+		number, _ := strconv.Atoi(req.ID[len(base):])
+		if series[base] == nil {
+			series[base] = map[int]requirement.Requirement{}
+			format[base] = form
+		}
+		if _, ok := series[base][number]; !ok {
+			series[base][number] = req
+		}
+	}
+	var errs []Error
+	for base, byNumber := range series {
+		numbers := make([]int, 0, len(byNumber))
+		for number := range byNumber {
+			numbers = append(numbers, number)
+		}
+		sort.Ints(numbers)
+		previous := 0
+		for _, number := range numbers {
+			req := byNumber[number]
+			var message string
+			switch {
+			case number == 0:
+				message = "number gap: numbers start at 001"
+			case number == previous+2:
+				message = fmt.Sprintf("number gap: %s is missing", fmt.Sprintf(format[base], base, number-1))
+			case number > previous+2:
+				message = fmt.Sprintf("number gap: %s to %s are missing",
+					fmt.Sprintf(format[base], base, previous+1), fmt.Sprintf(format[base], base, number-1))
+			}
+			previous = number
+			if message == "" {
+				continue
+			}
+			errs = append(errs, Error{File: req.File, Line: req.Line, Rule: ruleNumberGap, ID: req.ID, Message: message})
+		}
 	}
 	return errs
 }
