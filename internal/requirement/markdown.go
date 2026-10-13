@@ -70,11 +70,24 @@ func markdownFiles(root, dir string) ([]string, error) {
 func readDocument(docs *Documents, file string, source []byte, prefix string, form IDForm) {
 	source = blankFrontmatter(source)
 	root := goldmark.New().Parser().Parse(text.NewReader(source))
+	// open holds the headings whose range is not at its end, from the highest
+	// level down. The range of a heading ends at the next heading of the same
+	// or a higher level (CTR-FMT-003). A heading that is no requirement
+	// heading with an ID of the right form has an empty ID.
+	var open []Heading
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		heading, ok := node.(*ast.Heading)
 		if !ok || !entering {
 			return ast.WalkContinue, nil
 		}
+		for len(open) > 0 && open[len(open)-1].Level >= heading.Level {
+			open = open[:len(open)-1]
+		}
+		var above Heading
+		if len(open) > 0 && open[len(open)-1].ID != "" {
+			above = open[len(open)-1]
+		}
+		open = append(open, Heading{Level: heading.Level})
 		span, ok := heading.FirstChild().(*ast.CodeSpan)
 		if !ok {
 			return ast.WalkSkipChildren, nil
@@ -85,7 +98,15 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 		}
 		line := lineAt(source, heading.Lines().At(0).Start)
 		if form.Valid(id) {
-			docs.Requirements = append(docs.Requirements, Requirement{ID: id, File: file, Line: line})
+			open[len(open)-1].ID = id
+			docs.Requirements = append(docs.Requirements, Requirement{
+				ID:       id,
+				ParentID: ParentID(id),
+				File:     file,
+				Line:     line,
+				Level:    heading.Level,
+				Above:    above,
+			})
 		} else {
 			docs.InvalidHeadings = append(docs.InvalidHeadings, InvalidHeading{Text: id, File: file, Line: line})
 		}
