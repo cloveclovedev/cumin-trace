@@ -101,10 +101,12 @@ func TestWritesTheTemplatesWithoutAnAreaThatPassTheCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var names []string
 	for _, entry := range entries {
-		if entry.IsDir() {
-			t.Errorf("got the directory %s in the requirements directory, want no area page", entry.Name())
-		}
+		names = append(names, entry.Name())
+	}
+	if got := strings.Join(names, ","); got != "backlog.md,glossary.md,index.md,overview.md,technology.md" {
+		t.Errorf("got %s in the requirements directory, want the five pages and no area page", got)
 	}
 	checkPasses(t, root)
 }
@@ -172,7 +174,8 @@ func TestTheTechnologyPageAndTheGlossaryHoldNoID(t *testing.T) {
 }
 
 // CTR-TPL-001: the entry page links to the overview, the technology page,
-// the glossary, the backlog, and the source code structure.
+// the glossary, the backlog, and the source code structure, as
+// docs/ja/designs/templates/files.md says.
 func TestTheEntryPageLinksToThePages(t *testing.T) {
 	root := t.TempDir()
 	runInit(t, root, "PC", "")
