@@ -23,7 +23,9 @@ cumin-trace init <prefix> <area>
 |---|---|
 | ファイルを書いた | `written <path>` |
 | ファイルがすでにある | `skipped <path>: already exists` |
-| 版のないバイナリで、workflow を書かない | `skipped .github/workflows/cumin-trace-check.yml: this cumin-trace has no version; use a release binary` |
+| 版のないバイナリで、workflow がまだない | `skipped .github/workflows/cumin-trace-check.yml: this cumin-trace has no version; use a release binary` |
+
+ファイルがあるかを先に確かめ、なければ版を確かめる。版のないバイナリでも、workflow がすでにあれば `already exists` の行になる。
 
 例 (`cumin-trace init PC TASK`、空のリポジトリ):
 
@@ -42,7 +44,7 @@ written .github/workflows/cumin-trace-check.yml
 | 0 | すべてのファイルを、書いたか飛ばした | なし |
 | 2 | 引数の数が2つでない | `cumin-trace: usage: cumin-trace init <prefix> <area>` |
 | 2 | 接頭辞、またはカテゴリが決まりに合わない | `cumin-trace: invalid prefix "<値>": want upper-case letters and digits` (カテゴリは `invalid area`) |
-| 2 | ファイルかディレクトリを作れない | `cumin-trace: <OS のエラー>`。そのファイルで止まり、それまでに書いたファイルは残す |
+| 2 | ファイルかディレクトリを作れない | `cumin-trace: <OS のエラー>`。そのファイルで止まり、それまでに書いたファイルは残す。作ったあとで書き込みか close に失敗したファイルは消すので、次の実行で書き直せる |
 
 `check` の使い方の行は、`cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> <area>` に変える。コマンドがないとき、知らないコマンドのときに出す。
 

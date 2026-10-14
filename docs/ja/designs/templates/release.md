@@ -11,10 +11,11 @@ name: release
 
 # Runs on a version tag, for example v0.1.0. The tag is the version that the
 # binaries print and that cumin-trace init writes into the check workflow.
+# A pre-release tag (v0.1.0-rc.1) does not match: init treats it as no version.
 on:
   push:
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
   contents: write
@@ -83,6 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download cumin-trace
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: {{version}}
@@ -97,7 +99,7 @@ jobs:
         run: '"$RUNNER_TEMP/cumin-trace/cumin-trace-linux-amd64" check'
 ```
 
-- `checksums.txt` には4つのバイナリが並ぶので、取ったバイナリの行だけを `sha256sum --check` に渡す。行がなければ `grep` が失敗し、step が失敗する。
+- `checksums.txt` には4つのバイナリが並ぶので、取ったバイナリの行だけを `sha256sum --check` に渡す。行がなければ `grep` が失敗し、step が失敗する。`shell: bash` で、GitHub は `bash --noprofile --norc -eo pipefail {0}` を実行するので、パイプの中の失敗も step の失敗になる。
 - 版を上げるときは、新しい版の `cumin-trace` で workflow を消してから `init` を実行するか、`VERSION` の行を書き換える。
 
 ## 確かめたこと
@@ -107,7 +109,7 @@ jobs:
 - <https://cli.github.com/manual/gh_release_download>: `gh release download [<tag>] [flags]`。`--pattern` は「Download only assets that match a glob pattern」、`--dir` の既定は `.`、`--repo` で別のリポジトリを選ぶ。
 - <https://cli.github.com/manual/gh_release_create>: `gh release create [<tag>] [<filename>... | <pattern>...]`。`--verify-tag` は、リモートにタグがなければ止める。`--generate-notes` は、タイトルとノートを自動で作る。
 - <https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/using-github-cli-in-workflows>: GitHub CLI は GitHub のランナーに最初から入っている。step ごとに `GH_TOKEN` を設定する。
-- <https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions>: `on.push.tags` は `refs/tags` に対するパターンである。`contents: write` で、リリースを作れる。権限を1つでも書くと、書かない権限は `none` になる。
+- <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax>: `on.push.tags` は `refs/tags` に対するパターンである。フィルタのパターンで、`+` は直前の文字の1回以上、`[]` は括弧の中の1文字に合う (例 `v[12].[0-9]+.[0-9]+`)。`shell` を書かないと `bash -e {0}`、`shell: bash` では `bash --noprofile --norc -eo pipefail {0}` を実行する。`contents: write` で、リリースを作れる。権限を1つでも書くと、書かない権限は `none` になる。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/contexts>: `github.ref_name` は、実行のきっかけのブランチかタグの短い名前である。
 - `actions/checkout` と `actions/setup-go` のコミットは、このリポジトリの `.github/workflows/ci.yml` と同じである。
 

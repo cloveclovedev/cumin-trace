@@ -15,14 +15,16 @@
 | 5 | `docs/ja/requirements/glossary.md` | `docs/glossary.md` | なし | `CTR-TPL-007` |
 | 6 | `docs/ja/requirements/backlog.md` | `docs/backlog.md` | なし | `CTR-TPL-001` |
 | 7 | `docs/ja/requirements/{{area_dir}}/index.md` | `docs/area.md` | `{{prefix}}`、`{{area}}` | `CTR-TPL-003` |
-| 8 | `docs/ja/architecture/overview.md` | `docs/architecture.md` | なし | `CTR-TPL-009` |
-| 9 | `.claude/skills/cumin-trace-docs/SKILL.md` | `skill/SKILL.md` | なし | `CTR-TPL-005` |
-| 10 | `.claude/skills/cumin-trace-docs/templates/<名前>` | `docs/<名前>` の9つ (下の表) | 2 から 8 と同じ | `CTR-TPL-005`、`CTR-TPL-008` |
-| 11 | `scripts/render-diagrams.sh` | `scripts/render-diagrams.sh` | なし | `CTR-TPL-006` |
-| 12 | `tools/plantuml/Dockerfile` | `tools/plantuml/Dockerfile` | なし | `CTR-TPL-006` |
-| 13 | `.github/workflows/cumin-trace-check.yml` | `workflows/cumin-trace-check.yml` | `{{version}}` | `CTR-CHK-005` |
+| 8 | `docs/ja/requirements/{{area_dir}}/overview.puml` | `docs/area-overview.puml` | なし | `CTR-TPL-003`、`CTR-TPL-006` |
+| 9 | `docs/ja/requirements/{{area_dir}}/overview.svg` | `docs/area-overview.svg` | なし | `CTR-TPL-003`、`CTR-TPL-006` |
+| 10 | `docs/ja/architecture/overview.md` | `docs/architecture.md` | なし | `CTR-TPL-009` |
+| 11 | `.claude/skills/cumin-trace-docs/SKILL.md` | `skill/SKILL.md` | なし | `CTR-TPL-005` |
+| 12 | `.claude/skills/cumin-trace-docs/templates/<名前>` | `docs/<名前>` の9つ (下の表) | 2 から 7、10 と同じ | `CTR-TPL-005`、`CTR-TPL-008` |
+| 13 | `scripts/render-diagrams.sh` | `scripts/render-diagrams.sh` | なし | `CTR-TPL-006` |
+| 14 | `tools/plantuml/Dockerfile` | `tools/plantuml/Dockerfile` | なし | `CTR-TPL-006` |
+| 15 | `.github/workflows/cumin-trace-check.yml` | `workflows/cumin-trace-check.yml` | `{{version}}` | `CTR-CHK-005` |
 
-10 は、次の9つを、この順に書く。
+12 は、次の9つを、この順に書く。
 
 | 名前 | 種類 | `docs/` にも書くか |
 |---|---|---|
@@ -32,12 +34,21 @@
 | `glossary.md` | 用語集 | 書く (5) |
 | `backlog.md` | backlog | 書く (6) |
 | `area.md` | カテゴリごとの要件 | 書く (7) |
-| `architecture.md` | ソースコード全体構成 | 書く (8) |
+| `architecture.md` | ソースコード全体構成 | 書く (10) |
 | `design-index.md` | 設計文書の入口 | skill だけ |
 | `design-detail.md` | 設計文書の細部 | skill だけ |
 
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。書く先のパスは、`internal/scaffold/domain.go` の表だけが持つ。
-- 1 から 8 は #34 と #35、9 と 10 は #36、11 と 12 は #37、13 は #38 で足す。足すまでは、一覧にその行がない。
+- 1 から 9 は #34、10 は #35、11 と 12 は #36、13 と 14 は #37、15 は #38 で足す。足すまでは、一覧にその行がない。
+
+## カテゴリの図
+
+8 と 9 は、カテゴリのページ (7) の「全体像」が示す図の例である。`CTR-TPL-003` の図を置く場所を埋め、`CTR-TPL-006` の demo (生成したスクリプトで、テンプレートの図を SVG にする) の対象になる。
+
+- `overview.puml` は `@startuml overview` で始まり、英語のラベルだけを持つ。差し込む値を持たないので、どのプロダクトでも同じ文になる。
+- `overview.svg` は、`overview.puml` を cumin-works と同じ PlantUML のイメージで描画したものを、そのまま埋め込む。生成した直後から、ページの図が見える。
+- 生成したスクリプト (13) で描画し直すと、同じ SVG になる。埋め込んだ2つのファイルが同じ描画であることは、`init` のテストではなく、このリポジトリで描画し直して確かめる。
+- カテゴリのページは、`![カテゴリの全体像](overview.svg)` と `図の元ファイル: [overview.puml](overview.puml)` で図を示す。
 
 ## 差し込む値
 
