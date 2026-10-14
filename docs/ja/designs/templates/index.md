@@ -71,9 +71,9 @@
 
 ### 差し込む値は、決まった文字列の置き換えにする
 
-`{{prefix}}`、`{{area}}`、`{{area_dir}}`、`{{version}}` の4つを、`strings.Replacer` で置き換える。
+`{{prefix}}`、`{{area}}`、`{{area_dir}}`、`{{areas}}`、`{{area_rows}}`、`{{version}}` の6つを、`strings.Replacer` で置き換える。`{{areas}}` と `{{area_rows}}` は、カテゴリがあるかどうかで値が変わるので、置き換えの前に Go のコードで値を作る。
 
-- 理由: workflow は `${{ ... }}` を含むので、`text/template` の区切りと衝突する。値は4つだけで、条件や繰り返しは要らない。
+- 理由: workflow は `${{ ... }}` を含むので、`text/template` の区切りと衝突する。値は6つだけで、カテゴリによる違いは Go で作る値に閉じるので、テンプレートには条件も繰り返しも要らない。
 - 採らなかった案: `text/template`。workflow の `${{ ... }}` をすべて書き換えて逃がす必要がある。
 - 細部: [ファイルと埋め込み](files.md)
 
