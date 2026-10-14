@@ -26,12 +26,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # The publish step authenticates with GH_TOKEN. Keep the write token out
+      # of .git/config while the tests and their dependencies run.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: go vet
+        run: go vet ./...
       - name: go test
-        run: go test ./...
+        run: go test -race ./...
       - name: Build the binaries
         env:
           VERSION: ${{ github.ref_name }}
@@ -60,6 +66,10 @@ jobs:
 | `cumin-trace-linux-amd64` | GitHub のランナー用。check の workflow が使う |
 | `cumin-trace-linux-arm64`、`cumin-trace-darwin-amd64`、`cumin-trace-darwin-arm64` | 手元で `init` と `check` を実行する人のため |
 | `checksums.txt` | 4つのバイナリの SHA-256。`sha256sum` の出力の形 (`<hash>  <file>`) |
+
+- checkout は `persist-credentials: false` にする。job は `contents: write` を持つので、既定の `true` では、書き込みのできるトークンが `.git/config` に残ったまま、テストと依存先のコードが動く。公開の step は `GH_TOKEN` で `gh` を認証するので、git の認証情報は要らない。
+- テストは `ci.yml` と同じ `go vet ./...` と `go test -race ./...` にする。CI を通っていないコミットにタグを打っても、同じ検査を通ったものだけを公開する。
+- `concurrency` は書かない。タグごとに別のリリースを作るので、並んで動いてもぶつからない。同じ group で待てる run は1つだけで、待っている run は次の run に取り消される。タグをまとめて push すると、間のリリースが黙って作られない。
 
 ## プロダクトの check の workflow
 
