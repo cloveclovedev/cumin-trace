@@ -15,7 +15,8 @@ salt
  +++ backlog.md | what is put off, with the reason and the trigger
  ++ scripts/render-diagrams.sh | renders .puml to .svg
  ++ .github/workflows/ | check of the format on pull requests
- ++ .claude/skills/ | skill for writing requirements with an agent
+ ++ docs/ja/architecture/overview.md | code structure: diagram, packages, designs
+ ++ .claude/skills/ | skill for writing requirements and designs, with the templates
  ++ site/ | Starlight site
 }
 }
