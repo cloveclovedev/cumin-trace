@@ -24,7 +24,7 @@
 
 ## 全体像
 
-[全体の構成](../../architecture/overview.md) の `internal/check`、`internal/requirement`、`internal/core` にあたる。
+[全体構成](../../architecture/overview.md) の `internal/check`、`internal/requirement`、`internal/core` にあたる。
 
 ![書式検査のパッケージ](check-packages.svg)
 
