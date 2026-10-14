@@ -1,0 +1,28 @@
+@startuml overview
+title Packages of cumin-trace
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "product repository" {
+  file ".cumin-trace.toml" as toml
+  file "docs/ja/requirements/**/*.md" as docs
+}
+
+package "cumin-trace" {
+  [cmd/cumin-trace\nchoose the command] as cmd
+  [internal/check\nformat check] as check
+  [internal/requirement\nread requirements (shared)] as requirement
+  [internal/core\nread settings] as core
+}
+
+cmd --> check : run
+check --> requirement : read requirements
+check --> core : read settings
+core --> toml : reads
+requirement --> docs : reads
+
+legend right
+  each box in cumin-trace is one Go package
+  arrow = imports, or reads a file
+endlegend
+@enduml

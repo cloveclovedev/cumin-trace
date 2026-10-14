@@ -53,7 +53,7 @@ docs/requirements/tax/index.md:5: BIL-TAX-001: area TAX is not in .cumin-trace.t
 
 The check reads only the settings file and the requirement documents. It needs no token and no network.
 
-The check finds the ten errors of `CTR-CHK-001`. The design is in [docs/ja/designs/check.md](docs/ja/designs/check.md).
+The check finds the ten errors of `CTR-CHK-001`. The design is in [docs/ja/designs/check/index.md](docs/ja/designs/check/index.md).
 
 ## Check the documents of this repository
 
