@@ -174,3 +174,59 @@ func TestReadsReferencesInTextTablesAndListsButNotInCodeBlocks(t *testing.T) {
 		t.Errorf("got the references %q\nwant %q", got, want)
 	}
 }
+
+// CTR-FMT-003: a code span with a space at each end is read as GitHub shows
+// it. One space is removed at each end, so the first heading is a requirement
+// heading. The second heading keeps a space before its ID, so it is no
+// requirement heading.
+func TestReadsAHeadingWhoseCodeSpanHasASpaceAtEachEnd(t *testing.T) {
+	docs := readDocumentsOfTest(t, "## ` CTR-FMT-001 ` A space at each end\n\n"+
+		"- 検証: `test` It works\n\n"+
+		"## `  CTR-FMT-002  ` Two spaces at each end\n")
+
+	var ids []string
+	for _, req := range docs.Requirements {
+		ids = append(ids, req.ID)
+	}
+	if !reflect.DeepEqual(ids, []string{"CTR-FMT-001"}) || len(docs.Requirements[0].Verifications) != 1 {
+		t.Errorf("got the requirements %+v, want only CTR-FMT-001 with its verification", docs.Requirements)
+	}
+	if len(docs.InvalidHeadings) != 0 {
+		t.Errorf("got the invalid headings %+v, want none", docs.InvalidHeadings)
+	}
+}
+
+// CTR-FMT-001: a document that starts with a UTF-8 byte order mark has its
+// frontmatter, and the frontmatter is not read.
+func TestReadsTheFrontmatterOfADocumentWithAByteOrderMark(t *testing.T) {
+	docs := readDocumentsOfTest(t, "\xef\xbb\xbf---\ntitle: Names CTR-FMT-901\n---\n\n"+
+		"## `CTR-FMT-001` A requirement\n")
+
+	if len(docs.References) != 0 {
+		t.Errorf("got the references %+v, want none", docs.References)
+	}
+	if len(docs.Requirements) != 1 || docs.Requirements[0].Line != 5 {
+		t.Errorf("got the requirements %+v, want CTR-FMT-001 on line 5", docs.Requirements)
+	}
+}
+
+// CTR-FMT-003: only a heading at the top level of the document counts. A
+// heading inside a block quote ends no range and is no requirement heading.
+func TestTakesAHeadingInABlockQuoteAsNoHeading(t *testing.T) {
+	docs := readDocumentsOfTest(t, "## `CTR-FMT-001` A parent\n\n"+
+		"> ## A quoted heading\n\n"+
+		"> ### `CTR-FMT-002` A quoted requirement heading\n\n"+
+		"### `CTR-FMT-001.1` A child\n")
+
+	if len(docs.Requirements) != 2 {
+		t.Fatalf("got the requirements %+v, want CTR-FMT-001 and CTR-FMT-001.1", docs.Requirements)
+	}
+	child := docs.Requirements[1]
+	if child.ID != "CTR-FMT-001.1" || child.Above != (Heading{ID: "CTR-FMT-001", Level: 2}) {
+		t.Errorf("got the child %+v, want CTR-FMT-001.1 with CTR-FMT-001 above", child)
+	}
+	want := []Reference{{ID: "CTR-FMT-002", File: "requirements/index.md", Line: 5}}
+	if !reflect.DeepEqual(docs.References, want) {
+		t.Errorf("got the references %+v, want %+v", docs.References, want)
+	}
+}

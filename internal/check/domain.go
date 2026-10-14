@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/cloveclovedev/cumin-trace/internal/requirement"
 )
@@ -35,9 +36,26 @@ type Error struct {
 	Message string
 }
 
-// String returns the line that the check prints for the error.
+// String returns the line that the check prints for the error. Each control
+// character of the ID becomes a Go escape, so that the line stays one line and
+// holds no terminal code.
 func (e Error) String() string {
-	return fmt.Sprintf("%s:%d: %s: %s", e.File, e.Line, e.ID, e.Message)
+	return fmt.Sprintf("%s:%d: %s: %s", e.File, e.Line, escapeControls(e.ID), e.Message)
+}
+
+// escapeControls replaces each control character of the text with its Go
+// escape, for example "\x1b".
+func escapeControls(text string) string {
+	var escaped strings.Builder
+	for _, r := range text {
+		if !unicode.IsControl(r) {
+			escaped.WriteRune(r)
+			continue
+		}
+		quoted := strconv.QuoteRune(r)
+		escaped.WriteString(quoted[1 : len(quoted)-1])
+	}
+	return escaped.String()
 }
 
 // Find applies every rule to the documents and returns the errors in the
@@ -50,7 +68,7 @@ func Find(docs requirement.Documents, form requirement.IDForm, areas []string) [
 	errs = append(errs, wrongMethods(docs.Requirements)...)
 	errs = append(errs, missingVerifications(docs.Requirements)...)
 	errs = append(errs, wrongStatuses(docs.Requirements, form)...)
-	errs = append(errs, wrongReferences(docs.Requirements, docs.References, form)...)
+	errs = append(errs, wrongReferences(docs.Requirements, docs.References)...)
 	errs = append(errs, unknownAreas(docs.Requirements, areas)...)
 	errs = append(errs, numberGaps(docs.Requirements)...)
 	sortErrors(errs)
@@ -196,7 +214,7 @@ func wrongStatuses(requirements []requirement.Requirement, form requirement.IDFo
 // wrongReferences reports each reference to an ID that no requirement has, and
 // each reference to a deprecated requirement (CTR-FMT-010). The replacement
 // ID of a 状態 line must name a requirement, which may be deprecated.
-func wrongReferences(requirements []requirement.Requirement, references []requirement.Reference, form requirement.IDForm) []Error {
+func wrongReferences(requirements []requirement.Requirement, references []requirement.Reference) []Error {
 	deprecated := map[string]bool{}
 	for _, req := range requirements {
 		deprecated[req.ID] = deprecated[req.ID] || req.Deprecated
@@ -224,13 +242,7 @@ func wrongReferences(requirements []requirement.Requirement, references []requir
 		if _, exists := deprecated[req.ReplacedBy]; exists {
 			continue
 		}
-		// The replacement comes from the first 状態 line of the right form.
-		for _, status := range req.Statuses {
-			if _, ok := form.Deprecation(status.Value); ok {
-				errs = append(errs, missingReference(req.File, status.Line, req.ReplacedBy))
-				break
-			}
-		}
+		errs = append(errs, missingReference(req.File, req.ReplacedByLine, req.ReplacedBy))
 	}
 	return errs
 }

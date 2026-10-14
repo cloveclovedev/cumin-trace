@@ -381,7 +381,7 @@ func TestReportsAChildThatIsNotOneLevelBelowItsParent(t *testing.T) {
 			"docs/ja/requirements/a.md": "## `CTR-FMT-001` A parent\n- 検証: `test` It works\n",
 			"docs/ja/requirements/b.md": "### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/b.md:1" + message},
-		{"with no parent in the documents", map[string]string{
+		{"under another requirement, before the parent", map[string]string{
 			"docs/ja/requirements/index.md": "## `CTR-FMT-002` Another requirement\n- 検証: `test` It works\n### `CTR-FMT-001.1` A child\n- 検証: `test` It works\n## `CTR-FMT-001` A parent\n- 検証: `test` It works\n",
 		}, "docs/ja/requirements/index.md:3" + message},
 	}
@@ -761,5 +761,21 @@ func TestReadsReferencesInAFileWithNoRequirement(t *testing.T) {
 	want := "docs/ja/requirements/index.md:3: CTR-CHK-001: reference to an ID that does not exist\n"
 	if count != 1 || output != want {
 		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-CHK-002: an ID with control characters is printed with a Go escape for
+// each of them, so that the error stays on one line and holds no terminal code.
+func TestPrintsTheControlCharactersOfAnIDAsEscapes(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml":             settings,
+		"docs/ja/requirements/index.md": "## `CTR-\x1b[31mFMT\x07-001` A heading with control characters\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := `docs/ja/requirements/index.md:1: CTR-\x1b[31mFMT\a-001: invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>` + "\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%q\nwant 1 error and output:\n%q", count, output, want)
 	}
 }

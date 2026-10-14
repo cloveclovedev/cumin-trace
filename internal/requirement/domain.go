@@ -34,6 +34,10 @@ type Requirement struct {
 	// ReplacedBy is the replacement ID of the first 状態 line of the right
 	// form. It is empty when that line names none.
 	ReplacedBy string
+	// ReplacedByLine is the line of the 状態 line that ReplacedBy comes
+	// from. It is 0 when the requirement is not deprecated. Only the check
+	// uses it.
+	ReplacedByLine int
 	// Statuses holds every 状態 line of the requirement. Only the check uses
 	// it.
 	Statuses []Status
