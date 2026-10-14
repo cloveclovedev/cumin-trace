@@ -1,6 +1,7 @@
 package requirement
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +11,13 @@ import (
 // readDocumentOfTest writes one requirement document into a new temporary
 // directory, reads it, and returns the requirements.
 func readDocumentOfTest(t *testing.T, document string) []Requirement {
+	t.Helper()
+	return readDocumentsOfTest(t, document).Requirements
+}
+
+// readDocumentsOfTest writes one requirement document into a new temporary
+// directory, reads it, and returns all that the reading gives.
+func readDocumentsOfTest(t *testing.T, document string) Documents {
 	t.Helper()
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "requirements"), 0o755); err != nil {
@@ -22,7 +30,7 @@ func readDocumentOfTest(t *testing.T, document string) []Requirement {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	return docs.Requirements
+	return docs
 }
 
 // CTR-FMT-005: both fields are read, for the requirement that holds them. A
@@ -124,5 +132,45 @@ func TestReadsTheDeprecatedStateAndTheReplacementID(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v\nwant %+v", got, want)
+	}
+}
+
+// CTR-FMT-010: an ID of the product outside a requirement heading is a
+// reference, in body text, in a table, and in a list item, with and without a
+// code span. An ID in a code block, an ID of another product, and a text that
+// is no right ID are no reference.
+func TestReadsReferencesInTextTablesAndListsButNotInCodeBlocks(t *testing.T) {
+	docs := readDocumentsOfTest(t, "## `CTR-FMT-001` A requirement that names CTR-FMT-901\n\n"+
+		"Body text names CTR-FMT-002 and `CTR-FMT-003`.\n\n"+
+		"| Error | Requirement |\n"+
+		"|---|---|\n"+
+		"| One | CTR-FMT-004 |\n"+
+		"| Two | `CTR-FMT-005.1` |\n\n"+
+		"- A list item names CTR-FMT-006\n"+
+		"- 検証: `test` It works like `CTR-FMT-007`\n"+
+		"- 状態: 廃止。CTR-FMT-902 に置き換え\n\n"+
+		"```text\n"+
+		"CTR-FMT-903 in a fenced code block\n"+
+		"```\n\n"+
+		"    CTR-FMT-904 in an indented code block\n\n"+
+		"<div>CTR-FMT-905 in an HTML block</div>\n\n"+
+		"A [link](https://example.com/CTR-FMT-906) and PC-FMT-907 of another product.\n\n"+
+		"Not an ID: CTR-FMT, CTR-FMT-01, CTR-FMT-0012, XCTR-FMT-908, CTR-FMT-003.1.2, CTR-fmt-909.\n\n"+
+		"Twice on one line: CTR-FMT-008, CTR-FMT-008. Then CTR-FMT-009.\n\n"+
+		"## A grouping heading that names CTR-FMT-010\n")
+
+	var got []string
+	for _, ref := range docs.References {
+		got = append(got, fmt.Sprintf("%d %s", ref.Line, ref.ID))
+	}
+	want := []string{
+		"3 CTR-FMT-002", "3 CTR-FMT-003",
+		"7 CTR-FMT-004", "8 CTR-FMT-005.1",
+		"10 CTR-FMT-006", "11 CTR-FMT-007",
+		"26 CTR-FMT-008", "26 CTR-FMT-009",
+		"28 CTR-FMT-010",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got the references %q\nwant %q", got, want)
 	}
 }

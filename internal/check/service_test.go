@@ -654,7 +654,9 @@ func TestReportsEveryStateThatIsNotOneOfTheTwoForms(t *testing.T) {
 			"- 状態: 廃止。CTR-FMT-02 に置き換え\n" +
 			"- 状態: 廃止。PC-TASK-001 に置き換え\n" +
 			"- 状態: 廃止。`CTR-FMT-002 に置き換え\n" +
-			"- 状態:\n",
+			"- 状態:\n\n" +
+			"### `CTR-FMT-002` The replacement\n\n" +
+			"- 検証: `test` It works\n",
 	})
 
 	count, output := runCheck(t, root)
@@ -667,5 +669,97 @@ func TestReportsEveryStateThatIsNotOneOfTheTwoForms(t *testing.T) {
 		"docs/ja/requirements/index.md:11" + message
 	if count != 6 || output != want {
 		t.Errorf("got %d errors and output:\n%s\nwant 6 errors and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-010, CTR-CHK-001: a reference to an ID that does not exist is an
+// error. The document holds only this error.
+func TestReportsAReferenceToAnIDThatDoesNotExist(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"### `CTR-FMT-001` A requirement\n\n" +
+			"It works like `CTR-FMT-002`.\n\n" +
+			"- 検証: `test` It works\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-002` A requirement that refers to a missing one\n\n" +
+			"It works with CTR-FMT-003.\n\n" +
+			"- 検証: `test` It works\n\n" +
+			"---\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:13: CTR-FMT-003: reference to an ID that does not exist\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-010, CTR-CHK-001: a reference to a deprecated requirement is an
+// error. The replacement ID of a 状態 line may name a deprecated requirement.
+// The document holds only this error.
+func TestReportsAReferenceToADeprecatedRequirement(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"### `CTR-FMT-001` A deprecated requirement\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 廃止\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-002` A requirement replaced by a deprecated one\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 廃止。`CTR-FMT-001` に置き換え\n\n" +
+			"---\n\n" +
+			"### `CTR-FMT-003` A requirement that refers to a deprecated one\n\n" +
+			"It works like `CTR-FMT-002`.\n\n" +
+			"- 検証: `test` It works\n\n" +
+			"---\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:19: CTR-FMT-002: reference to a deprecated requirement\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-010: a replacement ID that names no requirement is an error at the
+// 状態 line. Another 状態 line holds no reference.
+func TestReportsAReplacementIDThatDoesNotExist(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/index.md": "### `CTR-FMT-001` A replaced requirement\n\n" +
+			"- 検証: `test` It works\n" +
+			"- 状態: 廃止。CTR-FMT-002 に置き換え\n" +
+			"- 状態: 廃止。CTR-FMT-003 に置き換え\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:4: CTR-FMT-002: reference to an ID that does not exist\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
+	}
+}
+
+// CTR-FMT-010: references are read in every Markdown file of the directory,
+// also in a file with no requirement. The output names the file and the line
+// of the reference.
+func TestReadsReferencesInAFileWithNoRequirement(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml": settings,
+		"docs/ja/requirements/format/index.md": "### `CTR-FMT-001` A requirement\n\n" +
+			"- 検証: `test` It works\n",
+		"docs/ja/requirements/index.md": "# Requirements\n\n" +
+			"The format is in CTR-FMT-001, and the check in CTR-CHK-001.\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/index.md:3: CTR-CHK-001: reference to an ID that does not exist\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
 	}
 }

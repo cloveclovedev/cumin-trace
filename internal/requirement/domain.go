@@ -71,18 +71,29 @@ type InvalidHeading struct {
 	Line int
 }
 
-// Documents is what the reading of the requirement documents gives. Both
+// Reference is one ID of the product outside a requirement heading
+// (CTR-FMT-010). The same ID on one line is one reference.
+type Reference struct {
+	ID   string
+	File string
+	Line int
+}
+
+// Documents is what the reading of the requirement documents gives. The
 // lists are in the order of the files, and in the order of the lines inside
 // one file.
 type Documents struct {
 	Requirements    []Requirement
 	InvalidHeadings []InvalidHeading
+	References      []Reference
 }
 
 // IDForm tells whether a text is a right ID of one product (CTR-FMT-002,
 // CTR-FMT-004).
 type IDForm struct {
 	pattern *regexp.Regexp
+	// reference matches an ID anywhere in a text (CTR-FMT-010).
+	reference *regexp.Regexp
 	// deprecation matches the two right values of a 状態 line (CTR-FMT-008).
 	deprecation *regexp.Regexp
 }
@@ -92,6 +103,7 @@ func NewIDForm(prefix string) IDForm {
 	id := regexp.QuoteMeta(prefix) + `-[A-Z0-9]+-[0-9]{3}(?:\.[1-9][0-9]*)?`
 	return IDForm{
 		pattern:     regexp.MustCompile(`\A` + id + `\z`),
+		reference:   regexp.MustCompile(id),
 		deprecation: regexp.MustCompile(`\A廃止(?:。\s*(?:` + "`(" + id + ")`|(" + id + `))\s*に置き換え)?\z`),
 	}
 }
@@ -99,6 +111,38 @@ func NewIDForm(prefix string) IDForm {
 // Valid reports whether the whole text is a right ID.
 func (f IDForm) Valid(text string) bool {
 	return f.pattern.MatchString(text)
+}
+
+// References returns the start and the end of each reference in text
+// (CTR-FMT-010). The text is the part of source from start to end, so that
+// the characters around a reference count also beyond the text. A match is a
+// reference when the character before it is no letter, no digit, and no "-",
+// when the character after it is no letter and no digit, and when no "." with
+// a digit follows it.
+func (f IDForm) References(source []byte, start, end int) [][2]int {
+	var refs [][2]int
+	for _, match := range f.reference.FindAllIndex(source[start:end], -1) {
+		from, to := start+match[0], start+match[1]
+		if from > 0 && (isAlphanumeric(source[from-1]) || source[from-1] == '-') {
+			continue
+		}
+		if to < len(source) && isAlphanumeric(source[to]) {
+			continue
+		}
+		if to+1 < len(source) && source[to] == '.' && isDigit(source[to+1]) {
+			continue
+		}
+		refs = append(refs, [2]int{from, to})
+	}
+	return refs
+}
+
+func isDigit(c byte) bool {
+	return '0' <= c && c <= '9'
+}
+
+func isAlphanumeric(c byte) bool {
+	return isDigit(c) || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
 }
 
 // Deprecation reports whether the value of a 状態 line has one of the two
