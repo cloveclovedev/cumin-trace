@@ -236,7 +236,7 @@ func TestRefusesWrongSettings(t *testing.T) {
 		{"a syntax error", "prefix = \"CTR\"\nareas = oops\n", ".cumin-trace.toml:2:"},
 		{"no prefix", "areas = [\"FMT\"]\n", "prefix is missing"},
 		{"a prefix in lower case", "prefix = \"ctr\"\nareas = [\"FMT\"]\n", "prefix \"ctr\""},
-		{"no area", "prefix = \"CTR\"\nareas = []\n", "at least one area"},
+		{"no areas key", "prefix = \"CTR\"\n", "areas is missing"},
 		{"an area named twice", "prefix = \"CTR\"\nareas = [\"FMT\", \"FMT\"]\n", "named twice"},
 		{"an unknown key", settings + "area = \"FMT\"\n", "unknown key area"},
 		{"a directory above the repository", settings + "requirements_dir = \"../docs\"\n", "must not contain .."},
@@ -255,6 +255,24 @@ func TestRefusesWrongSettings(t *testing.T) {
 				t.Errorf("got error %v, want an error that holds %q", err, test.want)
 			}
 		})
+	}
+}
+
+// CTR-FMT-011: an empty list of areas says that the product has no area yet.
+// Documents without requirements pass, and a requirement of any area is an
+// error.
+func TestAcceptsAnEmptyListOfAreas(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml":                    "prefix = \"CTR\"\nareas = []\n",
+		"docs/ja/requirements/index.md":        "# Requirements\n\nNo requirement yet.\n",
+		"docs/ja/requirements/format/index.md": "### `CTR-FMT-001` A requirement\n- 検証: `test` It works\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	want := "docs/ja/requirements/format/index.md:1: CTR-FMT-001: area FMT is not in .cumin-trace.toml\n"
+	if count != 1 || output != want {
+		t.Errorf("got %d errors and output:\n%s\nwant 1 error and output:\n%s", count, output, want)
 	}
 }
 

@@ -33,6 +33,12 @@ type Settings struct {
 
 var namePattern = regexp.MustCompile(`\A[A-Z0-9]+\z`)
 
+// IsName says whether the text is a valid prefix or area: one or more upper
+// case letters and digits (CTR-FMT-011).
+func IsName(text string) bool {
+	return namePattern.MatchString(text)
+}
+
 // LoadSettings reads the settings file at the top of the repository root and
 // checks its values. An unknown key is an error, so that a misspelled key
 // does not go unseen.
@@ -60,16 +66,18 @@ func LoadSettings(root string) (Settings, error) {
 	if !meta.IsDefined("prefix") {
 		return Settings{}, fmt.Errorf("%s: prefix is missing", SettingsFile)
 	}
-	if !namePattern.MatchString(file.Prefix) {
+	if !IsName(file.Prefix) {
 		return Settings{}, fmt.Errorf("%s: prefix %q must be upper case letters and digits", SettingsFile, file.Prefix)
 	}
 
-	if len(file.Areas) == 0 {
-		return Settings{}, fmt.Errorf("%s: areas must name at least one area", SettingsFile)
+	// An empty list says that the product has no area yet. A missing key
+	// is an error, so that it is not taken for an empty list.
+	if !meta.IsDefined("areas") {
+		return Settings{}, fmt.Errorf("%s: areas is missing", SettingsFile)
 	}
 	seen := map[string]bool{}
 	for _, area := range file.Areas {
-		if !namePattern.MatchString(area) {
+		if !IsName(area) {
 			return Settings{}, fmt.Errorf("%s: area %q must be upper case letters and digits", SettingsFile, area)
 		}
 		if seen[area] {
