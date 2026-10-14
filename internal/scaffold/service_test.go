@@ -31,6 +31,19 @@ func readFile(t *testing.T, root, name string) string {
 	return string(content)
 }
 
+// skillLines is the output of init for the files of the skill, which come
+// last in every run.
+const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/entry.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/overview.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/technology.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/glossary.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/backlog.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/area.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/architecture.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/design-index.md\n" +
+	"written .claude/skills/cumin-trace-docs/templates/design-detail.md\n"
+
 // checkPasses runs the format check and fails the test on any error.
 func checkPasses(t *testing.T, root string) {
 	t.Helper()
@@ -58,7 +71,8 @@ func TestWritesTheTemplatesWithAnAreaThatPassTheCheck(t *testing.T) {
 		"written docs/ja/requirements/task/index.md\n" +
 		"written docs/ja/requirements/task/overview.puml\n" +
 		"written docs/ja/requirements/task/overview.svg\n" +
-		"written docs/ja/architecture/overview.md\n"
+		"written docs/ja/architecture/overview.md\n" +
+		skillLines
 	if output != want {
 		t.Errorf("got output:\n%s\nwant:\n%s", output, want)
 	}
@@ -89,7 +103,8 @@ func TestWritesTheTemplatesWithoutAnAreaThatPassTheCheck(t *testing.T) {
 		"written docs/ja/requirements/technology.md\n" +
 		"written docs/ja/requirements/glossary.md\n" +
 		"written docs/ja/requirements/backlog.md\n" +
-		"written docs/ja/architecture/overview.md\n"
+		"written docs/ja/architecture/overview.md\n" +
+		skillLines
 	if output != want {
 		t.Errorf("got output:\n%s\nwant:\n%s", output, want)
 	}
