@@ -79,9 +79,10 @@ type openHeading struct {
 // readDocument adds the requirement headings of one document to docs, with
 // the fields of each requirement (CTR-FMT-005), and adds the references of
 // the document (CTR-FMT-010). A heading inside a code block is no heading for
-// the parser, so it is not read.
+// the parser, so it is not read. A byte order mark at the start of the
+// document is removed before the reading.
 func readDocument(docs *Documents, file string, source []byte, prefix string, form IDForm) {
-	source = blankFrontmatter(source)
+	source = blankFrontmatter(bytes.TrimPrefix(source, []byte("\uFEFF")))
 	root := goldmark.New().Parser().Parse(text.NewReader(source))
 	// open holds the headings whose range is not at its end, from the highest
 	// level down. The range of a heading ends at the next heading of the same
@@ -121,6 +122,9 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 			}
 			return ast.WalkContinue, nil
 		case *ast.FencedCodeBlock, *ast.CodeBlock, *ast.HTMLBlock:
+			// These blocks hold their lines and no Text child, so skipping
+			// their children changes nothing. The case says that they hold
+			// no reference.
 			return ast.WalkSkipChildren, nil
 		case *ast.Text:
 			for _, ref := range form.References(source, node.Segment.Start, node.Segment.Stop) {
@@ -132,8 +136,10 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 			}
 			return ast.WalkContinue, nil
 		}
+		// Only a heading at the top level of the document counts. A heading
+		// in a block quote or a list item is text that holds references.
 		heading, ok := node.(*ast.Heading)
-		if !ok {
+		if !ok || heading.Parent() != root {
 			return ast.WalkContinue, nil
 		}
 		for len(open) > 0 && open[len(open)-1].Level >= heading.Level {
@@ -202,12 +208,15 @@ func readFields(req *Requirement, list *ast.List, source []byte, form IDForm, st
 			if replacedBy, ok := form.Deprecation(value); ok && !req.Deprecated {
 				req.Deprecated = true
 				req.ReplacedBy = replacedBy
+				req.ReplacedByLine = line
 			}
 		}
 	}
 }
 
-// codeSpanText returns the content of a code span.
+// codeSpanText returns the content of a code span, as GitHub shows it. The
+// parser has already removed one space at each end when the content starts
+// and ends with a space, as CommonMark does.
 func codeSpanText(span *ast.CodeSpan, source []byte) string {
 	var content strings.Builder
 	for child := span.FirstChild(); child != nil; child = child.NextSibling() {
