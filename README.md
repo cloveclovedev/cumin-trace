@@ -32,8 +32,10 @@ cumin-trace init <prefix> [<area>]
 | `docs/ja/requirements/task/index.md` | The area page: overview, requirements with the example `PC-TASK-001`, and open questions |
 | `docs/ja/requirements/task/overview.puml` and `overview.svg` | The example diagram of the area page |
 | `docs/ja/architecture/overview.md` | The source code structure: a place for a diagram, and a table of packages, roles, and designs |
+| `.claude/skills/cumin-trace-docs/SKILL.md` | The skill `cumin-trace-docs` for Claude Code, which tells an agent how to write the requirement and design documents |
+| `.claude/skills/cumin-trace-docs/templates/` | The nine templates of the skill: the seven documents above, and the entry and the detail of a design document |
 
-Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every page except the area page and its diagram.
+Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every page except the area page and its diagram. The skill still holds all nine templates. Its area template holds `<AREA>` in place of the area.
 
 `init` prints one line for each file: `written <path>`, or `skipped <path>: already exists`. It never changes a file that exists. The exit code is 0 when every file is written or skipped. The exit code is 2 when an argument is wrong or a file cannot be written.
 

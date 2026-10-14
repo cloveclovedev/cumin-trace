@@ -43,7 +43,32 @@ func Files(area string) []File {
 	}
 	// The source code structure is outside the requirement documents (CTR-TPL-009).
 	files = append(files, File{Target: "docs/ja/architecture/overview.md", Source: "docs/architecture.md", Mode: 0o644})
+	// The skill holds the nine templates, written from the same embedded text
+	// as the documents (CTR-TPL-005, CTR-TPL-008).
+	files = append(files, File{Target: SkillDir + "/SKILL.md", Source: "skill/SKILL.md", Mode: 0o644})
+	for _, name := range SkillTemplates {
+		files = append(files, File{Target: SkillDir + "/templates/" + name, Source: "docs/" + name, Mode: 0o644})
+	}
 	return files
+}
+
+// SkillDir is the directory of the skill for writing documents (CTR-TPL-005).
+const SkillDir = ".claude/skills/cumin-trace-docs"
+
+// SkillTemplates names the templates of the skill, one for each kind of
+// document, in the order that init writes them. The seven kinds of
+// CTR-TPL-001 come first, then the entry and the detail of a design document
+// (CTR-TPL-008).
+var SkillTemplates = []string{
+	"entry.md",
+	"overview.md",
+	"technology.md",
+	"glossary.md",
+	"backlog.md",
+	"area.md",
+	"architecture.md",
+	"design-index.md",
+	"design-detail.md",
 }
 
 // CheckPrefix returns an error when the prefix is not a valid prefix of

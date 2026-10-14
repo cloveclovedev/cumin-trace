@@ -39,7 +39,7 @@
 | `design-detail.md` | 設計文書の細部 | skill だけ |
 
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。書く先のパスは、`internal/scaffold/domain.go` の表だけが持つ。
-- 1 から 10 はある。11 と 12 は #36、13 と 14 は #37、15 は #38 で足す。足すまでは、一覧にその行がない。
+- 1 から 12 はある。13 と 14 は #37、15 は #38 で足す。足すまでは、一覧にその行がない。
 
 ## カテゴリの図
 
@@ -79,7 +79,16 @@ areas = {{areas}}
 
 ## skill
 
-`SKILL.md` は英語で書き、`CTR-TPL-005` の6つの指示を持つ。テンプレートは `templates/` の下にあり、`SKILL.md` は種類ごとにその名前を示す。
+`SKILL.md` は英語で書き、`CTR-TPL-005` の7つの指示を持つ。先頭の front matter に `name: cumin-trace-docs` と `description` を書く。テンプレートは `templates/` の下にあり、`SKILL.md` は表で、種類ごとにその名前と、形が cumin-trace の決めるもの (`Set by cumin-trace`) か推奨 (`Recommended`) かを示す。
+
+| 形 | 種類 | 指示 |
+|---|---|---|
+| cumin-trace が決める | インデックス、概要、カテゴリごとの要件、用語集、バックログ | 新しく書くとき、テンプレートから書く |
+| 推奨 | 技術要素、ソースコード全体構成、設計文書の入口と細部 | リポジトリにその種類の文書があれば、その形に合わせる。なければテンプレートから書く |
+
+書式の文書は、プロダクトのリポジトリにないので、このリポジトリの main の書式の文書の URL で示す (カテゴリのテンプレートと同じ)。
+
+設計文書の入口 (`design-index.md`) は、`CTR-TPL-008` の4つの見出しを持つ。決めたことの記入例は、[テンプレートの生成の設計](index.md) と [書式検査の設計](../check/index.md) と同じ「理由」「採らなかった案」「細部」の行を持つ。細部 (`design-detail.md`) は、正確な値を書く「決まり」と、外部の API やライブラリを書く「確かめたこと」(版、公式ページ、手元の実行、未確認) の2つの節を持つ。[設定ファイル](../check/settings.md) が最初の例である。どちらも、書き換える場所をコメントで示し、差し込む値を持たない。
 
 ## 図のスクリプト
 
@@ -95,4 +104,5 @@ areas = {{areas}}
 
 - `embed` の `//go:embed` は、`.` か `_` で始まるファイルを、ディレクトリの指定からは外す: <https://pkg.go.dev/embed> (Go 1.27.2 の `go doc embed` で読んだ)。埋め込むファイルの名前は、どれも `.` で始めない。
 - cumin-works の `scripts/render-diagrams.sh` と `tools/plantuml/Dockerfile` を、GitHub の API (`gh api repos/cloveclovedev/cumin-works/contents/...`) で読んだ。
+- Claude Code の skill は `.claude/skills/<名前>/SKILL.md` に置き、front matter の `name` と `description` を読む。同じディレクトリの別のファイルを、`SKILL.md` から示して使える: <https://code.claude.com/docs/en/skills>
 - 手元の実行: この文書の SVG は、cumin-works の Dockerfile と同じイメージで描画した。既存の `check-packages.svg` を描画し直して、同じバイト列になった。
