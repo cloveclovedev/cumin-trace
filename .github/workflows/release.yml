@@ -17,12 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # The publish step authenticates with GH_TOKEN. Keep the write token out
+      # of .git/config while the tests and their dependencies run.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: go vet
+        run: go vet ./...
       - name: go test
-        run: go test ./...
+        run: go test -race ./...
       - name: Build the binaries
         env:
           VERSION: ${{ github.ref_name }}
