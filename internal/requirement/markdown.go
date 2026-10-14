@@ -77,8 +77,9 @@ type openHeading struct {
 }
 
 // readDocument adds the requirement headings of one document to docs, with
-// the fields of each requirement (CTR-FMT-005). A heading inside a code block
-// is no heading for the parser, so it is not read.
+// the fields of each requirement (CTR-FMT-005), and adds the references of
+// the document (CTR-FMT-010). A heading inside a code block is no heading for
+// the parser, so it is not read.
 func readDocument(docs *Documents, file string, source []byte, prefix string, form IDForm) {
 	source = blankFrontmatter(source)
 	root := goldmark.New().Parser().Parse(text.NewReader(source))
@@ -87,8 +88,21 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 	// or a higher level (CTR-FMT-003). A heading that is no requirement
 	// heading with an ID of the right form has an empty ID.
 	var open []openHeading
+	// statuses holds the list items of the 状態 fields. Their text is no
+	// reference: the replacement ID is read with the field (CTR-FMT-010).
+	statuses := map[ast.Node]bool{}
+	// seen holds the references of the document, so that the same ID on one
+	// line is one reference.
+	seen := map[Reference]bool{}
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
-		if list, ok := node.(*ast.List); ok && entering && list.Parent() == root && !list.IsOrdered() {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch node := node.(type) {
+		case *ast.List:
+			if node.Parent() != root || node.IsOrdered() {
+				return ast.WalkContinue, nil
+			}
 			// The fields belong to the nearest requirement heading above. A
 			// heading whose ID has a wrong form takes no field.
 			for i := len(open) - 1; i >= 0; i-- {
@@ -96,14 +110,30 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 					continue
 				}
 				if open[i].ID != "" {
-					readFields(&docs.Requirements[open[i].index], list, source, form)
+					readFields(&docs.Requirements[open[i].index], node, source, form, statuses)
 				}
 				break
 			}
 			return ast.WalkContinue, nil
+		case *ast.ListItem:
+			if statuses[node] {
+				return ast.WalkSkipChildren, nil
+			}
+			return ast.WalkContinue, nil
+		case *ast.FencedCodeBlock, *ast.CodeBlock, *ast.HTMLBlock:
+			return ast.WalkSkipChildren, nil
+		case *ast.Text:
+			for _, ref := range form.References(source, node.Segment.Start, node.Segment.Stop) {
+				reference := Reference{ID: string(source[ref[0]:ref[1]]), File: file, Line: lineAt(source, ref[0])}
+				if !seen[reference] {
+					seen[reference] = true
+					docs.References = append(docs.References, reference)
+				}
+			}
+			return ast.WalkContinue, nil
 		}
 		heading, ok := node.(*ast.Heading)
-		if !ok || !entering {
+		if !ok {
 			return ast.WalkContinue, nil
 		}
 		for len(open) > 0 && open[len(open)-1].Level >= heading.Level {
@@ -114,13 +144,15 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 			above = open[len(open)-1].Heading
 		}
 		open = append(open, openHeading{Heading: Heading{Level: heading.Level}})
+		// The text of a heading that is no requirement heading holds
+		// references (CTR-FMT-010).
 		span, ok := heading.FirstChild().(*ast.CodeSpan)
 		if !ok {
-			return ast.WalkSkipChildren, nil
+			return ast.WalkContinue, nil
 		}
 		id := codeSpanText(span, source)
 		if !strings.HasPrefix(id, prefix+"-") {
-			return ast.WalkSkipChildren, nil
+			return ast.WalkContinue, nil
 		}
 		line := lineAt(source, heading.Lines().At(0).Start)
 		open[len(open)-1].isRequirement = true
@@ -144,8 +176,8 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 
 // readFields adds the fields of a list to the requirement: each item whose
 // first line starts with "検証:" or "状態:" (CTR-FMT-005). An item with
-// another name is body text.
-func readFields(req *Requirement, list *ast.List, source []byte, form IDForm) {
+// another name is body text. It adds each item of a 状態 field to statuses.
+func readFields(req *Requirement, list *ast.List, source []byte, form IDForm, statuses map[ast.Node]bool) {
 	for item := list.FirstChild(); item != nil; item = item.NextSibling() {
 		block := item.FirstChild()
 		switch block.(type) {
@@ -164,6 +196,7 @@ func readFields(req *Requirement, list *ast.List, source []byte, form IDForm) {
 		}
 		if value, ok := strings.CutPrefix(string(first.Value(source)), "状態:"); ok {
 			value = strings.TrimSpace(value)
+			statuses[item] = true
 			req.Statuses = append(req.Statuses, Status{Value: value, Line: line})
 			// The replacement comes from the first line of the right form.
 			if replacedBy, ok := form.Deprecation(value); ok && !req.Deprecated {

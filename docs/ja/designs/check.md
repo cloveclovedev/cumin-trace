@@ -13,9 +13,9 @@
 | 設定ファイル | すべて実装している |
 | 読むファイル、要件の見出し、IDの形式 | 実装している。要件の範囲は、上の見出しを決めるためだけに使う。タイトルと本文は、まだ読まない |
 | フィールド | すべて実装している |
-| 参照 | まだ読まない |
-| 要件のモデル | `Title` と `Body` 以外を持つ。読み取りの結果は、要件の一覧と、IDの形式が正しくない要件の見出しの一覧の2つである |
-| エラー | 7 (存在しないIDを参照している) と 8 (廃止した要件を、置き換え先の指定以外で参照している) 以外を検出する |
+| 参照 | すべて実装している |
+| 要件のモデル | `Title` と `Body` 以外を持つ。読み取りの結果の3つは、すべて実装している |
+| エラー | すべて検出する |
 | 出力と終了コード | すべて実装している |
 
 ## パッケージとファイル
@@ -228,7 +228,7 @@ P-[A-Z0-9]+-[0-9]{3}(\.[1-9][0-9]*)?
 | 4 | 検証の書き始めが、4つの方法のどれでもない | `検証` の方法が、`test`、`demo`、`inspection`、`analysis` のどれでもない | `検証` の行 | 要件のID | ``verification must start with `test`, `demo`, `inspection`, or `analysis` in a code span`` |
 | 5 | 子を持たない要件に、検証がない | 子を持たない要件に、`検証` の行が1つもない。方法が正しくない行も、1行と数える。廃止した要件も対象である | 見出し | 要件のID | `no verification: a requirement without children needs a 検証 line` |
 | 6 | 状態に、廃止以外が書いてある | `状態` の値が、正しい2つの形のどちらでもない | `状態` の行 | 要件のID | `invalid status: want 廃止, or 廃止。<ID> に置き換え` |
-| 7 | 存在しないIDを参照している | 参照、または置き換え先のIDを持つ要件が、文書にない | 参照の行 | 参照したID | `reference to an ID that does not exist` |
+| 7 | 存在しないIDを参照している | 参照、または置き換え先のIDを持つ要件が、文書にない | 参照の行。置き換え先は、それを取った `状態` の行 | 参照したID | `reference to an ID that does not exist` |
 | 8 | 廃止した要件を、置き換え先の指定以外で参照している | 参照のIDを持つ要件が、廃止である。置き換え先は、廃止した要件を指してもよい | 参照の行 | 参照したID | `reference to a deprecated requirement` |
 | 9 | 設定にないカテゴリのIDがある | 要件のIDのカテゴリが、`areas` にない。参照には適用しない (7 になる) | 見出し | 要件のID | `area <area> is not in .cumin-trace.toml` |
 | 10 | 連番、または子の番号が空いている | 下の決まり | 見出し | 空きの次の要件のID | `number gap: <ID> is missing`、`number gap: <ID> to <ID> are missing`、`number gap: numbers start at 001` |
@@ -241,6 +241,23 @@ P-[A-Z0-9]+-[0-9]{3}(\.[1-9][0-9]*)?
 - 空きごとに1件を報告する。報告する場所は、空きのすぐ上の番号を持つ要件である。同じ番号の要件が複数あるときは、読み取りの順で最初のものである。メッセージには、空いているID (1つ、または最初と最後) を書く。
 - 連番が `000` の要件は、`number gap: numbers start at 001` で報告する。
 - 要件を並べた順は調べない。
+
+### エラーごとのテスト文書
+
+`CTR-CHK-001` の表の行ごとに、そのエラーを1つだけ含むテスト文書がある。テストは `internal/check/service_test.go` にある。
+
+| # | エラー | テスト |
+|---|---|---|
+| 1 | IDの形式が正しくない | `TestReportsAnIDWithAWrongForm` |
+| 2 | 同じIDが2か所以上にある | `TestReportsTheSameIDOnTwoPages` |
+| 3 | 子要件が、親の見出しの外にある | `TestReportsAChildOutsideTheHeadingOfItsParent` |
+| 4 | 検証の書き始めが、4つの方法のどれでもない | `TestReportsAVerificationThatStartsWithNoMethodOfTheFour` |
+| 5 | 子を持たない要件に、検証がない | `TestReportsARequirementWithoutChildrenAndWithoutVerification` |
+| 6 | 状態に、廃止以外が書いてある | `TestReportsAStateThatSaysAnotherThingThanDeprecated` |
+| 7 | 存在しないIDを参照している | `TestReportsAReferenceToAnIDThatDoesNotExist` |
+| 8 | 廃止した要件を、置き換え先の指定以外で参照している | `TestReportsAReferenceToADeprecatedRequirement` |
+| 9 | 設定にないカテゴリのIDがある | `TestReportsAnAreaThatIsNotInTheSettings` |
+| 10 | 連番、または子の番号が空いている | `TestReportsAGapInTheNumbersOfAnArea` |
 
 ## 出力と終了コード
 

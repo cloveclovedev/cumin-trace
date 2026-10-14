@@ -14,14 +14,16 @@ import (
 // The numbers of the errors in the table of the design note
 // (docs/ja/designs/check.md). They are the third key of the order.
 const (
-	ruleInvalidID          = 1
-	ruleDuplicateID        = 2
-	ruleChildOutsideParent = 3
-	ruleWrongMethod        = 4
-	ruleNoVerification     = 5
-	ruleWrongStatus        = 6
-	ruleUnknownArea        = 9
-	ruleNumberGap          = 10
+	ruleInvalidID           = 1
+	ruleDuplicateID         = 2
+	ruleChildOutsideParent  = 3
+	ruleWrongMethod         = 4
+	ruleNoVerification      = 5
+	ruleWrongStatus         = 6
+	ruleMissingReference    = 7
+	ruleDeprecatedReference = 8
+	ruleUnknownArea         = 9
+	ruleNumberGap           = 10
 )
 
 // Error is one format error (CTR-CHK-002).
@@ -48,6 +50,7 @@ func Find(docs requirement.Documents, form requirement.IDForm, areas []string) [
 	errs = append(errs, wrongMethods(docs.Requirements)...)
 	errs = append(errs, missingVerifications(docs.Requirements)...)
 	errs = append(errs, wrongStatuses(docs.Requirements, form)...)
+	errs = append(errs, wrongReferences(docs.Requirements, docs.References, form)...)
 	errs = append(errs, unknownAreas(docs.Requirements, areas)...)
 	errs = append(errs, numberGaps(docs.Requirements)...)
 	sortErrors(errs)
@@ -188,6 +191,52 @@ func wrongStatuses(requirements []requirement.Requirement, form requirement.IDFo
 		}
 	}
 	return errs
+}
+
+// wrongReferences reports each reference to an ID that no requirement has, and
+// each reference to a deprecated requirement (CTR-FMT-010). The replacement
+// ID of a 状態 line must name a requirement, which may be deprecated.
+func wrongReferences(requirements []requirement.Requirement, references []requirement.Reference, form requirement.IDForm) []Error {
+	deprecated := map[string]bool{}
+	for _, req := range requirements {
+		deprecated[req.ID] = deprecated[req.ID] || req.Deprecated
+	}
+	var errs []Error
+	for _, ref := range references {
+		isDeprecated, exists := deprecated[ref.ID]
+		switch {
+		case !exists:
+			errs = append(errs, missingReference(ref.File, ref.Line, ref.ID))
+		case isDeprecated:
+			errs = append(errs, Error{
+				File:    ref.File,
+				Line:    ref.Line,
+				Rule:    ruleDeprecatedReference,
+				ID:      ref.ID,
+				Message: "reference to a deprecated requirement",
+			})
+		}
+	}
+	for _, req := range requirements {
+		if req.ReplacedBy == "" {
+			continue
+		}
+		if _, exists := deprecated[req.ReplacedBy]; exists {
+			continue
+		}
+		// The replacement comes from the first 状態 line of the right form.
+		for _, status := range req.Statuses {
+			if _, ok := form.Deprecation(status.Value); ok {
+				errs = append(errs, missingReference(req.File, status.Line, req.ReplacedBy))
+				break
+			}
+		}
+	}
+	return errs
+}
+
+func missingReference(file string, line int, id string) Error {
+	return Error{File: file, Line: line, Rule: ruleMissingReference, ID: id, Message: "reference to an ID that does not exist"}
 }
 
 // numberGaps reports each gap in the numbers of an area, and in the numbers
