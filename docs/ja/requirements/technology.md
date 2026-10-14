@@ -23,6 +23,7 @@ cumin-trace で使う技術と、それを選んだ理由を記述する。具�
 | ダッシュボード | Astro のページ (静的) | サイトと同じ仕組みで作れ、要件のページへ同じサイトの中でリンクできる。サーバを持たずに済む |
 | 図 | PlantUML。Docker のイメージで描画する | テキストで書けて差分でレビューできる。cumin-works と同じやり方である。描画の環境を Docker で固定すると、誰が描画しても同じ SVG になる |
 | 自動化 | GitHub Actions | Pull Request の書式検査と、サイトのビルドを、リポジトリの中の設定だけで動かせる |
+| Pull Request の check でのコマンドの入手 | GitHub のリリースのバイナリ。版を固定し、チェックサムを確かめる | Go を入れずに動き、実行のたびにビルドしない。版を固定すると、新しいリリースで check の結果が黙って変わらない |
 | Agent と書くための仕組み | Claude Code の skill | Maintainer が要件を書くときに使っている道具である |
 | テスト | Go の標準のテスト。GitHub は `httptest` の偽のサーバで置き換える | ネットワークなしで、どのマシンでも同じ結果になる |
 
@@ -34,6 +35,5 @@ cumin-trace で使う技術と、それを選んだ理由を記述する。具�
 
 ## 決めていないこと
 
-- リポジトリの GitHub Actions が、`cumin-trace` のコマンドをどう入手するか (`go install` か、リリースのバイナリか) と、そのバージョンをどう固定するか。
 - サイトのテンプレートで、Astro、Starlight、Node.js のバージョンをどう固定し、どう更新するか。
 - GitHub Actions の `GITHUB_TOKEN` で、sub-issue とマイルストーンを読めるか ([GitHub との対応づけ](trace/index.md) の未決事項)。
