@@ -6,3 +6,4 @@
 - [ソースコード全体構成](architecture/overview.md)
 - 設計文書
   - [書式検査の設計](designs/check/index.md)
+  - [テンプレートの生成の設計](designs/templates/index.md)
