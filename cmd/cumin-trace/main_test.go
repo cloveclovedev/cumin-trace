@@ -28,7 +28,7 @@ func writeRepository(t *testing.T, document string) string {
 
 // CTR-CHK-003: the exit code is 0 when the documents hold no error.
 func TestExitsWithZeroWhenNoErrorExists(t *testing.T) {
-	root := writeRepository(t, "### `CTR-FMT-001` A good requirement\n")
+	root := writeRepository(t, "### `CTR-FMT-001` A good requirement\n- 検証: `test` It works\n")
 	var stdout, stderr bytes.Buffer
 
 	code := run([]string{"check"}, root, &stdout, &stderr)

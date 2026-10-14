@@ -17,6 +17,9 @@ const (
 	ruleInvalidID          = 1
 	ruleDuplicateID        = 2
 	ruleChildOutsideParent = 3
+	ruleWrongMethod        = 4
+	ruleNoVerification     = 5
+	ruleWrongStatus        = 6
 	ruleUnknownArea        = 9
 	ruleNumberGap          = 10
 )
@@ -37,11 +40,14 @@ func (e Error) String() string {
 
 // Find applies every rule to the documents and returns the errors in the
 // order of the output.
-func Find(docs requirement.Documents, areas []string) []Error {
+func Find(docs requirement.Documents, form requirement.IDForm, areas []string) []Error {
 	var errs []Error
 	errs = append(errs, invalidIDs(docs.InvalidHeadings)...)
 	errs = append(errs, duplicateIDs(docs.Requirements)...)
 	errs = append(errs, childrenOutsideParent(docs.Requirements)...)
+	errs = append(errs, wrongMethods(docs.Requirements)...)
+	errs = append(errs, missingVerifications(docs.Requirements)...)
+	errs = append(errs, wrongStatuses(docs.Requirements, form)...)
 	errs = append(errs, unknownAreas(docs.Requirements, areas)...)
 	errs = append(errs, numberGaps(docs.Requirements)...)
 	sortErrors(errs)
@@ -112,6 +118,74 @@ func childrenOutsideParent(requirements []requirement.Requirement) []Error {
 			ID:      req.ID,
 			Message: fmt.Sprintf("child requirement is not under its parent: put it one level below the heading of %s", req.ParentID),
 		})
+	}
+	return errs
+}
+
+// wrongMethods reports each 検証 line that starts with no method of the four
+// (CTR-FMT-006).
+func wrongMethods(requirements []requirement.Requirement) []Error {
+	var errs []Error
+	for _, req := range requirements {
+		for _, verification := range req.Verifications {
+			switch verification.Method {
+			case "test", "demo", "inspection", "analysis":
+				continue
+			}
+			errs = append(errs, Error{
+				File:    req.File,
+				Line:    verification.Line,
+				Rule:    ruleWrongMethod,
+				ID:      req.ID,
+				Message: "verification must start with `test`, `demo`, `inspection`, or `analysis` in a code span",
+			})
+		}
+	}
+	return errs
+}
+
+// missingVerifications reports each requirement without children that has no
+// 検証 line (CTR-FMT-007). A line with a wrong method counts as a line.
+func missingVerifications(requirements []requirement.Requirement) []Error {
+	parents := map[string]bool{}
+	for _, req := range requirements {
+		if req.ParentID != "" {
+			parents[req.ParentID] = true
+		}
+	}
+	var errs []Error
+	for _, req := range requirements {
+		if parents[req.ID] || len(req.Verifications) > 0 {
+			continue
+		}
+		errs = append(errs, Error{
+			File:    req.File,
+			Line:    req.Line,
+			Rule:    ruleNoVerification,
+			ID:      req.ID,
+			Message: "no verification: a requirement without children needs a 検証 line",
+		})
+	}
+	return errs
+}
+
+// wrongStatuses reports each 状態 line that says another thing than 廃止,
+// with or without a replacement ID (CTR-FMT-008).
+func wrongStatuses(requirements []requirement.Requirement, form requirement.IDForm) []Error {
+	var errs []Error
+	for _, req := range requirements {
+		for _, status := range req.Statuses {
+			if _, ok := form.Deprecation(status.Value); ok {
+				continue
+			}
+			errs = append(errs, Error{
+				File:    req.File,
+				Line:    status.Line,
+				Rule:    ruleWrongStatus,
+				ID:      req.ID,
+				Message: "invalid status: want 廃止, or 廃止。<ID> に置き換え",
+			})
+		}
 	}
 	return errs
 }
