@@ -62,6 +62,8 @@ requirements_dir = "docs/ja/requirements"
 | `areas` | 文字列の配列 | 必須 | 1つ以上。それぞれ英大文字と数字が1文字以上。同じ名前を2回書かない |
 | `requirements_dir` | 文字列 | 省略できる | リポジトリの最上位からの相対パス。区切りは `/`。絶対パスと `..` は書けない。既定は `docs/ja/requirements` |
 
+このリポジトリも、最上位に自分の設定ファイル [.cumin-trace.toml](../../../.cumin-trace.toml) を持つ。接頭辞は `CTR`、カテゴリは [要件の一覧](../requirements/index.md) の表の7つで、同じ順に並べる。`requirements_dir` は既定のままなので書かない。`cmd/cumin-trace/main_test.go` の `TestTheDocumentsOfThisRepositoryPassTheCheck` が、このリポジトリの要件文書に書式検査を実行し、エラーがないことを確かめる。
+
 - 知らないキーがあれば、設定のエラーにする。キーの書き間違いに気付けるようにするためである。ほかの機能 (対応づけ、サイト) がキーを足すときは、同じ構造体に足す。
 - カテゴリの名前とディレクトリの名前が合っているかは、確かめない。`CTR-CHK-001` の表にないためである。
 

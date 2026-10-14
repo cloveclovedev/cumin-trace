@@ -1,0 +1,5 @@
+# The settings of cumin-trace for the requirement documents of this repository
+prefix = "CTR"
+
+# The allowed areas, in the order of docs/ja/requirements/index.md
+areas = ["FMT", "TPL", "CHK", "EXP", "TRC", "SITE", "DASH"]

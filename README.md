@@ -50,4 +50,14 @@ docs/ja/requirements/site/index.md:15: CTR-SITE-001: area SITE is not in .cumin-
 
 The check reads only the settings file and the requirement documents. It needs no token and no network.
 
-Today the check finds two errors: an ID with a wrong form, and an ID whose area is not in the settings. The design is in [docs/ja/designs/check.md](docs/ja/designs/check.md).
+The check finds the ten errors of `CTR-CHK-001`. The design is in [docs/ja/designs/check.md](docs/ja/designs/check.md).
+
+## Check the documents of this repository
+
+This repository holds its own settings file, [.cumin-trace.toml](.cumin-trace.toml): the prefix `CTR` and seven areas. Run the check at the top of a clone.
+
+```sh
+go run ./cmd/cumin-trace check
+```
+
+The check prints nothing and exits with 0. `go test ./...` runs the same check in `TestTheDocumentsOfThisRepositoryPassTheCheck`.

@@ -75,3 +75,17 @@ func TestExitsWithTwoWhenTheCheckCannotRun(t *testing.T) {
 		})
 	}
 }
+
+// CTR-FMT-011: the requirement documents of this repository pass the check
+// with the settings of this repository. Go runs the test in the directory of
+// the package, so the top of the repository is two levels up.
+func TestTheDocumentsOfThisRepositoryPassTheCheck(t *testing.T) {
+	root := filepath.Join("..", "..")
+	var stdout, stderr bytes.Buffer
+
+	code := run([]string{"check"}, root, &stdout, &stderr)
+
+	if code != 0 || stdout.String() != "" || stderr.String() != "" {
+		t.Errorf("got exit code %d, stdout %q, stderr %q; want 0 and no output", code, stdout.String(), stderr.String())
+	}
+}
