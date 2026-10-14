@@ -14,22 +14,25 @@ The documents are in Japanese. Start at [docs/ja/index.md](docs/ja/index.md).
 
    ```toml
    # The prefix of the product
-   prefix = "CTR"
+   prefix = "BIL"
 
    # The allowed areas
-   areas = ["FMT", "CHK"]
+   areas = ["PAY", "INV"]
 
-   # The directory of the requirement documents. Optional.
-   requirements_dir = "docs/ja/requirements"
+   # The directory of the requirement documents. Optional. The default is docs/ja/requirements.
+   requirements_dir = "docs/requirements"
    ```
 
-2. Build the command in a clone of cumin-trace.
+2. Install the command from a clone of cumin-trace, and add the directory of Go commands to `PATH`.
 
    ```sh
-   go build -o cumin-trace ./cmd/cumin-trace
+   go install ./cmd/cumin-trace
+   export PATH="$PATH:$(go env GOPATH)/bin"
    ```
 
-3. Run the built command at the top of the repository that holds the requirement documents.
+   When `go env GOBIN` prints a directory, `go install` writes the command there. Add that directory to `PATH` instead.
+
+3. Run the command at the top of the repository that holds the requirement documents.
 
    ```sh
    cumin-trace check
@@ -38,8 +41,8 @@ The documents are in Japanese. Start at [docs/ja/index.md](docs/ja/index.md).
 The check prints one line for each error: file, line, ID, and message.
 
 ```text
-docs/ja/requirements/format/index.md:82: CTR-FMT-01: invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>
-docs/ja/requirements/site/index.md:15: CTR-SITE-001: area SITE is not in .cumin-trace.toml
+docs/requirements/billing/index.md:12: BIL-PAY-01: invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>
+docs/requirements/tax/index.md:5: BIL-TAX-001: area TAX is not in .cumin-trace.toml
 ```
 
 | Exit code | Meaning |
