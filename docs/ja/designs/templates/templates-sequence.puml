@@ -1,0 +1,31 @@
+@startuml templates-sequence
+title Sequence of cumin-trace init <prefix> <area>
+skinparam shadowing false
+hide footbox
+
+participant "cmd/cumin-trace\nmain.go" as main
+participant "internal/scaffold\nservice.go" as service
+participant "internal/scaffold\ndomain.go" as rules
+participant "templates\ntemplates.go" as embedded
+participant "internal/scaffold\nstore.go" as store
+
+main -> service : Run(root, prefix, area, version, stdout)
+service -> rules : check prefix and area
+rules --> service : an error if invalid
+service -> rules : file list for the values
+rules --> service : path, embedded name, mode
+loop each file in the fixed order
+  service -> embedded : read the text
+  service -> rules : replace the placeholders
+  service -> store : create the file if missing
+  store --> service : written, or exists
+  service -> service : print "written <path>"\nor "skipped <path>: ..."
+end
+service --> main : nil, or an error
+main -> main : exit 0, or 2
+
+note over service, store
+  no version: the workflow is skipped
+  a file that cannot be written: stop, exit 2
+end note
+@enduml

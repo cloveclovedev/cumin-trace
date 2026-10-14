@@ -1,0 +1,41 @@
+@startuml templates-packages
+title Packages of cumin-trace init
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "cmd/cumin-trace" {
+  [main.go\nchoose the command,\nhold the version,\nset the exit code] as main
+}
+
+package "internal/scaffold" #LightYellow {
+  [service.go\nwrite each missing file,\nprint one line per file] as service
+  [domain.go\nthe file list, the values,\nthe output lines (pure)] as rules
+  [store.go\ncreate a file only if it is missing] as store
+}
+
+package "templates (top level)" #LightYellow {
+  [templates.go\nembed.FS of the text] as embedded
+}
+
+package "product repository" {
+  file ".cumin-trace.toml\ndocs/ja/requirements/...\ndocs/ja/architecture/overview.md" as docs
+  file ".claude/skills/cumin-trace-docs/..." as skill
+  file "scripts/render-diagrams.sh\ntools/plantuml/Dockerfile" as script
+  file ".github/workflows/cumin-trace-check.yml" as workflow
+}
+
+main --> service
+service --> rules
+service --> embedded
+service --> store
+store --> docs : writes
+store --> skill : writes
+store --> script : writes
+store --> workflow : writes
+
+legend right
+  yellow = designed in this document
+  arrow = imports, or writes a file
+  no embedded path holds .claude, CLAUDE.md, or .github/workflows
+endlegend
+@enduml

@@ -13,9 +13,15 @@ package "cumin-trace" {
   [internal/check\nformat check] as check
   [internal/requirement\nread requirements (shared)] as requirement
   [internal/core\nread settings] as core
+  [internal/scaffold\nwrite the templates (init)] as scaffold
+  [templates\nembedded text (top level)] as templates
 }
 
 cmd --> check : run
+cmd --> scaffold : run
+scaffold --> templates : reads
+scaffold --> toml : writes
+scaffold --> docs : writes
 check --> requirement : read requirements
 check --> core : read settings
 core --> toml : reads
@@ -23,6 +29,6 @@ requirement --> docs : reads
 
 legend right
   each box in cumin-trace is one Go package
-  arrow = imports, or reads a file
+  arrow = imports, reads, or writes a file
 endlegend
 @enduml
