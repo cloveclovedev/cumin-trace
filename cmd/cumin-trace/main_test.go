@@ -89,3 +89,55 @@ func TestTheDocumentsOfThisRepositoryPassTheCheck(t *testing.T) {
 		t.Errorf("got exit code %d, stdout %q, stderr %q; want 0 and no output", code, stdout.String(), stderr.String())
 	}
 }
+
+// CTR-TPL-001: init then check in an empty directory both exit with 0, with
+// and without an area.
+func TestInitThenCheckExitWithZero(t *testing.T) {
+	for name, args := range map[string][]string{
+		"with an area":    {"init", "PC", "TASK"},
+		"without an area": {"init", "PC"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			var stdout, stderr bytes.Buffer
+
+			initCode := run(args, root, &stdout, &stderr)
+			checkCode := run([]string{"check"}, root, &bytes.Buffer{}, &stderr)
+
+			if initCode != 0 || checkCode != 0 || stderr.String() != "" {
+				t.Errorf("got exit codes %d and %d, stderr %q; want 0, 0, and no error", initCode, checkCode, stderr.String())
+			}
+		})
+	}
+}
+
+// CTR-TPL-001: init exits with 2 and writes no file when the arguments are
+// wrong.
+func TestInitExitsWithTwoOnWrongArguments(t *testing.T) {
+	tests := []struct {
+		name       string
+		args       []string
+		wantStderr string
+	}{
+		{"no prefix", []string{"init"}, "cumin-trace: usage: cumin-trace init <prefix> [<area>]\n"},
+		{"an extra argument", []string{"init", "PC", "TASK", "MORE"}, "cumin-trace: usage: cumin-trace init <prefix> [<area>]\n"},
+		{"a wrong prefix", []string{"init", "pc"}, "cumin-trace: invalid prefix \"pc\": want upper-case letters and digits\n"},
+		{"an empty area", []string{"init", "PC", ""}, "cumin-trace: invalid area \"\": want upper-case letters and digits\n"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			var stdout, stderr bytes.Buffer
+
+			code := run(test.args, root, &stdout, &stderr)
+
+			entries, err := os.ReadDir(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if code != 2 || stdout.String() != "" || stderr.String() != test.wantStderr || len(entries) != 0 {
+				t.Errorf("got exit code %d, stdout %q, stderr %q, %d files; want 2, stderr %q, and no file", code, stdout.String(), stderr.String(), len(entries), test.wantStderr)
+			}
+		})
+	}
+}

@@ -51,7 +51,7 @@
 
 ### 設定とカテゴリのページは、引数の値で書く
 
-カテゴリがないときは、`.cumin-trace.toml` に `prefix` と `areas = []` を書き、カテゴリのページと図の例は書かない。最初のカテゴリのページは、カテゴリのテンプレートを持つ skill で書く。書式検査は、空の `areas` を受け付け、要件のない文書をエラーなしで通す。そのために #34 で `internal/core/settings.go` を変える ([設定ファイル](../check/settings.md))。
+カテゴリがないときは、`.cumin-trace.toml` に `prefix` と `areas = []` を書き、カテゴリのページと図の例は書かない。最初のカテゴリのページは、カテゴリのテンプレートを持つ skill で書く。書式検査は、空の `areas` を受け付け、要件のない文書をエラーなしで通す ([設定ファイル](../check/settings.md))。
 
 カテゴリがあるときは、`.cumin-trace.toml` に、その `prefix` と、その1つのカテゴリだけの `areas` を書く。カテゴリのページは `docs/ja/requirements/<カテゴリの小文字>/index.md` で、記入例のIDは `<prefix>-<area>-001` である。同じディレクトリに、図の例 `overview.puml` と、その描画の `overview.svg` を書く。`init` が用意するのは最初のカテゴリだけで、2つ目からのカテゴリは skill で書く。
 

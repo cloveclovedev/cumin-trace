@@ -1,0 +1,16 @@
+@startuml overview
+title Overview of the area
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+actor "User" as user
+[Feature of the area] as feature
+database "Data" as data
+
+user --> feature : uses
+feature --> data : reads and writes
+
+legend right
+  Replace this example with the diagram of the area.
+endlegend
+@enduml

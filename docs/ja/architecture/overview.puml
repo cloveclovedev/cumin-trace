@@ -20,6 +20,7 @@ package "cumin-trace" {
 cmd --> check : run
 cmd --> scaffold : run
 scaffold --> templates : reads
+scaffold --> core : name rule, paths
 scaffold --> toml : writes
 scaffold --> docs : writes
 check --> requirement : read requirements

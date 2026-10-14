@@ -6,22 +6,37 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 
 	"github.com/cloveclovedev/cumin-trace/internal/check"
+	"github.com/cloveclovedev/cumin-trace/internal/scaffold"
 )
+
+const usage = "cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>]"
+
+// version is the version of the binary. A release build sets it with
+// -ldflags "-X main.version=<tag>".
+var version string
 
 func main() {
 	os.Exit(run(os.Args[1:], ".", os.Stdout, os.Stderr))
 }
 
-// run chooses the command from the arguments and returns the exit code
-// (CTR-CHK-003): 0 with no error, 1 with a format error, and 2 when the
-// command cannot run.
+// run chooses the command from the arguments and returns the exit code.
 func run(args []string, root string, stdout, stderr io.Writer) int {
-	if len(args) != 1 || args[0] != "check" {
-		fmt.Fprintln(stderr, "cumin-trace: usage: cumin-trace check")
-		return 2
+	switch {
+	case len(args) == 1 && args[0] == "check":
+		return runCheck(root, stdout, stderr)
+	case len(args) > 0 && args[0] == "init":
+		return runInit(args[1:], root, stdout, stderr)
 	}
+	fmt.Fprintln(stderr, usage)
+	return 2
+}
+
+// runCheck runs the format check and returns the exit code (CTR-CHK-003): 0
+// with no error, 1 with a format error, and 2 when the check cannot run.
+func runCheck(root string, stdout, stderr io.Writer) int {
 	count, err := check.Run(root, stdout)
 	if err != nil {
 		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
@@ -36,4 +51,40 @@ func run(args []string, root string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+// runInit writes the templates and returns the exit code (CTR-TPL-001): 0
+// when every file is written or skipped, and 2 when the arguments are wrong
+// or a file cannot be written.
+func runInit(args []string, root string, stdout, stderr io.Writer) int {
+	if len(args) != 1 && len(args) != 2 {
+		fmt.Fprintln(stderr, "cumin-trace: usage: cumin-trace init <prefix> [<area>]")
+		return 2
+	}
+	prefix, area := args[0], ""
+	if len(args) == 2 {
+		area = args[1]
+		// An empty argument is a wrong area, not a missing one.
+		if err := scaffold.CheckArea(area); err != nil {
+			fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
+			return 2
+		}
+	}
+	if err := scaffold.Run(root, prefix, area, binaryVersion(), stdout); err != nil {
+		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
+		return 2
+	}
+	return 0
+}
+
+// binaryVersion returns the version that the build set, or else the version
+// of the main module that Go records in the binary.
+func binaryVersion() string {
+	if version != "" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		return info.Main.Version
+	}
+	return ""
 }
