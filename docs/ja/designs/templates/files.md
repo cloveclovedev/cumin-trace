@@ -28,11 +28,11 @@
 
 | 名前 | 種類 | `docs/` にも書くか |
 |---|---|---|
-| `entry.md` | 入口のページ | 書く (2) |
+| `entry.md` | インデックス | 書く (2) |
 | `overview.md` | 概要 | 書く (3) |
 | `technology.md` | 技術要素 | 書く (4) |
 | `glossary.md` | 用語集 | 書く (5) |
-| `backlog.md` | backlog | 書く (6) |
+| `backlog.md` | バックログ | 書く (6) |
 | `area.md` | カテゴリごとの要件 | 書く (7) |
 | `architecture.md` | ソースコード全体構成 | 書く (10) |
 | `design-index.md` | 設計文書の入口 | skill だけ |
@@ -58,7 +58,7 @@
 | `{{area}}` | 引数のカテゴリ | `TASK` |
 | `{{area_dir}}` | カテゴリの小文字 (`strings.ToLower`) | `task` |
 | `{{areas}}` | `areas` の配列。カテゴリがなければ空 | `["TASK"]`。カテゴリがなければ `[]` |
-| `{{area_rows}}` | 入口のページの、カテゴリの表の行。カテゴリがなければ空の文字列 | `TASK` の1行 (略号と、`task/index.md` へのリンク) |
+| `{{area_rows}}` | インデックスの、カテゴリの表の行。カテゴリがなければ空の文字列 | `TASK` の1行 (略号と、`task/index.md` へのリンク) |
 | `{{version}}` | バイナリの版 | `v0.1.0` |
 
 カテゴリがないとき、`{{area}}` は `<AREA>` になる。これが文に現れるのは skill のテンプレート (12 の `area.md`) だけで、skill は Agent に、カテゴリを決めてから置き換えるように指示する。
