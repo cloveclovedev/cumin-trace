@@ -51,9 +51,14 @@ func TestWritesTheTemplatesWithAnAreaThatPassTheCheck(t *testing.T) {
 
 	want := "written .cumin-trace.toml\n" +
 		"written docs/ja/requirements/index.md\n" +
+		"written docs/ja/requirements/overview.md\n" +
+		"written docs/ja/requirements/technology.md\n" +
+		"written docs/ja/requirements/glossary.md\n" +
+		"written docs/ja/requirements/backlog.md\n" +
 		"written docs/ja/requirements/task/index.md\n" +
 		"written docs/ja/requirements/task/overview.puml\n" +
-		"written docs/ja/requirements/task/overview.svg\n"
+		"written docs/ja/requirements/task/overview.svg\n" +
+		"written docs/ja/architecture/overview.md\n"
 	if output != want {
 		t.Errorf("got output:\n%s\nwant:\n%s", output, want)
 	}
@@ -71,7 +76,7 @@ func TestWritesTheTemplatesWithAnAreaThatPassTheCheck(t *testing.T) {
 }
 
 // CTR-TPL-001: in an empty directory, init with a prefix only writes the
-// settings with an empty list of areas and the entry page, and no area page.
+// settings with an empty list of areas and the other pages, and no area page.
 // The format check passes at once.
 func TestWritesTheTemplatesWithoutAnAreaThatPassTheCheck(t *testing.T) {
 	root := t.TempDir()
@@ -79,7 +84,12 @@ func TestWritesTheTemplatesWithoutAnAreaThatPassTheCheck(t *testing.T) {
 	output := runInit(t, root, "PC", "")
 
 	want := "written .cumin-trace.toml\n" +
-		"written docs/ja/requirements/index.md\n"
+		"written docs/ja/requirements/index.md\n" +
+		"written docs/ja/requirements/overview.md\n" +
+		"written docs/ja/requirements/technology.md\n" +
+		"written docs/ja/requirements/glossary.md\n" +
+		"written docs/ja/requirements/backlog.md\n" +
+		"written docs/ja/architecture/overview.md\n"
 	if output != want {
 		t.Errorf("got output:\n%s\nwant:\n%s", output, want)
 	}
@@ -91,10 +101,92 @@ func TestWritesTheTemplatesWithoutAnAreaThatPassTheCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) != 1 || entries[0].Name() != "index.md" {
-		t.Errorf("got %d entries in the requirements directory, want index.md only", len(entries))
+	var names []string
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	if got := strings.Join(names, ","); got != "backlog.md,glossary.md,index.md,overview.md,technology.md" {
+		t.Errorf("got %s in the requirements directory, want the five pages and no area page", got)
 	}
 	checkPasses(t, root)
+}
+
+// headings returns the level 2 headings of the page, in order.
+func headings(page string) []string {
+	var found []string
+	for _, line := range strings.Split(page, "\n") {
+		if strings.HasPrefix(line, "## ") {
+			found = append(found, strings.TrimPrefix(line, "## "))
+		}
+	}
+	return found
+}
+
+// CTR-TPL-002, CTR-TPL-004, CTR-TPL-007, CTR-TPL-009: each page has exactly
+// the headings and the table columns of its requirement.
+func TestEachPageHasTheHeadingsAndColumnsOfItsRequirement(t *testing.T) {
+	root := t.TempDir()
+	runInit(t, root, "PC", "TASK")
+
+	tests := []struct {
+		page, headings, header string
+	}{
+		{"docs/ja/requirements/overview.md", "解決したい課題,目的,指標,登場人物,範囲外,フェーズ", ""},
+		{"docs/ja/requirements/technology.md", "構成,使う技術,ライブラリの方針,決めていないこと", "| 要素 | 技術 | 選んだ理由 |"},
+		{"docs/ja/requirements/glossary.md", "", "| 語 | 意味 | 使わない言い方 | 英語 |"},
+		{"docs/ja/architecture/overview.md", "", "| パッケージ | 役割 | 設計 |"},
+	}
+	for _, test := range tests {
+		t.Run(test.page, func(t *testing.T) {
+			page := readFile(t, root, test.page)
+
+			if got := strings.Join(headings(page), ","); got != test.headings {
+				t.Errorf("got level 2 headings %q, want %q", got, test.headings)
+			}
+			var tableHeaders []string
+			for _, line := range strings.Split(page, "\n") {
+				if strings.HasPrefix(line, "| ") {
+					tableHeaders = append(tableHeaders, line)
+				}
+			}
+			want := []string{}
+			if test.header != "" {
+				want = []string{test.header}
+			}
+			if strings.Join(tableHeaders, "\n") != strings.Join(want, "\n") {
+				t.Errorf("got table lines %q, want %q", tableHeaders, want)
+			}
+		})
+	}
+}
+
+// CTR-TPL-004, CTR-TPL-007: the technology page and the glossary hold no
+// requirement ID.
+func TestTheTechnologyPageAndTheGlossaryHoldNoID(t *testing.T) {
+	root := t.TempDir()
+	runInit(t, root, "PC", "TASK")
+
+	for _, name := range []string{"docs/ja/requirements/technology.md", "docs/ja/requirements/glossary.md"} {
+		if page := readFile(t, root, name); strings.Contains(page, "PC-") || strings.Contains(page, "{{") {
+			t.Errorf("%s holds an ID or a value to fill:\n%s", name, page)
+		}
+	}
+}
+
+// CTR-TPL-001: the entry page links to the overview, the technology page,
+// the glossary, the backlog, and the source code structure, as
+// docs/ja/designs/templates/files.md says.
+func TestTheEntryPageLinksToThePages(t *testing.T) {
+	root := t.TempDir()
+	runInit(t, root, "PC", "")
+
+	entry := readFile(t, root, "docs/ja/requirements/index.md")
+
+	for _, link := range []string{"(overview.md)", "(technology.md)", "(glossary.md)", "(backlog.md)", "(../architecture/overview.md)"} {
+		if !strings.Contains(entry, link) {
+			t.Errorf("the entry page has no link %s:\n%s", link, entry)
+		}
+	}
 }
 
 // CTR-TPL-003: the area page has the headings 全体像, 要件, and 未決事項, a
@@ -105,14 +197,8 @@ func TestTheAreaPageHasTheHeadingsAndOneExample(t *testing.T) {
 
 	page := readFile(t, root, "docs/ja/requirements/task/index.md")
 
-	var headings []string
-	for _, line := range strings.Split(page, "\n") {
-		if strings.HasPrefix(line, "## ") {
-			headings = append(headings, strings.TrimPrefix(line, "## "))
-		}
-	}
-	if strings.Join(headings, ",") != "全体像,要件,未決事項" {
-		t.Errorf("got level 2 headings %q, want 全体像, 要件, 未決事項", headings)
+	if got := headings(page); strings.Join(got, ",") != "全体像,要件,未決事項" {
+		t.Errorf("got level 2 headings %q, want 全体像, 要件, 未決事項", got)
 	}
 	if !strings.Contains(page, "![カテゴリの全体像](overview.svg)") {
 		t.Errorf("the area page shows no diagram:\n%s", page)

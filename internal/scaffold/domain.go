@@ -28,6 +28,10 @@ func Files(area string) []File {
 	files := []File{
 		{Target: core.SettingsFile, Source: "settings.toml", Mode: 0o644},
 		{Target: core.DefaultRequirementsDir + "/index.md", Source: "docs/entry.md", Mode: 0o644},
+		{Target: core.DefaultRequirementsDir + "/overview.md", Source: "docs/overview.md", Mode: 0o644},
+		{Target: core.DefaultRequirementsDir + "/technology.md", Source: "docs/technology.md", Mode: 0o644},
+		{Target: core.DefaultRequirementsDir + "/glossary.md", Source: "docs/glossary.md", Mode: 0o644},
+		{Target: core.DefaultRequirementsDir + "/backlog.md", Source: "docs/backlog.md", Mode: 0o644},
 	}
 	if area != "" {
 		dir := core.DefaultRequirementsDir + "/" + areaDir(area)
@@ -37,6 +41,8 @@ func Files(area string) []File {
 			File{Target: dir + "/overview.svg", Source: "docs/area-overview.svg", Mode: 0o644},
 		)
 	}
+	// The source code structure is outside the requirement documents (CTR-TPL-009).
+	files = append(files, File{Target: "docs/ja/architecture/overview.md", Source: "docs/architecture.md", Mode: 0o644})
 	return files
 }
 

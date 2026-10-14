@@ -24,11 +24,16 @@ cumin-trace init <prefix> [<area>]
 | File | Content |
 |---|---|
 | `.cumin-trace.toml` | `prefix = "PC"` and `areas = ["TASK"]` |
-| `docs/ja/requirements/index.md` | The entry page, with a row for the area |
+| `docs/ja/requirements/index.md` | The entry page, with links to the other pages and a row for the area |
+| `docs/ja/requirements/overview.md` | The overview: problem, goal, measures, people, out of scope, and phases |
+| `docs/ja/requirements/technology.md` | The technology page: structure, technologies with reasons, library policy, and open choices |
+| `docs/ja/requirements/glossary.md` | The glossary: one term for each row, with the words not to use and the English term |
+| `docs/ja/requirements/backlog.md` | The backlog: each item with the reason to put it off and the trigger to review it |
 | `docs/ja/requirements/task/index.md` | The area page: overview, requirements with the example `PC-TASK-001`, and open questions |
 | `docs/ja/requirements/task/overview.puml` and `overview.svg` | The example diagram of the area page |
+| `docs/ja/architecture/overview.md` | The source code structure: a place for a diagram, and a table of packages, roles, and designs |
 
-Without an area, `init` writes only `.cumin-trace.toml` with `areas = []`, and the entry page.
+Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every page except the area page and its diagram.
 
 `init` prints one line for each file: `written <path>`, or `skipped <path>: already exists`. It never changes a file that exists. The exit code is 0 when every file is written or skipped. The exit code is 2 when an argument is wrong or a file cannot be written.
 
