@@ -31,9 +31,9 @@ Maintainer が母国語で書いた要件文書を正本にしたまま、要件
 - Agent: Maintainer と一緒に要件文書を書く AI。Claude Code など
 - リポジトリ: 要件文書を置くリポジトリ。cumin-works など
 
-## 全体の構成
+## プロダクトの構成
 
-![全体の構成](overview.svg)
+![プロダクトの構成](overview.svg)
 
 図の元ファイル: [overview.puml](overview.puml)
 

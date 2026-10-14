@@ -12,8 +12,8 @@ import (
 	"github.com/cloveclovedev/cumin-trace/internal/requirement"
 )
 
-// The numbers of the errors in the table of the design note
-// (docs/ja/designs/check.md). They are the third key of the order.
+// The numbers of the errors in the table of the design document
+// (docs/ja/designs/check/errors.md). They are the third key of the order.
 const (
 	ruleInvalidID           = 1
 	ruleDuplicateID         = 2

@@ -1,4 +1,5 @@
 @startuml check-packages
+title Packages of the format check
 skinparam shadowing false
 skinparam componentStyle rectangle
 
@@ -6,34 +7,35 @@ package "cmd/cumin-trace" {
   [main.go\nchoose the command,\nset the exit code] as main
 }
 
-package "internal/check" {
+package "internal/check" #LightYellow {
   [service.go\nrun the check,\nprint the errors] as service
   [domain.go\nthe ten rules of CTR-CHK-001\n(pure)] as rules
 }
 
-package "internal/requirement" {
+package "internal/requirement" #LightYellow {
   [markdown.go\nread the requirement documents] as markdown
   [domain.go\nmodel of a requirement,\nform of an ID (pure)] as model
 }
 
-package "internal/core" {
+package "internal/core" #LightYellow {
   [settings.go\nread .cumin-trace.toml] as settings
 }
 
-[BurntSushi/toml] as toml
-[yuin/goldmark] as goldmark
+[BurntSushi/toml v1] as toml
+[yuin/goldmark v1] as goldmark
 
 main --> service
 service --> rules
 service --> settings
 service --> markdown
 rules --> model
+markdown --> model
 settings --> toml
 markdown --> goldmark
-markdown --> model
 
-note bottom of model
-  cumin-trace export (CTR-EXP-001)
-  and the trace use this package later
-end note
+legend right
+  yellow = designed in this document
+  arrow = imports
+  library types stop in the file that uses them
+endlegend
 @enduml

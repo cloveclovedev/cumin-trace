@@ -1,0 +1,26 @@
+@startuml check-sequence
+title Sequence of cumin-trace check
+skinparam shadowing false
+hide footbox
+
+participant "cmd/cumin-trace\nmain.go" as main
+participant "internal/check\nservice.go" as service
+participant "internal/core\nsettings.go" as settings
+participant "internal/requirement\nmarkdown.go" as markdown
+participant "internal/check\ndomain.go" as rules
+
+main -> service : Run(root, stdout)
+service -> settings : read .cumin-trace.toml
+settings --> service : prefix, areas, requirements_dir
+service -> markdown : read *.md under requirements_dir
+markdown --> service : requirements, wrong IDs, references
+service -> rules : apply the ten rules
+rules --> service : errors, sorted
+service -> service : print one line per error
+service --> main : number of errors
+main -> main : exit 0 or 1
+
+note over service, markdown
+  settings or files that cannot be read: exit 2
+end note
+@enduml
