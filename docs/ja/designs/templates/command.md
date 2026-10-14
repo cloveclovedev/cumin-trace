@@ -5,13 +5,13 @@
 ## 引数
 
 ```sh
-cumin-trace init <prefix> <area>
+cumin-trace init <prefix> [<area>]
 ```
 
 | 引数 | 必須 | 決まり |
 |---|---|---|
 | `<prefix>` | 必須 | 英大文字と数字が1文字以上。`.cumin-trace.toml` の `prefix` と同じ決まり ([設定ファイル](../check/settings.md)) |
-| `<area>` | 必須 | 英大文字と数字が1文字以上。`areas` の1つと同じ決まり |
+| `<area>` | 省略できる | 英大文字と数字が1文字以上。`areas` の1つと同じ決まり。省略すると、カテゴリのページと図の例を書かない ([ファイルの一覧](files.md)) |
 
 書く先は、現在のディレクトリである。`main.go` は、`check` と同じく `root` に `.` を渡す。
 
@@ -32,7 +32,24 @@ cumin-trace init <prefix> <area>
 ```text
 written .cumin-trace.toml
 written docs/ja/requirements/index.md
+...
+written docs/ja/requirements/backlog.md
 written docs/ja/requirements/task/index.md
+written docs/ja/requirements/task/overview.puml
+written docs/ja/requirements/task/overview.svg
+written docs/ja/architecture/overview.md
+...
+written .github/workflows/cumin-trace-check.yml
+```
+
+例 (`cumin-trace init PC`、空のリポジトリ)。カテゴリのページと図の例の行がない:
+
+```text
+written .cumin-trace.toml
+written docs/ja/requirements/index.md
+...
+written docs/ja/requirements/backlog.md
+written docs/ja/architecture/overview.md
 ...
 written .github/workflows/cumin-trace-check.yml
 ```
@@ -42,18 +59,18 @@ written .github/workflows/cumin-trace-check.yml
 | コード | 場合 | 標準エラー出力 |
 |---|---|---|
 | 0 | すべてのファイルを、書いたか飛ばした | なし |
-| 2 | 引数の数が2つでない | `cumin-trace: usage: cumin-trace init <prefix> <area>` |
+| 2 | 引数の数が1つでも2つでもない | `cumin-trace: usage: cumin-trace init <prefix> [<area>]` |
 | 2 | 接頭辞、またはカテゴリが決まりに合わない | `cumin-trace: invalid prefix "<値>": want upper-case letters and digits` (カテゴリは `invalid area`) |
 | 2 | ファイルかディレクトリを作れない | `cumin-trace: <OS のエラー>`。そのファイルで止まり、それまでに書いたファイルは残す。作ったあとで書き込みか close に失敗したファイルは消すので、次の実行で書き直せる |
 
-`check` の使い方の行は、`cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> <area>` に変える。コマンドがないとき、知らないコマンドのときに出す。
+`check` の使い方の行は、`cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>]` に変える。コマンドがないとき、知らないコマンドのときに出す。
 
 ## パッケージとファイル
 
 | ファイル | 役割 |
 |---|---|
 | `cmd/cumin-trace/main.go` | 引数からコマンドを選ぶ。`var version string` を持ち、空なら `runtime/debug.ReadBuildInfo` の `Main.Version` を使う。結果を終了コードにする |
-| `internal/scaffold/service.go` | 入口 `scaffold.Run(root, prefix, area, version string, stdout io.Writer) error`。値を確かめ、ファイルごとに埋め込みの文を読み、置き換え、書き、1行を出す |
+| `internal/scaffold/service.go` | 入口 `scaffold.Run(root, prefix, area, version string, stdout io.Writer) error`。`area` が空なら、カテゴリがない。値を確かめ、ファイルごとに埋め込みの文を読み、置き換え、書き、1行を出す |
 | `internal/scaffold/domain.go` | ファイルの一覧、置き換える値、版の決まり、出力の行。純粋な関数で、I/O を持たない |
 | `internal/scaffold/store.go` | `os.OpenFile` の `O_CREATE\|O_EXCL` でファイルを作る。ないディレクトリは `os.MkdirAll` で作る |
 | `templates/templates.go` | パッケージ `templates`。`//go:embed` で埋め込んだ `embed.FS` を `Files` として公開する |

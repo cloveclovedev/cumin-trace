@@ -8,15 +8,15 @@
 
 | # | 書く先 | 埋め込み | 差し込む値 | 要件 |
 |---|---|---|---|---|
-| 1 | `.cumin-trace.toml` | `settings.toml` | `{{prefix}}`、`{{area}}` | `CTR-TPL-001` |
-| 2 | `docs/ja/requirements/index.md` | `docs/entry.md` | `{{prefix}}`、`{{area}}`、`{{area_dir}}` | `CTR-TPL-001` |
+| 1 | `.cumin-trace.toml` | `settings.toml` | `{{prefix}}`、`{{areas}}` | `CTR-TPL-001` |
+| 2 | `docs/ja/requirements/index.md` | `docs/entry.md` | `{{prefix}}`、`{{area_rows}}` | `CTR-TPL-001` |
 | 3 | `docs/ja/requirements/overview.md` | `docs/overview.md` | なし | `CTR-TPL-002` |
 | 4 | `docs/ja/requirements/technology.md` | `docs/technology.md` | なし | `CTR-TPL-004` |
 | 5 | `docs/ja/requirements/glossary.md` | `docs/glossary.md` | なし | `CTR-TPL-007` |
 | 6 | `docs/ja/requirements/backlog.md` | `docs/backlog.md` | なし | `CTR-TPL-001` |
-| 7 | `docs/ja/requirements/{{area_dir}}/index.md` | `docs/area.md` | `{{prefix}}`、`{{area}}` | `CTR-TPL-003` |
-| 8 | `docs/ja/requirements/{{area_dir}}/overview.puml` | `docs/area-overview.puml` | なし | `CTR-TPL-003`、`CTR-TPL-006` |
-| 9 | `docs/ja/requirements/{{area_dir}}/overview.svg` | `docs/area-overview.svg` | なし | `CTR-TPL-003`、`CTR-TPL-006` |
+| 7 | `docs/ja/requirements/{{area_dir}}/index.md` (カテゴリがあるときだけ) | `docs/area.md` | `{{prefix}}`、`{{area}}` | `CTR-TPL-003` |
+| 8 | `docs/ja/requirements/{{area_dir}}/overview.puml` (同上) | `docs/area-overview.puml` | なし | `CTR-TPL-003`、`CTR-TPL-006` |
+| 9 | `docs/ja/requirements/{{area_dir}}/overview.svg` (同上) | `docs/area-overview.svg` | なし | `CTR-TPL-003`、`CTR-TPL-006` |
 | 10 | `docs/ja/architecture/overview.md` | `docs/architecture.md` | なし | `CTR-TPL-009` |
 | 11 | `.claude/skills/cumin-trace-docs/SKILL.md` | `skill/SKILL.md` | なし | `CTR-TPL-005` |
 | 12 | `.claude/skills/cumin-trace-docs/templates/<名前>` | `docs/<名前>` の9つ (下の表) | 2 から 7、10 と同じ | `CTR-TPL-005`、`CTR-TPL-008` |
@@ -57,7 +57,11 @@
 | `{{prefix}}` | 引数の接頭辞 | `PC` |
 | `{{area}}` | 引数のカテゴリ | `TASK` |
 | `{{area_dir}}` | カテゴリの小文字 (`strings.ToLower`) | `task` |
+| `{{areas}}` | `areas` の配列。カテゴリがなければ空 | `["TASK"]`。カテゴリがなければ `[]` |
+| `{{area_rows}}` | 入口のページの、カテゴリの表の行。カテゴリがなければ空の文字列 | `TASK` の1行 (略号と、`task/index.md` へのリンク) |
 | `{{version}}` | バイナリの版 | `v0.1.0` |
+
+カテゴリがないとき、`{{area}}` は `<AREA>`、`{{area_dir}}` は `<area>` になる。この2つが現れるのは skill のテンプレート (12 の `area.md`) だけで、skill は Agent に、カテゴリを決めてから置き換えるように指示する。
 
 `.cumin-trace.toml` の中身:
 
@@ -66,10 +70,10 @@
 prefix = "{{prefix}}"
 
 # The allowed areas. Add an area here before you write its first requirement.
-areas = ["{{area}}"]
+areas = {{areas}}
 ```
 
-カテゴリのページの記入例は、`{{prefix}}-{{area}}-001` の要件を1つ持ち、`検証` の行と区切り線を持つ。生成した直後のファイルは、書式検査をエラーなしで通る (`CTR-TPL-001`)。
+カテゴリがないとき、生成した直後の文書には要件がなく、書式検査はエラーなしで通る。カテゴリのページの記入例は、`{{prefix}}-{{area}}-001` の要件を1つ持ち、`検証` の行と区切り線を持つ。生成した直後のファイルは、書式検査をエラーなしで通る (`CTR-TPL-001`)。
 
 ## skill
 
