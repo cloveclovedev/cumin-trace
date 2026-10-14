@@ -34,10 +34,20 @@ cumin-trace init <prefix> [<area>]
 | `docs/ja/architecture/overview.md` | The source code structure: a place for a diagram, and a table of packages, roles, and designs |
 | `.claude/skills/cumin-trace-docs/SKILL.md` | The skill `cumin-trace-docs` for Claude Code, which tells an agent how to write the requirement and design documents |
 | `.claude/skills/cumin-trace-docs/templates/` | The nine templates of the skill: the seven documents above, and the entry and the detail of a design document |
+| `scripts/render-diagrams.sh` | The script that renders each PlantUML diagram (`.puml`) to SVG with Docker, as in cumin-works. Mode `0755` |
+| `tools/plantuml/Dockerfile` | The PlantUML image of the script, with a Japanese font |
 
 Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every page except the area page and its diagram. The skill still holds all nine templates. Its area template holds `<AREA>` in place of the area.
 
 `init` prints one line for each file: `written <path>`, or `skipped <path>: already exists`. It never changes a file that exists. The exit code is 0 when every file is written or skipped. The exit code is 2 when an argument is wrong or a file cannot be written.
+
+`scripts/render-diagrams.sh` has three uses. It needs Docker.
+
+| Command | Result |
+|---|---|
+| `scripts/render-diagrams.sh` | Renders every `.puml` under `docs/` to an SVG next to it |
+| `scripts/render-diagrams.sh <in.puml> <out.svg>` | Renders one diagram to the given SVG |
+| `scripts/render-diagrams.sh --check <base>` | Renders the diagrams that differ from `<base>`, and compares them with the SVGs. It changes no file |
 
 The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/templates/index.md](docs/ja/designs/templates/index.md).
 

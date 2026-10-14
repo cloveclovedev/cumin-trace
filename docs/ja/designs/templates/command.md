@@ -72,7 +72,7 @@ written .github/workflows/cumin-trace-check.yml
 | `cmd/cumin-trace/main.go` | 引数からコマンドを選ぶ。`var version string` を持ち、空なら `runtime/debug.ReadBuildInfo` の `Main.Version` を使う。結果を終了コードにする |
 | `internal/scaffold/service.go` | 入口 `scaffold.Run(root, prefix, area, version string, stdout io.Writer) error`。`area` が空なら、カテゴリがない。値を確かめ、ファイルごとに埋め込みの文を読み、置き換え、書き、1行を出す |
 | `internal/scaffold/domain.go` | ファイルの一覧、置き換える値、版の決まり、出力の行。純粋な関数で、I/O を持たない。接頭辞とカテゴリの決まり (`core.IsName`) と設定ファイルのパスは、`internal/core` のものを使う |
-| `internal/scaffold/store.go` | `os.OpenFile` の `O_CREATE\|O_EXCL` でファイルを作る。ないディレクトリは `os.MkdirAll` で作る |
+| `internal/scaffold/store.go` | `os.OpenFile` の `O_CREATE\|O_EXCL` でファイルを作る。作ったファイルは `File.Chmod` で一覧の権限にし、umask によらない。ないディレクトリは `os.MkdirAll` で作る |
 | `templates/templates.go` | パッケージ `templates`。`//go:embed` で埋め込んだ `embed.FS` を `Files` として公開する |
 
 - 版として使うのは、`v<数>.<数>.<数>` の形の値だけである。空、`(devel)`、`-` や `+` を含む値 (疑似版、変更のあるビルド) は、版がないものとして扱う。
@@ -81,6 +81,7 @@ written .github/workflows/cumin-trace-check.yml
 ## 確かめたこと
 
 - `os.OpenFile` の `O_EXCL` は、`O_CREATE` と一緒に使い、ファイルがあれば失敗する: <https://pkg.go.dev/os#pkg-constants> (Go 1.27.2 の `go doc os.O_EXCL` で読んだ)。
+- `os.OpenFile` の権限は umask を引く前の値で、`File.Chmod` は権限をその値にする: `go doc os.OpenFile`、`go doc os.File.Chmod` (Go 1.27.2)。
 - `-X importpath.name=value` は、初期値のない、または定数で初期化した文字列の変数に値を入れる: `go doc cmd/link` (Go 1.27.2)。
 - Go 1.24 から、`go build` は VCS のタグとコミットから、本体のモジュールの版をバイナリに記録する。変更があれば `+dirty` を足す: <https://go.dev/doc/go1.24>。
 - 未確認: `go install ...@v0.1.0` で入れたバイナリの `Main.Version` が `v0.1.0` になること。最初のリリースのあと、#34 の作業で手元で確かめる。

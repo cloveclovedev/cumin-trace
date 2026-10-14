@@ -39,7 +39,7 @@
 | `design-detail.md` | 設計文書の細部 | skill だけ |
 
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。書く先のパスは、`internal/scaffold/domain.go` の表だけが持つ。
-- 1 から 12 はある。13 と 14 は #37、15 は #38 で足す。足すまでは、一覧にその行がない。
+- 1 から 14 はある。15 は #38 で足す。足すまでは、一覧にその行がない。
 
 ## カテゴリの図
 
@@ -92,7 +92,10 @@ areas = {{areas}}
 
 ## 図のスクリプト
 
-`scripts/render-diagrams.sh` と `tools/plantuml/Dockerfile` は、cumin-works の同じ名前のファイルを写す。書いた時点の cumin-works の main のコミットを、スクリプトの先頭のコメントに書く。
+`scripts/render-diagrams.sh` と `tools/plantuml/Dockerfile` は、cumin-works の同じ名前のファイルを写す。書いた時点の cumin-works の main のコミットを、スクリプトの先頭のコメントに書く。そのコメントは使い方の行 (2 から 6 行目) のあとに置く。スクリプトは、引数の数が違うとき、その5行を使い方として出す。
+
+- スクリプトのイメージ `cumin-plantuml:<版>` と、Dockerfile の `FROM plantuml/plantuml:<版>` は、同じ版を持つ。テストで確かめる。
+- 引数の数が 0 でも 2 でもないとき、スクリプトは Docker を使う前に、使い方を標準エラー出力に出し、終了コード 2 で終わる。
 
 | 使い方 | 動き |
 |---|---|
@@ -103,6 +106,7 @@ areas = {{areas}}
 ## 確かめたこと
 
 - `embed` の `//go:embed` は、`.` か `_` で始まるファイルを、ディレクトリの指定からは外す: <https://pkg.go.dev/embed> (Go 1.27.2 の `go doc embed` で読んだ)。埋め込むファイルの名前は、どれも `.` で始めない。
-- cumin-works の `scripts/render-diagrams.sh` と `tools/plantuml/Dockerfile` を、GitHub の API (`gh api repos/cloveclovedev/cumin-works/contents/...`) で読んだ。
+- cumin-works の `scripts/render-diagrams.sh` と `tools/plantuml/Dockerfile` を、GitHub の API (`gh api repos/cloveclovedev/cumin-works/contents/...`) で読んだ。main のコミット `f1e4d22f9ea85a299828b1d8ff7f08c7d9eea3b4` のものを写した。
+- 手元の実行: 空のディレクトリで `init PC TASK` のあと、生成したスクリプトを引数なしで実行し、カテゴリの図 (8) を描画した。描画した SVG は、埋め込んだ SVG (9) と同じバイト列になった。
 - Claude Code の skill は `.claude/skills/<名前>/SKILL.md` に置き、front matter の `name` と `description` を読む。同じディレクトリの別のファイルを、`SKILL.md` から示して使える: <https://code.claude.com/docs/en/skills>
 - 手元の実行: この文書の SVG は、cumin-works の Dockerfile と同じイメージで描画した。既存の `check-packages.svg` を描画し直して、同じバイト列になった。

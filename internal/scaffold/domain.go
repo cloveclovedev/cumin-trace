@@ -49,11 +49,20 @@ func Files(area string) []File {
 	for _, name := range SkillTemplates {
 		files = append(files, File{Target: SkillDir + "/templates/" + name, Source: "docs/" + name, Mode: 0o644})
 	}
+	// The script that renders the diagrams, and its image, as in cumin-works
+	// (CTR-TPL-006).
+	files = append(files,
+		File{Target: RenderScript, Source: RenderScript, Mode: 0o755},
+		File{Target: "tools/plantuml/Dockerfile", Source: "tools/plantuml/Dockerfile", Mode: 0o644},
+	)
 	return files
 }
 
 // SkillDir is the directory of the skill for writing documents (CTR-TPL-005).
 const SkillDir = ".claude/skills/cumin-trace-docs"
+
+// RenderScript is the script that renders the diagrams to SVG (CTR-TPL-006).
+const RenderScript = "scripts/render-diagrams.sh"
 
 // SkillTemplates names the templates of the skill, one for each kind of
 // document, in the order that init writes them. The seven kinds of
