@@ -71,7 +71,7 @@ written .github/workflows/cumin-trace-check.yml
 |---|---|
 | `cmd/cumin-trace/main.go` | 引数からコマンドを選ぶ。`var version string` を持ち、空なら `runtime/debug.ReadBuildInfo` の `Main.Version` を使う。結果を終了コードにする |
 | `internal/scaffold/service.go` | 入口 `scaffold.Run(root, prefix, area, version string, stdout io.Writer) error`。`area` が空なら、カテゴリがない。値を確かめ、ファイルごとに埋め込みの文を読み、置き換え、書き、1行を出す |
-| `internal/scaffold/domain.go` | ファイルの一覧、置き換える値、版の決まり、出力の行。純粋な関数で、I/O を持たない |
+| `internal/scaffold/domain.go` | ファイルの一覧、置き換える値、版の決まり、出力の行。純粋な関数で、I/O を持たない。接頭辞とカテゴリの決まり (`core.IsName`) と設定ファイルのパスは、`internal/core` のものを使う |
 | `internal/scaffold/store.go` | `os.OpenFile` の `O_CREATE\|O_EXCL` でファイルを作る。ないディレクトリは `os.MkdirAll` で作る |
 | `templates/templates.go` | パッケージ `templates`。`//go:embed` で埋め込んだ `embed.FS` を `Files` として公開する |
 

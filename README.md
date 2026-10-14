@@ -6,11 +6,39 @@ It reads Markdown requirement documents in a product repository, checks their fo
 
 The documents are in Japanese. Start at [docs/ja/index.md](docs/ja/index.md).
 
+## Start the documents
+
+`cumin-trace init` writes the first requirement documents into the current directory. Run it at the top of the repository of the product. Install the command as in step 2 of "Check the format".
+
+```sh
+cumin-trace init <prefix> [<area>]
+```
+
+| Argument | Required | Rule |
+|---|---|---|
+| `<prefix>` | Yes | Upper-case letters and digits. The first part of every ID, for example `PC` |
+| `<area>` | No | Upper-case letters and digits. The first area, for example `TASK` |
+
+`cumin-trace init PC TASK` writes these files:
+
+| File | Content |
+|---|---|
+| `.cumin-trace.toml` | `prefix = "PC"` and `areas = ["TASK"]` |
+| `docs/ja/requirements/index.md` | The entry page, with a row for the area |
+| `docs/ja/requirements/task/index.md` | The area page: overview, requirements with the example `PC-TASK-001`, and open questions |
+| `docs/ja/requirements/task/overview.puml` and `overview.svg` | The example diagram of the area page |
+
+Without an area, `init` writes only `.cumin-trace.toml` with `areas = []`, and the entry page.
+
+`init` prints one line for each file: `written <path>`, or `skipped <path>: already exists`. It never changes a file that exists. The exit code is 0 when every file is written or skipped. The exit code is 2 when an argument is wrong or a file cannot be written.
+
+The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/templates/index.md](docs/ja/designs/templates/index.md).
+
 ## Check the format
 
 `cumin-trace check` reads the requirement documents of a repository and prints every format error.
 
-1. Write `.cumin-trace.toml` at the top of the repository.
+1. Write `.cumin-trace.toml` at the top of the repository, or let `cumin-trace init` write it.
 
    ```toml
    # The prefix of the product
