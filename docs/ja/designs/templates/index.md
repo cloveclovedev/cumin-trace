@@ -105,7 +105,7 @@
 
 ### このリポジトリは、版のタグでリリースのバイナリを公開する
 
-`v<数>.<数>.<数>` の形のタグ (プレリリースを除く) を push すると、workflow がテストし、4つの OS と CPU の組のバイナリをビルドし、`checksums.txt` を添えて GitHub のリリースにする。バイナリは、`-ldflags "-X main.version=<タグ>"` で自分の版を知る。この workflow は Agent が書けない場所に置くので、Maintainer が [リリースと workflow](release.md) の全文を足す。
+`v<数>.<数>.<数>` の形のタグ (プレリリースを除く) を push すると、workflow がテストし、4つの OS と CPU の組のバイナリをビルドし、`checksums.txt` を添えて GitHub のリリースにする。バイナリは、`-ldflags "-X main.version=<タグ>"` で自分の版を知る。この workflow は Agent が書けない場所に置くので、Maintainer が [リリースと workflow](release.md) の全文を保守する。
 
 - 理由: check の workflow が Go なしで動くには、ビルド済みのバイナリが要る。
 - 採らなかった案: Go 1.24 からの、VCS のタグによる版の自動の記録だけに頼る。checkout の取り方で、タグが見えないことがある。`go install ...@<version>` で入れたバイナリのためにだけ、それも読む。

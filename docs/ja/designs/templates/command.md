@@ -84,4 +84,4 @@ written .github/workflows/cumin-trace-check.yml
 - `os.OpenFile` の権限は umask を引く前の値で、`File.Chmod` は権限をその値にする: `go doc os.OpenFile`、`go doc os.File.Chmod` (Go 1.27.2)。
 - `-X importpath.name=value` は、初期値のない、または定数で初期化した文字列の変数に値を入れる: `go doc cmd/link` (Go 1.27.2)。
 - Go 1.24 から、`go build` は VCS のタグとコミットから、本体のモジュールの版をバイナリに記録する。変更があれば `+dirty` を足す: <https://go.dev/doc/go1.24>。
-- 未確認: `go install ...@v0.1.0` で入れたバイナリの `Main.Version` が `v0.1.0` になること。最初のリリースのあと、#34 の作業で手元で確かめる。
+- 未確認: `go install ...@v0.1.0` で入れたバイナリの `Main.Version` が `v0.1.0` になること。
