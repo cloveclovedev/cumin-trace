@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cloveclovedev/cumin-trace/internal/check"
+	"github.com/cloveclovedev/cumin-trace/internal/requirement"
 )
 
 // runInit runs init in the directory with the binary of a release, and
@@ -193,10 +194,37 @@ func TestTheTechnologyPageAndTheGlossaryHoldNoID(t *testing.T) {
 	runInit(t, root, "PC", "TASK")
 
 	for _, name := range []string{"docs/ja/requirements/technology.md", "docs/ja/requirements/glossary.md"} {
-		if page := readFile(t, root, name); strings.Contains(page, "PC-") || strings.Contains(page, "{{") {
-			t.Errorf("%s holds an ID or a value to fill:\n%s", name, page)
+		page := readFile(t, root, name)
+		if ids := idsIn(page, "PC"); len(ids) > 0 || strings.Contains(page, "{{") {
+			t.Errorf("%s holds the IDs %q or a value to fill:\n%s", name, ids, page)
 		}
 	}
+}
+
+// The no-ID test finds an ID of the prefix anywhere in a page: in a heading,
+// in the text, in a code span, and in a code block.
+func TestTheNoIDTestFindsEveryIDOfThePrefix(t *testing.T) {
+	for _, page := range []string{
+		"### `PC-TASK-001` 見出し\n",
+		"本文の PC-TASK-001 への参照\n",
+		"子の `PC-TASK-001.1`\n",
+		"```\nPC-X1-123\n```\n",
+	} {
+		if ids := idsIn(page, "PC"); len(ids) == 0 {
+			t.Errorf("got no ID in %q", page)
+		}
+	}
+}
+
+// idsIn returns every text of the page that has the form of an ID of the
+// prefix, also inside a code block.
+func idsIn(page, prefix string) []string {
+	source := []byte(page)
+	var ids []string
+	for _, ref := range requirement.NewIDForm(prefix).References(source, 0, len(source)) {
+		ids = append(ids, page[ref[0]:ref[1]])
+	}
+	return ids
 }
 
 // CTR-TPL-001: the entry page links to the overview, the technology page,
