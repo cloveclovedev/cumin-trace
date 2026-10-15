@@ -19,6 +19,9 @@ type File struct {
 	Source string
 	// Mode is the permission of a new file.
 	Mode fs.FileMode
+	// NeedsVersion says that the text names the release version of the
+	// binary. init writes the file only when the binary has one.
+	NeedsVersion bool
 }
 
 // Files returns the files in the order that init writes them
@@ -55,6 +58,9 @@ func Files(area string) []File {
 		File{Target: RenderScript, Source: RenderScript, Mode: 0o755},
 		File{Target: "tools/plantuml/Dockerfile", Source: "tools/plantuml/Dockerfile", Mode: 0o644},
 	)
+	// The workflow that runs the format check on pull requests, with the
+	// release binary of this version (CTR-CHK-005).
+	files = append(files, File{Target: CheckWorkflow, Source: "workflows/cumin-trace-check.yml", Mode: 0o644, NeedsVersion: true})
 	return files
 }
 
@@ -63,6 +69,10 @@ const SkillDir = ".claude/skills/cumin-trace-docs"
 
 // RenderScript is the script that renders the diagrams to SVG (CTR-TPL-006).
 const RenderScript = "scripts/render-diagrams.sh"
+
+// CheckWorkflow is the workflow that runs the format check on pull requests
+// (CTR-CHK-005).
+const CheckWorkflow = ".github/workflows/cumin-trace-check.yml"
 
 // SkillTemplates names the templates of the skill, one for each kind of
 // document, in the order that init writes them. The seven kinds of
@@ -144,4 +154,10 @@ func WrittenLine(target string) string {
 // SkippedLine returns the line that init prints for a file that exists.
 func SkippedLine(target string) string {
 	return "skipped " + target + ": already exists"
+}
+
+// NoVersionLine returns the line that init prints for a file that names the
+// release version, when the binary has no release version.
+func NoVersionLine(target string) string {
+	return "skipped " + target + ": this cumin-trace has no version; use a release binary"
 }

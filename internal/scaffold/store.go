@@ -40,3 +40,12 @@ func create(path string, content []byte, mode fs.FileMode) (bool, error) {
 	}
 	return true, nil
 }
+
+// exists reports whether a file or a directory is at path.
+func exists(path string) (bool, error) {
+	_, err := os.Lstat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	return err == nil, err
+}
