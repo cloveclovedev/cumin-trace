@@ -10,11 +10,19 @@ import (
 	"github.com/cloveclovedev/cumin-trace/internal/check"
 )
 
-// runInit runs init in the directory and returns the output.
+// runInit runs init in the directory with the binary of a release, and
+// returns the output.
 func runInit(t *testing.T, root, prefix, area string) string {
 	t.Helper()
+	return runInitWithVersion(t, root, prefix, area, "v0.1.0")
+}
+
+// runInitWithVersion runs init in the directory with the binary of the
+// version, and returns the output.
+func runInitWithVersion(t *testing.T, root, prefix, area, version string) string {
+	t.Helper()
 	var stdout bytes.Buffer
-	if err := Run(root, prefix, area, "", &stdout); err != nil {
+	if err := Run(root, prefix, area, version, &stdout); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	return stdout.String()
@@ -31,8 +39,8 @@ func readFile(t *testing.T, root, name string) string {
 	return string(content)
 }
 
-// skillLines is the output of init for the files of the skill and the
-// script of the diagrams, which come last in every run.
+// skillLines is the output of init for the files of the skill, the script
+// of the diagrams, and the workflow, which come last in every run.
 const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/entry.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/overview.md\n" +
@@ -44,7 +52,8 @@ const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/design-index.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/design-detail.md\n" +
 	"written scripts/render-diagrams.sh\n" +
-	"written tools/plantuml/Dockerfile\n"
+	"written tools/plantuml/Dockerfile\n" +
+	"written .github/workflows/cumin-trace-check.yml\n"
 
 // checkPasses runs the format check and fails the test on any error.
 func checkPasses(t *testing.T, root string) {

@@ -73,7 +73,7 @@ jobs:
 
 ## プロダクトの check の workflow
 
-`init` が書く `.github/workflows/cumin-trace-check.yml` である (#38)。`{{version}}` は、`init` を実行したバイナリの版になる。
+`init` が書く `.github/workflows/cumin-trace-check.yml` である。埋め込みは `templates/workflows/cumin-trace-check.yml` で、文は下と同じである。`{{version}}` は、`init` を実行したバイナリの版になる。
 
 ```yaml
 name: cumin-trace check
@@ -127,5 +127,5 @@ jobs:
 
 未確認 (自分の推論):
 
-- `GITHUB_TOKEN` で、別の公開リポジトリのリリースを `gh release download` できること。公開リポジトリのリリースは誰でも読めるので、できると考える。#38 の demo で確かめる。
+- `GITHUB_TOKEN` で、別の公開リポジトリのリリースを `gh release download` できること。公開リポジトリのリリースは誰でも読めるので、できると考える。最初のリリースのあとの demo で確かめる。
 - ubuntu のランナーでの `sha256sum` の動き。手元では通った (上)。最初のリリースのあとに、ランナーで確かめる。

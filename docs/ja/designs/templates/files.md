@@ -39,7 +39,7 @@
 | `design-detail.md` | 設計文書の細部 | skill だけ |
 
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。書く先のパスは、`internal/scaffold/domain.go` の表だけが持つ。
-- 1 から 14 はある。15 は #38 で足す。足すまでは、一覧にその行がない。
+- 15 は、版を持つバイナリのときだけ書く ([リリースと workflow](release.md))。`internal/scaffold/domain.go` の表では、`NeedsVersion` で示す。
 
 ## カテゴリの図
 
