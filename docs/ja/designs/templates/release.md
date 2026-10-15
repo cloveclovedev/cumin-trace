@@ -4,7 +4,7 @@
 
 ## このリポジトリのリリース
 
-Maintainer が、次の全文を `.github/workflows/release.yml` として足す。Agent は `.github/workflows/` を書けないためである。
+`.github/workflows/release.yml` の全文は次のとおりである。Agent は `.github/workflows/` を書けないので、Maintainer がこのファイルを書き換える。
 
 ```yaml
 name: release
@@ -92,7 +92,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # The steps need no git credentials. Keep the token out of .git/config.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Download cumin-trace
         shell: bash
         env:
@@ -109,6 +112,7 @@ jobs:
         run: '"$RUNNER_TEMP/cumin-trace/cumin-trace-linux-amd64" check'
 ```
 
+- checkout は `persist-credentials: false` にする。どの step も git の認証情報を使わない。`gh` は step の `GH_TOKEN` で認証するので、トークンを `.git/config` に残さない。
 - `checksums.txt` には4つのバイナリが並ぶので、取ったバイナリの行だけを `sha256sum --check` に渡す。行がなければ `grep` が失敗し、step が失敗する。`shell: bash` で、GitHub は `bash --noprofile --norc -eo pipefail {0}` を実行するので、パイプの中の失敗も step の失敗になる。
 - 版を上げるときは、新しい版の `cumin-trace` で workflow を消してから `init` を実行するか、`VERSION` の行を書き換える。
 
@@ -127,5 +131,5 @@ jobs:
 
 未確認 (自分の推論):
 
-- `GITHUB_TOKEN` で、別の公開リポジトリのリリースを `gh release download` できること。公開リポジトリのリリースは誰でも読めるので、できると考える。最初のリリースのあとの demo で確かめる。
-- ubuntu のランナーでの `sha256sum` の動き。手元では通った (上)。最初のリリースのあとに、ランナーで確かめる。
+- `GITHUB_TOKEN` で、別の公開リポジトリのリリースを `gh release download` できること。公開リポジトリのリリースは誰でも読めるので、できると考える。
+- ubuntu のランナーでの `sha256sum` の動き。手元では通った (上)。

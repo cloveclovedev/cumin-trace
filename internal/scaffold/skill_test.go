@@ -77,6 +77,9 @@ func TestTheSkillGivesEachInstruction(t *testing.T) {
 		"Give a new requirement the sequence number after the largest one of its area. Count the numbers of deprecated requirements too.",
 		"Run `cumin-trace check` at the top of the repository.",
 		"Fix every error that the check prints.",
+		"Write the page to `<requirements_dir>/<area in lower case>/index.md`.",
+		"Replace the area of the template with the new area, in the heading and in every ID.",
+		"Draw the diagram of the area as `overview.puml` in the same directory. Render it to `overview.svg` in that directory.",
 	} {
 		if !strings.Contains(skill, instruction) {
 			t.Errorf("SKILL.md does not hold the instruction %q", instruction)
