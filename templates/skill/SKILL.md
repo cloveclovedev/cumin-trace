@@ -37,9 +37,10 @@ The templates are in the directory `templates/` next to this file.
 - For a new area, follow these steps:
   1. Decide the area with the Maintainer.
   2. Add the area to `areas` in `.cumin-trace.toml`.
-  3. Write the page to `<requirements_dir>/<area in lower case>/index.md`. For the area `TASK`, the page is `task/index.md`.
-  4. Replace the area of the template with the new area, in the heading and in every ID.
-  5. Draw the diagram of the area as `overview.puml` in the same directory. Render it to `overview.svg` in that directory.
+  3. Add a row for the new area to the table of areas on the entry page, `<requirements_dir>/index.md`.
+  4. Write the page to `<requirements_dir>/<area in lower case>/index.md`. For the area `TASK`, the page is `task/index.md`.
+  5. Replace the area of the template with the new area in every ID. Rewrite the heading as the comment of the template says.
+  6. Draw the diagram of the area as `overview.puml` in the same directory. Render it to `overview.svg` in that directory.
 
 ## While you write
 

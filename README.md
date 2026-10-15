@@ -40,7 +40,7 @@ cumin-trace init <prefix> [<area>]
 
 Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every page except the area page and its diagram. The skill still holds all nine templates. Its area template holds `<AREA>` in place of the area.
 
-`init` prints one line for each file: `written <path>`, or `skipped <path>: already exists`. A binary without a release version (`v<number>.<number>.<number>`), writes no workflow. Such a binary has a pseudo-version, a `+dirty` build, or `(devel)`. It prints `skipped .github/workflows/cumin-trace-check.yml: this cumin-trace has no version; use a release binary`. It never changes a file that exists. The exit code is 0 when every file is written or skipped. The exit code is 2 when an argument is wrong or a file cannot be written.
+`init` prints one line for each file: `written <path>`, or `skipped <path>: already exists`. A binary without a release version (`v<number>.<number>.<number>`) writes no workflow. Such a binary has a pseudo-version, a `+dirty` build, or `(devel)`. It prints `skipped .github/workflows/cumin-trace-check.yml: this cumin-trace has no version; use a release binary`. It never changes a file that exists. The exit code is 0 when every file is written or skipped. The exit code is 2 when an argument is wrong or a file cannot be written.
 
 `scripts/render-diagrams.sh` has three uses. It needs Docker.
 

@@ -78,7 +78,8 @@ func TestTheSkillGivesEachInstruction(t *testing.T) {
 		"Run `cumin-trace check` at the top of the repository.",
 		"Fix every error that the check prints.",
 		"Write the page to `<requirements_dir>/<area in lower case>/index.md`.",
-		"Replace the area of the template with the new area, in the heading and in every ID.",
+		"Add a row for the new area to the table of areas on the entry page, `<requirements_dir>/index.md`.",
+		"Replace the area of the template with the new area in every ID.",
 		"Draw the diagram of the area as `overview.puml` in the same directory. Render it to `overview.svg` in that directory.",
 	} {
 		if !strings.Contains(skill, instruction) {
