@@ -12,6 +12,7 @@ import (
 // the file exists, so that it never overwrites a file (CTR-TPL-001). It
 // returns false with no error when the file exists. When the write or the
 // close fails, it removes the file, so that the next run writes it again.
+// The new file gets the mode as given, whatever the umask is.
 func create(path string, content []byte, mode fs.FileMode) (bool, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return false, err
@@ -21,6 +22,11 @@ func create(path string, content []byte, mode fs.FileMode) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
+		return false, err
+	}
+	if err := file.Chmod(mode); err != nil {
+		file.Close()
+		os.Remove(path)
 		return false, err
 	}
 	if _, err := file.Write(content); err != nil {

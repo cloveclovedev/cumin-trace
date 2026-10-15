@@ -31,8 +31,8 @@ func readFile(t *testing.T, root, name string) string {
 	return string(content)
 }
 
-// skillLines is the output of init for the files of the skill, which come
-// last in every run.
+// skillLines is the output of init for the files of the skill and the
+// script of the diagrams, which come last in every run.
 const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/entry.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/overview.md\n" +
@@ -42,7 +42,9 @@ const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/area.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/architecture.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/design-index.md\n" +
-	"written .claude/skills/cumin-trace-docs/templates/design-detail.md\n"
+	"written .claude/skills/cumin-trace-docs/templates/design-detail.md\n" +
+	"written scripts/render-diagrams.sh\n" +
+	"written tools/plantuml/Dockerfile\n"
 
 // checkPasses runs the format check and fails the test on any error.
 func checkPasses(t *testing.T, root string) {

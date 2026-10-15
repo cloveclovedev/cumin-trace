@@ -7,5 +7,5 @@ import "embed"
 
 // Files is the embedded text. A path is relative to this directory.
 //
-//go:embed settings.toml docs skill
+//go:embed settings.toml docs skill scripts tools
 var Files embed.FS
