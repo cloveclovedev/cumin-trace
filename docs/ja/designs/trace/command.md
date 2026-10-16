@@ -147,7 +147,7 @@ token の扱い (`CTR-TRC-007`):
 | `deprecated` | 真偽値 | 廃止した要件か |
 | `progress` | 文字列か `null` | `not_filed`、`in_progress`、`done` (`CTR-TRC-004`)。子を持つ要件と、廃止した要件は `null` |
 | `children` | オブジェクトか `null` | 子を持つ要件では、廃止していない子の進捗ごとの数と、その合計 (`total`) (`CTR-TRC-005`)。子を持たない要件と、廃止した要件は `null` |
-| `requirement_issues` | 配列 | 本文にこのIDを書いた要求Issue。番号の順 |
+| `requirement_issues` | 配列 | `## Requirements` の節の項目の先頭にこのIDを書いた要求Issue ([IDの見つけ方](rules.md#idの見つけ方))。番号の順 |
 | `implementation_issues` | オブジェクト | `requirement_issues` のすべての sub-issue の、閉じた数 (`closed`) と全体の数 (`total`)。同じ sub-issue は1回だけ数える |
 
 `requirement_issues` の1つ:
@@ -176,7 +176,7 @@ token の扱い (`CTR-TRC-007`):
 |---|---|---|
 | `kind` | 文字列 | `unknown_id` (要件文書にないID) か `open_issue_for_deprecated` (廃止した要件に対応する、開いた要求Issue) |
 | `issue` | 数 | 要求Issueの番号 |
-| `id` | 文字列 | 本文に書いてあったID |
+| `id` | 文字列 | `## Requirements` の節の項目の先頭に書いてあったID ([IDの見つけ方](rules.md#idの見つけ方)) |
 
 ## 並べ方
 

@@ -4,12 +4,12 @@ skinparam shadowing false
 skinparam componentStyle rectangle
 
 package "cmd/cumin-trace" {
-  [main.go\nchoose the command,\nread the environment,\nset the exit code] as main
+  [main.go\nchoose the command,\nread the environment,\nrun git remote get-url origin,\nset the exit code] as main
 }
 
 package "internal/trace" #LightYellow {
   [service.go\nrun the trace,\nwrite the JSON] as service
-  [domain.go\nfind IDs, progress,\ndiscrepancies (pure)] as rules
+  [domain.go\nrepository from origin,\nprogress, discrepancies (pure)] as rules
 }
 
 package "internal/platform" #LightYellow {
