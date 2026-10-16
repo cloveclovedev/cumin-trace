@@ -1,0 +1,47 @@
+@startuml trace-sequence
+title Sequence of cumin-trace trace
+skinparam shadowing false
+hide footbox
+
+participant "cmd/cumin-trace\nmain.go" as main
+participant "internal/trace\nservice.go" as service
+participant "internal/check\ndomain.go" as check
+participant "internal/platform\ngithub.go" as github
+participant "GitHub\nGraphQL API" as api
+participant "internal/trace\ndomain.go" as rules
+
+main -> service : Run(root, env, stdout, stderr)
+service -> service : read .cumin-trace.toml\nand the requirement documents
+service -> check : Find (the format check)
+check --> service : errors
+
+alt format errors
+  service -> service : print the errors to stderr
+  service --> main : number of errors
+  main -> main : exit 1
+  note right of main : no GitHub call, no JSON
+else no format error
+  service -> service : check the repository and the token
+  service -> github : RequirementIssues(owner, name, label)
+  loop pages of 100
+    github -> api : query requirementIssues
+    api --> github : issues, sub-issues
+  end
+  opt more than 100 sub-issues
+    github -> api : query moreSubIssues
+  end
+  opt closed implementation issues
+    github -> api : query closers (100 IDs each)
+  end
+  github --> service : requirement issues (core model)
+  service -> rules : link IDs, progress, discrepancies
+  rules --> service : result
+  service -> service : write the JSON to stdout
+  service --> main : 0 errors
+  main -> main : exit 0
+end
+
+note over service, github
+  settings, files, repository, token, or GitHub fail: exit 2
+end note
+@enduml
