@@ -63,13 +63,31 @@ written .github/workflows/cumin-trace-check.yml
 | 2 | 接頭辞、またはカテゴリが決まりに合わない | `cumin-trace: invalid prefix "<値>": want upper-case letters and digits` (カテゴリは `invalid area`) |
 | 2 | ファイルかディレクトリを作れない | `cumin-trace: <OS のエラー>`。そのファイルで止まり、それまでに書いたファイルは残す。作ったあとで書き込みか close に失敗したファイルは消すので、次の実行で書き直せる |
 
-`check` の使い方の行は、`cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>]` に変える。コマンドがないとき、知らないコマンドのときに出す。
+全体の使い方の行は、`cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace version` である。コマンドがないとき、知らないコマンドのとき、`check` と `version` の引数の数が合わないときに、標準エラー出力に出し、終了コード 2 で終わる (`CTR-CMD-003`)。どの場合も、ファイルを書かない。
+
+## `version`
+
+`cumin-trace version` は、バイナリのバージョンを1行で標準出力に出す (`CTR-CMD-002`)。値は、`init` が使う値と同じである。ビルドが `main.version` に入れた値、なければ `runtime/debug.ReadBuildInfo` の `Main.Version` である。
+
+- リリースのバージョンでない値 (`(devel)`、疑似バージョン、`+dirty` のついた値) も、そのまま出す。
+- 値が空なら、`(devel)` を出す。
+
+| コード | 場合 | 出力 |
+|---|---|---|
+| 0 | 引数が `version` だけ | 標準出力に `<バージョン>` の1行 |
+| 2 | `version` のあとに引数がある | 標準エラー出力に、全体の使い方の行 |
+
+例 (`-ldflags "-X main.version=v0.1.0"` でビルドしたバイナリ):
+
+```text
+v0.1.0
+```
 
 ## パッケージとファイル
 
 | ファイル | 役割 |
 |---|---|
-| `cmd/cumin-trace/main.go` | 引数からコマンドを選ぶ。`var version string` を持ち、空なら `runtime/debug.ReadBuildInfo` の `Main.Version` を使う。結果を終了コードにする |
+| `cmd/cumin-trace/main.go` | 引数からコマンドを選ぶ。`var version string` を持ち、空なら `runtime/debug.ReadBuildInfo` の `Main.Version` を使う。`version` のコマンドは、この値を出す。結果を終了コードにする |
 | `internal/scaffold/service.go` | 入口 `scaffold.Run(root, prefix, area, version string, stdout io.Writer) error`。`area` が空なら、カテゴリがない。値を確かめ、ファイルごとに埋め込みの文を読み、置き換え、書き、1行を出す |
 | `internal/scaffold/domain.go` | ファイルの一覧、置き換える値、バージョンの決まり、出力の行。純粋な関数で、I/O を持たない。接頭辞とカテゴリの決まり (`core.IsName`) と設定ファイルのパスは、`internal/core` のものを使う |
 | `internal/scaffold/store.go` | `os.OpenFile` の `O_CREATE\|O_EXCL` でファイルを作る。作ったファイルは `File.Chmod` で一覧の権限にし、umask によらない。ないディレクトリは `os.MkdirAll` で作る |

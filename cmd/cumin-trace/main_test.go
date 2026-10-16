@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -137,6 +138,73 @@ func TestInitExitsWithTwoOnWrongArguments(t *testing.T) {
 			}
 			if code != 2 || stdout.String() != "" || stderr.String() != test.wantStderr || len(entries) != 0 {
 				t.Errorf("got exit code %d, stdout %q, stderr %q, %d files; want 2, stderr %q, and no file", code, stdout.String(), stderr.String(), len(entries), test.wantStderr)
+			}
+		})
+	}
+}
+
+// setVersion sets the version that the build sets, for one test.
+func setVersion(t *testing.T, v string) {
+	t.Helper()
+	saved := version
+	version = v
+	t.Cleanup(func() { version = saved })
+}
+
+// CTR-CMD-002: version prints the version that the build set, and exits with
+// 0.
+func TestVersionPrintsTheVersionThatTheBuildSet(t *testing.T) {
+	setVersion(t, "v1.2.3")
+	var stdout, stderr bytes.Buffer
+
+	code := run([]string{"version"}, t.TempDir(), &stdout, &stderr)
+
+	if code != 0 || stdout.String() != "v1.2.3\n" || stderr.String() != "" {
+		t.Errorf("got exit code %d, stdout %q, stderr %q; want 0 and %q", code, stdout.String(), stderr.String(), "v1.2.3\n")
+	}
+}
+
+// CTR-CMD-002: a build without a version still prints one line, and exits
+// with 0. A test binary has no version that the build set.
+func TestVersionPrintsOneLineWithoutAVersion(t *testing.T) {
+	setVersion(t, "")
+	var stdout, stderr bytes.Buffer
+
+	code := run([]string{"version"}, t.TempDir(), &stdout, &stderr)
+
+	line, rest, found := strings.Cut(stdout.String(), "\n")
+	if code != 0 || line == "" || !found || rest != "" || stderr.String() != "" {
+		t.Errorf("got exit code %d, stdout %q, stderr %q; want 0 and one line", code, stdout.String(), stderr.String())
+	}
+}
+
+// CTR-CMD-003: with no command, an unknown command, or a wrong number of
+// arguments, the usage line is on stderr, no file is written, and the exit
+// code is not 0.
+func TestWrongArgumentsPrintTheUsageAndWriteNoFile(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"no command", nil},
+		{"an unknown command", []string{"trace"}},
+		{"an extra argument to check", []string{"check", "docs"}},
+		{"an extra argument to version", []string{"version", "now"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			var stdout, stderr bytes.Buffer
+
+			code := run(test.args, root, &stdout, &stderr)
+
+			entries, err := os.ReadDir(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantStderr := usage + "\n"
+			if code == 0 || stdout.String() != "" || stderr.String() != wantStderr || len(entries) != 0 {
+				t.Errorf("got exit code %d, stdout %q, stderr %q, %d files; want not 0, stderr %q, and no file", code, stdout.String(), stderr.String(), len(entries), wantStderr)
 			}
 		})
 	}

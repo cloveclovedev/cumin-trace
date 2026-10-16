@@ -16,6 +16,9 @@
   - `CTR-TPL-006` 図の描画
 - [書式検査](../../requirements/check/index.md)
   - `CTR-CHK-005` Pull Request の check
+- [コマンド](../../requirements/command/index.md)
+  - `CTR-CMD-002` バージョンの表示 ([コマンド](command.md))
+  - `CTR-CMD-003` 引数の誤り ([コマンド](command.md))
 
 ## 全体像
 
