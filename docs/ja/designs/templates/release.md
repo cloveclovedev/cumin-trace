@@ -73,7 +73,7 @@ jobs:
 
 ## プロダクトの check の workflow
 
-`init` が書く `.github/workflows/cumin-trace-check.yml` である。埋め込みは `templates/workflows/cumin-trace-check.yml` で、文は下と同じである。`{{version}}` は、`init` を実行したバイナリの版になる。
+`init` が書く `.github/workflows/cumin-trace-check.yml` である。埋め込みは `templates/workflows/cumin-trace-check.yml` で、文は下と同じである。`{{version}}` は、`init` を実行したバイナリのバージョンになる。
 
 ```yaml
 name: cumin-trace check
@@ -114,7 +114,7 @@ jobs:
 
 - checkout は `persist-credentials: false` にする。どの step も git の認証情報を使わない。`gh` は step の `GH_TOKEN` で認証するので、トークンを `.git/config` に残さない。
 - `checksums.txt` には4つのバイナリが並ぶので、取ったバイナリの行だけを `sha256sum --check` に渡す。行がなければ `grep` が失敗し、step が失敗する。`shell: bash` で、GitHub は `bash --noprofile --norc -eo pipefail {0}` を実行するので、パイプの中の失敗も step の失敗になる。
-- 版を上げるときは、新しい版の `cumin-trace` で workflow を消してから `init` を実行するか、`VERSION` の行を書き換える。
+- バージョンを上げるときは、新しいバージョンの `cumin-trace` で workflow を消してから `init` を実行するか、`VERSION` の行を書き換える。
 
 ## 確かめたこと
 

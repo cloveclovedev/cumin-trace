@@ -101,7 +101,7 @@ P-[A-Z0-9]+-[0-9]{3}(\.[1-9][0-9]*)?
 
 ## 確かめたこと
 
-- 版: `github.com/yuin/goldmark` v1.8.6 を、拡張なしで使う。
+- バージョン: `github.com/yuin/goldmark` v1.8.6 を、拡張なしで使う。
 - 公式ページ: <https://pkg.go.dev/github.com/yuin/goldmark> (v1.8.6、2026-09-03 公開) と <https://pkg.go.dev/github.com/yuin/goldmark/ast>。`Parser().Parse(text.NewReader(source))`、`ast.Walk`、`Heading.Level`、`FencedCodeBlock`、`CodeBlock`、`HTMLBlock`、`CodeSpan`、`ListItem`、`List.IsOrdered`、`Text.Segment`、`Lines()` を読んだ。CommonMark 0.31.2 に準拠し、標準ライブラリ以外に依存せず (`go list -deps`)、MIT ライセンスである。
 - 公式ページ: <https://pkg.go.dev/github.com/yuin/goldmark/v2> (v2.1.6、2026-09-27 公開)。v1 は、バグとセキュリティの修正を受け続ける。修正の対象は、最新のメジャーバージョンと、その1つ前までである。v2 では `Parse` の引数、`Text.Segment`、`Lines()` が変わり、`CodeSpan` が子を持たない。
 - Go 1.27.2 の `go list std` に、Markdown のパーサはない。

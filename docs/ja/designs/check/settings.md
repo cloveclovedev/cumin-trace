@@ -32,9 +32,9 @@ requirements_dir = "docs/ja/requirements"
 
 ## 確かめたこと
 
-- 版: `github.com/BurntSushi/toml` v1.6.0。cumin-works の `go.mod` と同じ版である。
+- バージョン: `github.com/BurntSushi/toml` v1.6.0。cumin-works の `go.mod` と同じバージョンである。
 - 公式ページ: <https://pkg.go.dev/github.com/BurntSushi/toml> (v1.6.0、2025-12-18 公開)。`Decode`、`MetaData.Undecoded`、`MetaData.IsDefined`、`ParseError` の定義を読んだ。
-- 対応する TOML の版は、README では v1.1.0、概要では v1.0.0 と書いてある。上の3つのキーは、どちらの版でも同じ書き方である。
+- 対応する TOML のバージョンは、README では v1.1.0、概要では v1.0.0 と書いてある。上の3つのキーは、どちらのバージョンでも同じ書き方である。
 - 標準ライブラリ以外に依存せず (`go list -deps`)、MIT ライセンスである。Go 1.27.2 の `go list std` に、TOML のパーサはない。
 - 手元の実行で: 知らないキーは `MetaData.Undecoded`、構文エラーの行番号は `ParseError.Position.Line` で取れる。
 - 未確認: `github.com/pelletier/go-toml/v2` の公式ページ。cumin-works と同じライブラリで足りるので、比べていない。

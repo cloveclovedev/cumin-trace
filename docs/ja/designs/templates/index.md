@@ -90,23 +90,23 @@
 `scripts/render-diagrams.sh` と `tools/plantuml/Dockerfile` を書く。引数なし、`<in.puml> <out.svg>`、`--check <base>` の3つの使い方と、Docker のイメージ (`plantuml/plantuml:1.2025.4` に日本語のフォント) を cumin-works と同じにする。
 
 - 理由: `CTR-TPL-006` が、cumin-works と同じ使い方を求める。同じイメージなら、どちらで描画しても同じ SVG になる。
-- 採らなかった案: Docker を使わずに PlantUML の jar を動かす。Java の版で SVG が変わりうる。
+- 採らなかった案: Docker を使わずに PlantUML の jar を動かす。Java のバージョンで SVG が変わりうる。
 - 細部: [ファイルと埋め込み](files.md)
 
-### check の workflow は、固定した版のリリースのバイナリを使う
+### check の workflow は、固定したバージョンのリリースのバイナリを使う
 
-`.github/workflows/cumin-trace-check.yml` は、このリポジトリの GitHub のリリースから、決まった版の Linux (amd64) のバイナリと `checksums.txt` を `gh release download` で取り、チェックサムを確かめてから `check` を実行する。Go は要らない。版は、`init` を実行したバイナリの版である。版を持たないバイナリは、workflow を書かずに `skipped` を出す。
+`.github/workflows/cumin-trace-check.yml` は、このリポジトリの GitHub のリリースから、決まったバージョンの Linux (amd64) のバイナリと `checksums.txt` を `gh release download` で取り、チェックサムを確かめてから `check` を実行する。Go は要らない。バージョンは、`init` を実行したバイナリのバージョンである。バージョンを持たないバイナリは、workflow を書かずに `skipped` を出す。
 
-- 理由: `gh` は GitHub のランナーに最初から入っていて、`GH_TOKEN` だけで動く。版を固定すると、cumin-trace の新しいリリースで check の結果が黙って変わらない。
+- 理由: `gh` は GitHub のランナーに最初から入っていて、`GH_TOKEN` だけで動く。バージョンを固定すると、cumin-trace の新しいリリースで check の結果が黙って変わらない。
 - 採らなかった案: workflow で `go install ...@<version>`。実行のたびにソースを取ってビルドする。
 - 採らなかった案: `curl` でリリースの URL から取る。URL の形を自分で組み立てることになり、`gh` で足りる。
-- 採らなかった案: 版のないバイナリは `latest` を書く。新しいリリースで結果が変わり、版を固定する意味がなくなる。
+- 採らなかった案: バージョンのないバイナリは `latest` を書く。新しいリリースで結果が変わり、バージョンを固定する意味がなくなる。
 - 細部: [リリースと workflow](release.md)
 
-### このリポジトリは、版のタグでリリースのバイナリを公開する
+### このリポジトリは、バージョンのタグでリリースのバイナリを公開する
 
-`v<数>.<数>.<数>` の形のタグ (プレリリースを除く) を push すると、workflow がテストし、4つの OS と CPU の組のバイナリをビルドし、`checksums.txt` を添えて GitHub のリリースにする。バイナリは、`-ldflags "-X main.version=<タグ>"` で自分の版を知る。この workflow は Agent が書けない場所に置くので、Maintainer が [リリースと workflow](release.md) の全文を保守する。
+`v<数>.<数>.<数>` の形のタグ (プレリリースを除く) を push すると、workflow がテストし、4つの OS と CPU の組のバイナリをビルドし、`checksums.txt` を添えて GitHub のリリースにする。バイナリは、`-ldflags "-X main.version=<タグ>"` で自分のバージョンを知る。この workflow は Agent が書けない場所に置くので、Maintainer が [リリースと workflow](release.md) の全文を保守する。
 
 - 理由: check の workflow が Go なしで動くには、ビルド済みのバイナリが要る。
-- 採らなかった案: Go 1.24 からの、VCS のタグによる版の自動の記録だけに頼る。checkout の取り方で、タグが見えないことがある。`go install ...@<version>` で入れたバイナリのためにだけ、それも読む。
+- 採らなかった案: Go 1.24 からの、VCS のタグによるバージョンの自動の記録だけに頼る。checkout の取り方で、タグが見えないことがある。`go install ...@<version>` で入れたバイナリのためにだけ、それも読む。
 - 細部: [リリースと workflow](release.md)
