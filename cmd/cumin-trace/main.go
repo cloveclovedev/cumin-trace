@@ -12,7 +12,7 @@ import (
 	"github.com/cloveclovedev/cumin-trace/internal/scaffold"
 )
 
-const usage = "cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>]"
+const usage = "cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace version"
 
 // version is the version of the binary. A release build sets it with
 // -ldflags "-X main.version=<tag>".
@@ -29,6 +29,8 @@ func run(args []string, root string, stdout, stderr io.Writer) int {
 		return runCheck(root, stdout, stderr)
 	case len(args) > 0 && args[0] == "init":
 		return runInit(args[1:], root, stdout, stderr)
+	case len(args) == 1 && args[0] == "version":
+		return runVersion(stdout)
 	}
 	fmt.Fprintln(stderr, usage)
 	return 2
@@ -74,6 +76,17 @@ func runInit(args []string, root string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
 		return 2
 	}
+	return 0
+}
+
+// runVersion prints the version of the binary in one line and returns 0
+// (CTR-CMD-002). A build without a version prints "(devel)".
+func runVersion(stdout io.Writer) int {
+	v := binaryVersion()
+	if v == "" {
+		v = "(devel)"
+	}
+	fmt.Fprintln(stdout, v)
 	return 0
 }
 

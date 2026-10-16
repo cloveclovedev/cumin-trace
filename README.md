@@ -103,6 +103,22 @@ The check reads only the settings file and the requirement documents. It needs n
 
 The check finds the ten errors of `CTR-CHK-001`. The design is in [docs/ja/designs/check/index.md](docs/ja/designs/check/index.md).
 
+## Print the version
+
+`cumin-trace version` prints the version of the binary in one line and exits with 0.
+
+```sh
+cumin-trace version
+```
+
+A release binary prints its tag, for example `v0.1.0`. A binary that `go build` or `go install` built from a clone prints the version that Go records, for example a pseudo-version. A binary without any version prints `(devel)`.
+
+Wrong arguments print the usage line on the standard error and exit with 2:
+
+```text
+cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace version
+```
+
 ## Check the documents of this repository
 
 This repository holds its own settings file, [.cumin-trace.toml](.cumin-trace.toml): the prefix `CTR` and seven areas. Run the check at the top of a clone.
