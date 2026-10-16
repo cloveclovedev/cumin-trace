@@ -22,6 +22,7 @@ IDの接頭辞は `CTR` である。カテゴリごとにディレクトリを�
 | `TRC` | [GitHub との対応づけ](trace/index.md) | 要件と要求Issue、実装Issueの結び付きと、進捗の決め方 |
 | `SITE` | [サイト](site/index.md) | 要件文書をサイトとして表示する |
 | `DASH` | [ダッシュボード](dashboard/index.md) | 要件の全体像と進捗を1ページで見る |
+| `CMD` | [コマンド](command/index.md) | コマンドの一覧と、すべてのコマンドに共通する約束 |
 
 ## 受け入れのシナリオ
 
