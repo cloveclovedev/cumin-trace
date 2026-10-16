@@ -17,6 +17,7 @@ cumin-trace は、次のコマンドを持つ。
 | `init <接頭辞> [<カテゴリ>]` | テンプレート、skill、図の描画のスクリプト、Pull Request の check の workflow を生成する | CTR-TPL-001、CTR-TPL-005、CTR-TPL-006、CTR-CHK-005 |
 | `check` | 書式検査をする | CTR-CHK-001 |
 | `export` | 要件を JSON で出力する | CTR-EXP-001 |
+| `trace` | 要件と要求Issueを対応づけ、結果を JSON で出力する | CTR-TRC-008 |
 | `version` | バージョンを表示する | CTR-CMD-002 |
 
 - 検証: `inspection` 使い方の行に、この表のコマンドがすべて出る
@@ -39,5 +40,5 @@ cumin-trace は、次のコマンドを持つ。
 
 ## 未決事項
 
-- 対応づけとサイトで、cumin-trace のコマンドが増えるかどうか。それぞれのカテゴリで決め、増えたら `CTR-CMD-001` の表に足す。
+- サイトで、cumin-trace のコマンドが増えるかどうか。サイトのカテゴリで決め、増えたら `CTR-CMD-001` の表に足す。
 - コマンドがどこで、いつ動くかの図。対応づけとサイトの形が決まってから描く。
