@@ -102,4 +102,4 @@ v0.1.0
 - `os.OpenFile` の権限は umask を引く前の値で、`File.Chmod` は権限をその値にする: `go doc os.OpenFile`、`go doc os.File.Chmod` (Go 1.27.2)。
 - `-X importpath.name=value` は、初期値のない、または定数で初期化した文字列の変数に値を入れる: `go doc cmd/link` (Go 1.27.2)。
 - Go 1.24 から、`go build` は VCS のタグとコミットから、本体のモジュールのバージョンをバイナリに記録する。変更があれば `+dirty` を足す: <https://go.dev/doc/go1.24>。
-- 未確認: `go install ...@v0.1.0` で入れたバイナリの `Main.Version` が `v0.1.0` になること。
+- `go install github.com/cloveclovedev/cumin-trace/cmd/cumin-trace@v0.0.1` で入れたバイナリは、`go version -m` でモジュールのバージョンが `v0.0.1` になり、そのバイナリの `init` は `VERSION: v0.0.1` を書いた (Go 1.27.2、2026-10-16)。
