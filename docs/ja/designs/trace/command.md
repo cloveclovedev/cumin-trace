@@ -61,7 +61,7 @@ token の扱い (`CTR-TRC-007`):
 1. 設定を読む
 2. 要件文書を読み、書式検査 (`check.Find`) を適用する
 3. 書式のエラーがあれば、GitHub を呼ばずに終わる (`CTR-TRC-009`)
-4. リポジトリと token を確かめる
+4. リポジトリと token を確かめる。`requirement_label` と、設定または `GITHUB_REPOSITORY` のリポジトリが、上の決まりに合わなければ、`invalid requirement_label: want a non-empty string` か `invalid repository "<value>": want <owner>/<name>` のエラーにする
 5. GitHub を読み、対応づけて、JSON を標準出力に書く
 
 | コード | 場合 | 標準出力 | 標準エラー出力 |
@@ -108,12 +108,12 @@ token の扱い (`CTR-TRC-007`):
           ]
         }
       ],
-      "implementation_issues": {"closed": 1, "total": 3}
+      "implementation_issues": {"closed": 1, "total": 1}
     }
   ],
   "discrepancies": [
-    {"kind": "unknown_id", "issue": 31, "id": "PC-TASK-099"},
-    {"kind": "open_issue_for_deprecated", "issue": 18, "id": "PC-TASK-002"}
+    {"kind": "open_issue_for_deprecated", "issue": 18, "id": "PC-TASK-002"},
+    {"kind": "unknown_id", "issue": 31, "id": "PC-TASK-099"}
   ]
 }
 ```
