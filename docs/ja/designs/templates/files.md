@@ -39,7 +39,7 @@
 | `design-detail.md` | 設計文書の細部 | skill だけ |
 
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。書く先のパスは、`internal/scaffold/domain.go` の表だけが持つ。
-- 15 は、版を持つバイナリのときだけ書く ([リリースと workflow](release.md))。`internal/scaffold/domain.go` の表では、`NeedsVersion` で示す。
+- 15 は、バージョンを持つバイナリのときだけ書く ([リリースと workflow](release.md))。`internal/scaffold/domain.go` の表では、`NeedsVersion` で示す。
 
 ## カテゴリの図
 
@@ -59,7 +59,7 @@
 | `{{area_dir}}` | カテゴリの小文字 (`strings.ToLower`) | `task` |
 | `{{areas}}` | `areas` の配列。カテゴリがなければ空 | `["TASK"]`。カテゴリがなければ `[]` |
 | `{{area_rows}}` | インデックスの、カテゴリの表の行。カテゴリがなければ空の文字列 | `TASK` の1行 (略号と、`task/index.md` へのリンク) |
-| `{{version}}` | バイナリの版 | `v0.1.0` |
+| `{{version}}` | バイナリのバージョン | `v0.1.0` |
 
 カテゴリがないとき、`{{area}}` は `<AREA>` になる。これが文に現れるのは skill のテンプレート (12 の `area.md`) だけである。カテゴリがあるとき、skill のテンプレートは最初のカテゴリ (例 `TASK`) を持つ。どちらの場合も、skill は Agent に、カテゴリを決めてから、すべての ID のカテゴリを置き換えるように指示する。見出しは、テンプレートのコメントに従ってカテゴリの名前に書き換える。入口のページのカテゴリの表には、新しいカテゴリの行を足す。新しいカテゴリのページは `<requirements_dir>/<カテゴリの小文字>/index.md` に書き、同じディレクトリに `overview.puml` と `overview.svg` を描く。
 
@@ -88,13 +88,13 @@ areas = {{areas}}
 
 書式の文書は、プロダクトのリポジトリにないので、このリポジトリの main の書式の文書の URL で示す (カテゴリのテンプレートと同じ)。
 
-設計文書の入口 (`design-index.md`) は、`CTR-TPL-008` の4つの見出しを持つ。決めたことの記入例は、[テンプレートの生成の設計](index.md) と [書式検査の設計](../check/index.md) と同じ「理由」「採らなかった案」「細部」の行を持つ。細部 (`design-detail.md`) は、正確な値を書く「決まり」と、外部の API やライブラリを書く「確かめたこと」(版、公式ページ、手元の実行、未確認) の2つの節を持つ。[設定ファイル](../check/settings.md) が最初の例である。どちらも、書き換える場所をコメントで示し、差し込む値を持たない。
+設計文書の入口 (`design-index.md`) は、`CTR-TPL-008` の4つの見出しを持つ。決めたことの記入例は、[テンプレートの生成の設計](index.md) と [書式検査の設計](../check/index.md) と同じ「理由」「採らなかった案」「細部」の行を持つ。細部 (`design-detail.md`) は、正確な値を書く「決まり」と、外部の API やライブラリを書く「確かめたこと」(バージョン、公式ページ、手元の実行、未確認) の2つの節を持つ。[設定ファイル](../check/settings.md) が最初の例である。どちらも、書き換える場所をコメントで示し、差し込む値を持たない。
 
 ## 図のスクリプト
 
 `scripts/render-diagrams.sh` と `tools/plantuml/Dockerfile` は、cumin-works の同じ名前のファイルを写す。書いた時点の cumin-works の main のコミットを、スクリプトの先頭のコメントに書く。そのコメントは使い方の行 (2 から 6 行目) のあとに置く。スクリプトは、引数の数が違うとき、その5行を使い方として出す。
 
-- スクリプトのイメージ `cumin-plantuml:<版>` と、Dockerfile の `FROM plantuml/plantuml:<版>` は、同じ版を持つ。テストで確かめる。
+- スクリプトのイメージ `cumin-plantuml:<バージョン>` と、Dockerfile の `FROM plantuml/plantuml:<バージョン>` は、同じバージョンを持つ。テストで確かめる。
 - 引数の数が 0 でも 2 でもないとき、スクリプトは Docker を使う前に、使い方を標準エラー出力に出し、終了コード 2 で終わる。
 
 | 使い方 | 動き |

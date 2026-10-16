@@ -46,5 +46,6 @@ cumin-trace の文書で使う語の意味を決める。「使わない言い�
 | 語 | 意味 | 使わない言い方 | 英語 |
 |---|---|---|---|
 | 書式検査 | 要件文書が書式に沿っているかを確かめること。`cumin-trace check` | 検査、チェック、lint | format check |
+| バージョン | cumin-trace のリリースや、使うライブラリとツールを区別する名前。例: `v0.0.1`。英語版、日本語版のように、文書の言語を指す「版」は別の語である | 版 | version |
 | Maintainer | 要件文書と要求Issueを書く人 | メンテナ | Maintainer |
 | Agent | Maintainer と一緒に要件文書を書く AI | エージェント | Agent |

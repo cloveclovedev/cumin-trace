@@ -128,7 +128,7 @@ func TestTheDesignTemplatesHaveTheirPlaces(t *testing.T) {
 	if got := strings.Join(headings(detail), ","); got != "決まり,確かめたこと" {
 		t.Errorf("got level 2 headings %q of the design detail, want 決まり, 確かめたこと", got)
 	}
-	for _, place := range []string{"- 版: ", "- 公式ページ: ", "- 手元の実行: ", "- 未確認: "} {
+	for _, place := range []string{"- バージョン: ", "- 公式ページ: ", "- 手元の実行: ", "- 未確認: "} {
 		if !strings.Contains(detail, place) {
 			t.Errorf("the design detail has no %q:\n%s", place, detail)
 		}
