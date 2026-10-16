@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/cloveclovedev/cumin-trace/templates"
 )
 
 // CTR-CHK-005: after init with the binary of a release, the workflow runs on
@@ -33,6 +35,29 @@ func TestWritesTheWorkflowThatRunsTheCheckOnPullRequests(t *testing.T) {
 	}
 	if !strings.Contains(workflow, "GH_TOKEN: ${{ github.token }}") {
 		t.Errorf("the workflow lost the expression of the token:\n%s", workflow)
+	}
+}
+
+// CTR-CHK-005: the design document shows the same text of the workflow as
+// the embedded template.
+func TestTheDesignShowsTheTextOfTheEmbeddedWorkflow(t *testing.T) {
+	embedded, err := templates.Files.ReadFile("workflows/cumin-trace-check.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	design, err := os.ReadFile(filepath.Join("..", "..", "docs", "ja", "designs", "templates", "release.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, section, found := strings.Cut(string(design), "\n## プロダクトの check の workflow\n")
+	_, block, inBlock := strings.Cut(section, "\n```yaml\n")
+	shown, _, closed := strings.Cut(block, "\n```\n")
+	if !found || !inBlock || !closed {
+		t.Fatalf("release.md has no YAML block in the section of the check workflow")
+	}
+	if shown+"\n" != string(embedded) {
+		t.Errorf("release.md shows:\n%s\nthe embedded workflow is:\n%s", shown, embedded)
 	}
 }
 

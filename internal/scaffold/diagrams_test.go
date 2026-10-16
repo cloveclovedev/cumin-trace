@@ -14,6 +14,9 @@ import (
 // CTR-TPL-006: after init, the script of the diagrams has mode 0755 and the
 // Dockerfile of its image has mode 0644.
 func TestWritesTheScriptOfTheDiagramsAsAnExecutable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows has no permission bits of Unix")
+	}
 	root := t.TempDir()
 	runInit(t, root, "PC", "")
 

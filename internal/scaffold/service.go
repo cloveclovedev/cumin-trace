@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/cloveclovedev/cumin-trace/templates"
 )
@@ -28,37 +29,41 @@ func Run(root, prefix, area, version string, stdout io.Writer) error {
 	values := Values(prefix, area, version)
 	for _, file := range Files(area) {
 		path := filepath.Join(root, filepath.FromSlash(file.Target))
-		if file.NeedsVersion && version == "" {
-			// A file that exists is reported as such, before the version.
-			found, err := exists(path)
-			if err != nil {
-				return err
-			}
-			line := NoVersionLine(file.Target)
-			if found {
-				line = SkippedLine(file.Target)
-			}
-			if _, err := fmt.Fprintln(stdout, line); err != nil {
-				return err
-			}
-			continue
-		}
-		text, err := templates.Files.ReadFile(file.Source)
+		line, err := write(file, path, values, version)
 		if err != nil {
 			return err
-		}
-		content := []byte(values.Replace(string(text)))
-		written, err := create(path, content, file.Mode)
-		if err != nil {
-			return err
-		}
-		line := SkippedLine(file.Target)
-		if written {
-			line = WrittenLine(file.Target)
 		}
 		if _, err := fmt.Fprintln(stdout, line); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// write writes one file when it is missing, and returns the line that init
+// prints for the file.
+func write(file File, path string, values *strings.Replacer, version string) (string, error) {
+	if file.NeedsVersion && version == "" {
+		// A file that exists is reported as such, before the version.
+		found, err := exists(path)
+		if err != nil {
+			return "", err
+		}
+		if found {
+			return SkippedLine(file.Target), nil
+		}
+		return NoVersionLine(file.Target), nil
+	}
+	text, err := templates.Files.ReadFile(file.Source)
+	if err != nil {
+		return "", err
+	}
+	written, err := create(path, []byte(values.Replace(string(text))), file.Mode)
+	if err != nil {
+		return "", err
+	}
+	if written {
+		return WrittenLine(file.Target), nil
+	}
+	return SkippedLine(file.Target), nil
 }

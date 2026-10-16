@@ -33,7 +33,14 @@ The templates are in the directory `templates/` next to this file.
 - A kind whose form cumin-trace sets: start each new document of that kind from its template.
 - A recommended kind: when the repository already has a document of that kind, write the new document in the form of the existing one. Start from the template only when the repository has none.
 - A comment `<!-- ... -->` in a template says what to write there. Replace each comment with the text that it asks for.
-- The template of the area page may hold `<AREA>` in place of the area. Decide the area with the Maintainer. Add the area to `areas` in `.cumin-trace.toml`. Then replace `<AREA>` with the area.
+- The template of the area page holds an area in the heading and in every ID. That area is `<AREA>`, or the first area of the repository, for example `TASK`.
+- For a new area, follow these steps:
+  1. Decide the area with the Maintainer.
+  2. Add the area to `areas` in `.cumin-trace.toml`.
+  3. Add a row for the new area to the table of areas on the entry page, `<requirements_dir>/index.md`.
+  4. Write the page to `<requirements_dir>/<area in lower case>/index.md`. For the area `TASK`, the page is `task/index.md`.
+  5. Replace the area of the template with the new area in every ID. Rewrite the heading as the comment of the template says.
+  6. Draw the diagram of the area as `overview.puml` in the same directory. Render it to `overview.svg` in that directory.
 
 ## While you write
 
