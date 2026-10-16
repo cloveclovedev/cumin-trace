@@ -21,7 +21,7 @@ alt format errors
   main -> main : exit 1
   note right of main : no GitHub call, no JSON
 else no format error
-  service -> service : check the repository and the token
+  service -> service : decide the repository\n(GITHUB_REPOSITORY, then origin),\ncheck the token
   service -> github : RequirementIssues(owner, name, label)
   loop pages of 100
     github -> api : query requirementIssues

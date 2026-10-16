@@ -18,26 +18,38 @@ cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cum
 
 ## 設定
 
-`.cumin-trace.toml` の構造体 (`internal/core/settings.go`) に、次の2つのキーを足す。書式検査も同じ構造体を読むので、2つのキーがあっても知らないキーにならない。書式検査は、2つのキーの値を確かめない。
+`.cumin-trace.toml` の構造体 (`internal/core/settings.go`) に、次の1つのキーを足す。書式検査も同じ構造体を読むので、このキーがあっても知らないキーにならない。書式検査は、このキーの値を確かめない。
 
 ```toml
 # 要求Issueのラベル。省略できる
 requirement_label = "cumin/type/requirement"
-
-# 読むリポジトリ。省略できる
-repository = "cloveclovedev/cumin-trace"
 ```
 
 | キー | 型 | 必須 | 決まり |
 |---|---|---|---|
 | `requirement_label` | 文字列 | 省略できる | 空ではない文字列。既定は `cumin/type/requirement` (`CTR-TRC-001`) |
-| `repository` | 文字列 | 省略できる | `<owner>/<name>` の形。`/` はちょうど1つで、両側は空ではない |
 
-リポジトリは、次の順で決める。
+## リポジトリ
 
-1. 設定の `repository`
-2. 環境変数 `GITHUB_REPOSITORY`。GitHub Actions が `octocat/Hello-World` の形で渡す
-3. どちらもなければ、`no repository: set repository in .cumin-trace.toml or GITHUB_REPOSITORY` のエラー
+要求Issueは、要件文書と同じリポジトリにある。読むリポジトリは、設定に書かず、次の順で決める。
+
+1. 環境変数 `GITHUB_REPOSITORY`。GitHub Actions が `octocat/Hello-World` の形で渡す。空でなければ使い、`<owner>/<name>` の形でなければエラーにする (次の手に進まない)
+2. 現在のディレクトリの `git remote get-url origin` の URL。下の表の github.com の形のときだけ使う
+3. どちらもなければ、`no repository: set GITHUB_REPOSITORY to <owner>/<name>` のエラー
+
+`<owner>/<name>` の形: `/` がちょうど1つで、両側は空ではない。
+
+`origin` の URL で使う形 (`.git` は、あってもなくてもよい):
+
+| 形 | 例 |
+|---|---|
+| https | `https://github.com/octocat/Hello-World.git` |
+| ssh (scp の書き方) | `git@github.com:octocat/Hello-World.git` |
+| ssh (URL の書き方) | `ssh://git@github.com/octocat/Hello-World.git` |
+
+- github.com 以外のホスト、ほかの形、`git` がない、`origin` がない、のどれも、2 では決まらないとして 3 に進む。
+- `git remote get-url origin` は `main.go` が実行し、URL を `trace.Env.Remote` に入れる。失敗したときは空にする。URL を読む規則 (`RepositoryFromRemote`) は `internal/trace/domain.go` の純粋な関数である。
+- URL に利用者名や token が入っていても (`https://<user>:<token>@github.com/...`)、使うのは `<owner>/<name>` だけで、URL は出力にもエラーにも入れない。
 
 ## 環境変数
 
@@ -46,7 +58,7 @@ repository = "cloveclovedev/cumin-trace"
 | 環境変数 | 使い方 |
 |---|---|
 | `GITHUB_TOKEN` | GitHub を読む token。必須 |
-| `GITHUB_REPOSITORY` | 設定に `repository` がないときの、読むリポジトリ |
+| `GITHUB_REPOSITORY` | 読むリポジトリ。なければ `origin` の remote から決める ([リポジトリ](#リポジトリ)) |
 | `GITHUB_GRAPHQL_URL` | GraphQL API の URL。既定は `https://api.github.com/graphql`。テストでは偽の GitHub の URL を渡す |
 
 token の扱い (`CTR-TRC-007`):
@@ -61,14 +73,14 @@ token の扱い (`CTR-TRC-007`):
 1. 設定を読む
 2. 要件文書を読み、書式検査 (`check.Find`) を適用する
 3. 書式のエラーがあれば、GitHub を呼ばずに終わる (`CTR-TRC-009`)
-4. リポジトリと token を確かめる。`requirement_label` と、設定または `GITHUB_REPOSITORY` のリポジトリが、上の決まりに合わなければ、`invalid requirement_label: want a non-empty string` か `invalid repository "<value>": want <owner>/<name>` のエラーにする
+4. リポジトリと token を確かめる。`requirement_label` が空なら `invalid requirement_label: want a non-empty string`、`GITHUB_REPOSITORY` が形に合わなければ `invalid GITHUB_REPOSITORY "<value>": want <owner>/<name>` のエラーにする
 5. GitHub を読み、対応づけて、JSON を標準出力に書く
 
 | コード | 場合 | 標準出力 | 標準エラー出力 |
 |---|---|---|---|
 | 0 | JSON を書いた | JSON | なし |
 | 1 | 書式のエラーがある | なし | 書式検査と同じエラーの行、続けて `cumin-trace: <N> error(s)` |
-| 2 | 引数の誤り、設定や要件文書を読めない、リポジトリや token がない、GitHub を読めない | なし | `cumin-trace: <message>` |
+| 2 | 引数の誤り、設定や要件文書を読めない、リポジトリが決まらない、token がない、GitHub を読めない | なし | `cumin-trace: <message>` |
 
 - 書式のエラーの行は、`check` と同じ `<file>:<line>: <ID>: <message>` である ([エラーと出力](../check/errors.md))。`check` と違って標準エラー出力に書く。標準出力をファイルにリダイレクトしても、JSON でないものがファイルに入らないためである。
 - GitHub のエラーは、`GitHub: HTTP <status>`、または GraphQL の `errors` の最初の `message` を `GitHub: <message>` として出す。再試行しない。

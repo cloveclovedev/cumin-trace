@@ -18,7 +18,7 @@ package "internal/platform" #LightYellow {
 
 package "internal/core" #LightYellow {
   [issue.go\nmodel of an issue\n(provider-neutral)] as issue
-  [settings.go\nadd requirement_label,\nrepository] as settings
+  [settings.go\nadd requirement_label] as settings
 }
 
 package "internal/check" {
@@ -26,7 +26,7 @@ package "internal/check" {
 }
 
 package "internal/requirement" {
-  [read the requirement documents,\nIDForm.References] as requirement
+  [read the requirement documents,\nListedIDs (IDs of an issue body)] as requirement
 }
 
 cloud "GitHub GraphQL API" as api

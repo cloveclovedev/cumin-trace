@@ -48,11 +48,12 @@
 - `CTR-CMD-001` の表に `trace` の行を足すのは、Maintainer の作業である。
 - 細部: [コマンドと出力](command.md)
 
-### 設定は2つのキーを足す。token は環境変数だけ
+### 設定は1つのキーを足す。リポジトリと token は環境から決める
 
-`.cumin-trace.toml` に `requirement_label` (既定 `cumin/type/requirement`) と `repository` (省略できる) を足す。`repository` がなければ、環境変数 `GITHUB_REPOSITORY` を使う。token は環境変数 `GITHUB_TOKEN` から読む。
+`.cumin-trace.toml` に `requirement_label` (既定 `cumin/type/requirement`) だけを足す。読むリポジトリは、環境変数 `GITHUB_REPOSITORY`、なければ現在のディレクトリの `origin` の remote から決める。token は環境変数 `GITHUB_TOKEN` から読む。
 
-- 理由: GitHub Actions は `GITHUB_REPOSITORY` を必ず渡すので、設定に書かなくても動く。手元では、設定に1度書けば毎回渡さなくてよい。token はファイルに書かない (`CTR-TRC-007`)。
+- 理由: 要求Issueは、要件文書と同じリポジトリにある。GitHub Actions は `GITHUB_REPOSITORY` を必ず渡し、手元のクローンは `origin` を持つので、設定に書かなくても決まる。token はファイルに書かない (`CTR-TRC-007`)。
+- 採らなかった案: 設定の `repository` キー。リポジトリの名前を変えたり fork したりすると、設定と実際のリポジトリが食い違う。
 - 細部: [コマンドと出力](command.md)
 
 ### GitHub は GraphQL API だけで読む
@@ -62,11 +63,12 @@
 - 理由: ラベル、閉じた理由、マイルストーン、sub-issue を、100件の要求Issueにつき1回の呼び出しで読める。REST API では、要求Issueごとに sub-issue の呼び出しが、実装Issueごとに timeline の呼び出しが要る。
 - 細部: [GitHub の読み方](github.md)
 
-### IDは、本文の全体に `IDForm.References` を使って探す
+### IDは、本文の `## Requirements` の節の、箇条書きの項目の先頭だけから探す
 
-要求Issueの本文を Markdown として読まず、文字列の全体に `IDForm.References` (`internal/requirement`) を適用する。
+要求Issueの本文を `goldmark` で読み、`## Requirements` の節の項目の先頭のIDだけを対応にする (`CTR-TRC-002`)。読む関数は `internal/requirement/markdown.go` に置き、IDの形は `IDForm` で確かめる。
 
-- 理由: 要件文書の参照 (`CTR-FMT-010`) と同じ決まりで、同じIDを見つける。要求Issueの本文は cumin-works が書く短い文で、コードブロックの中の例を気にしなくてよい。
+- 理由: 節と項目とコードブロックの区別には、Markdown の構文木が要る。要件文書と同じ読み方 (CommonMark、拡張なし) で、GitHub での見え方と合う。`goldmark` の型は `markdown.go` の外に出さない ([パッケージとファイル](../check/packages.md))。
+- 採らなかった案: 本文の全体に `IDForm.References` を適用する。ほかの節の説明やコードブロックの例のIDも、対応になってしまう。
 - 細部: [進捗と不整合](rules.md)
 
 ### パッケージは `internal/trace` と `internal/platform`
