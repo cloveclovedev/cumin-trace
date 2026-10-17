@@ -1,0 +1,35 @@
+@startuml export-sequence
+title Sequence of the export of requirements (cumin-trace export)
+skinparam shadowing false
+hide footbox
+
+participant "cmd/cumin-trace\nmain.go" as main
+participant "internal/export\nservice.go" as service
+participant "internal/requirement\nmarkdown.go" as markdown
+participant "internal/check\ndomain.go" as check
+participant "internal/export\ndomain.go" as rules
+
+main -> service : Run(root, stdout, stderr)
+service -> service : read .cumin-trace.toml
+service -> markdown : Read(root, dir, prefix)
+markdown --> service : requirements with Title and Text
+service -> check : Find (the format check)
+check --> service : errors
+
+alt format errors
+  service -> check : WriteErrors(stderr)
+  service --> main : number of errors
+  main -> main : print "N error(s)", exit 1
+  note right of main : no JSON
+else no format error
+  service -> rules : Build(requirements, areas)
+  rules --> service : Output in the order of areas
+  service -> service : write the JSON to stdout
+  service --> main : 0 errors
+  main -> main : exit 0
+end
+
+note over service, markdown
+  settings or files fail: exit 2
+end note
+@enduml

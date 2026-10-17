@@ -12,7 +12,8 @@ cumin-trace のコードの地図である。機能ごとの設計文書は、�
 |---|---|---|
 | `cmd/cumin-trace` | 引数からコマンドを選び、結果を終了コードにする | なし |
 | `internal/check` | 書式検査 | [書式検査](../designs/check/index.md) |
-| `internal/requirement` | 要件文書を読み、要件のモデルにする。書式検査、出力、対応づけが共有する | [書式検査](../designs/check/index.md) |
+| `internal/requirement` | 要件文書を読み、要件のモデルにする。書式検査、出力、対応づけが共有する (タイトルと本文の読み取りは未実装) | [書式検査](../designs/check/index.md)、[構造化データの出力](../designs/export/index.md) |
+| `internal/export` | `cumin-trace export`。要件を設定のカテゴリの順に並べ、JSON に出す (未実装) | [構造化データの出力](../designs/export/index.md) |
 | `internal/core` | `.cumin-trace.toml` を読む | [書式検査](../designs/check/index.md)、[要件と要求Issueの対応づけ](../designs/trace/index.md) |
 | `internal/trace` | `cumin-trace trace`。要件と要求Issueを対応づけ、進捗と不整合を JSON に出す。Issueのモデルを持ち、`internal/platform` の型から変える | [要件と要求Issueの対応づけ](../designs/trace/index.md) |
 | `internal/platform` | GitHub の GraphQL API を読み、自分で定義した Go の型で返す。GraphQL の型はここで止める (要求Issueの一覧、sub-issue、閉じた Pull Request を実装) | [要件と要求Issueの対応づけ](../designs/trace/index.md) |

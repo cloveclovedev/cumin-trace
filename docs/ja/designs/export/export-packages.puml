@@ -1,0 +1,41 @@
+@startuml export-packages
+title Packages of the export of requirements
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "cmd/cumin-trace" {
+  [main.go\nchoose the command,\nset the exit code] as main
+}
+
+package "internal/export" #LightYellow {
+  [service.go\nrun the export,\nwrite the JSON] as service
+  [domain.go\nJSON structure, order by areas\n(Build, pure)] as rules
+}
+
+package "internal/requirement" #LightYellow {
+  [markdown.go\nread the documents,\nadd Title and Text] as markdown
+  [domain.go\nRequirement model\n(add Title and Text)] as model
+}
+
+package "internal/check" {
+  [domain.go\nthe ten rules (Find),\nWriteErrors] as check
+}
+
+package "internal/core" {
+  [settings.go\nprefix, areas,\nrequirements_dir] as settings
+}
+
+main --> service
+service --> settings
+service --> markdown
+service --> check
+service --> rules
+rules --> model
+markdown --> model
+
+legend right
+  yellow = designed in this document
+  arrow = imports
+  no network, no environment variable
+endlegend
+@enduml
