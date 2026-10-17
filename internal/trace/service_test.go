@@ -338,7 +338,7 @@ func TestAnIssueLinksToEachIDThatItsRequirementsSectionLists(t *testing.T) {
 
 // CTR-TRC-008: the JSON holds the time of the read and each requirement with
 // its progress and its requirement issues: number, state, reason, and
-// milestone. The same
+// milestone. It lists each discrepancy with its kind, issue, and ID. The same
 // input gives the same JSON.
 func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	github := &fakeGitHub{t: t, issues: []fakeIssue{
@@ -433,6 +433,18 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
         "total": 0
       }
     }
+  ],
+  "discrepancies": [
+    {
+      "kind": "open_issue_for_deprecated",
+      "issue": 12,
+      "id": "PC-TASK-004"
+    },
+    {
+      "kind": "unknown_id",
+      "issue": 12,
+      "id": "PC-TASK-099"
+    }
   ]
 }
 `
@@ -444,6 +456,59 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	}
 	if again != stdout {
 		t.Errorf("got another JSON on the second run\n%s", again)
+	}
+}
+
+// CTR-TRC-006: an issue that lists an ID outside the documents gives one
+// unknown_id, and an open issue for a deprecated requirement gives one
+// open_issue_for_deprecated. A closed issue for a deprecated requirement
+// gives none. The list is in the order of the issue number, then the ID.
+func TestTheTraceReportsAnUnknownIDAndAnOpenIssueForADeprecatedRequirement(t *testing.T) {
+	github := &fakeGitHub{t: t, issues: []fakeIssue{
+		requirementIssue(7, "OPEN", "", "PC-TASK-004"),
+		requirementIssue(5, "CLOSED", "COMPLETED", "PC-TASK-004"),
+		requirementIssue(3, "OPEN", "", "PC-TASK-099", "PC-TASK-001", "PC-TASK-005"),
+	}}
+	root := writeRepository(t, settingsOfTest, documentOfTest)
+
+	_, err, stdout, _ := runTrace(t, root, github)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	got := decode(t, stdout).Discrepancies
+	want := []Discrepancy{
+		{Kind: UnknownID, Issue: 3, ID: "PC-TASK-005"},
+		{Kind: UnknownID, Issue: 3, ID: "PC-TASK-099"},
+		{Kind: OpenIssueForDeprecated, Issue: 7, ID: "PC-TASK-004"},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got the discrepancies %v; want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("got the discrepancies %v; want %v", got, want)
+			break
+		}
+	}
+}
+
+// CTR-TRC-008: without a discrepancy, the list in the JSON is empty, not
+// null.
+func TestTheListOfDiscrepanciesIsEmptyWithoutADiscrepancy(t *testing.T) {
+	github := &fakeGitHub{t: t, issues: []fakeIssue{
+		requirementIssue(1, "OPEN", "", "PC-TASK-001"),
+		requirementIssue(2, "CLOSED", "COMPLETED", "PC-TASK-004"),
+	}}
+	root := writeRepository(t, settingsOfTest, documentOfTest)
+
+	_, err, stdout, _ := runTrace(t, root, github)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	if !strings.Contains(stdout, "\n  \"discrepancies\": []\n") {
+		t.Errorf("got the JSON without an empty list of discrepancies\n%s", stdout)
 	}
 }
 

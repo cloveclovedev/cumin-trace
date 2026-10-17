@@ -71,8 +71,9 @@
 | `CTR-TRC-004.2` | 開いた要求Issueと、completed で閉じた要求Issueを持つ要件 |
 | `CTR-TRC-004.3` | completed で閉じた要求Issueだけを持つ要件 |
 | `CTR-TRC-005` | 3つの進捗の子と、廃止した子を持つ要件 |
-| `CTR-TRC-006` | 文書にないIDを書いた要求Issueと、廃止した要件に対応する開いた要求Issue |
-| `CTR-TRC-008` | 上の状態をまとめた出力の全体を、決めた時刻で比べる |
+| `CTR-TRC-006` | 文書にないIDを書いた要求Issueと、廃止した要件に対応する開いた要求Issue。廃止した要件に対応する閉じた要求Issueは、不整合にならない |
+| `CTR-TRC-008` | 上の状態をまとめた出力の全体を、決めた時刻で比べる。`discrepancies` に、2種類の不整合が1つずつ出る |
+| `CTR-TRC-008` | 不整合がなければ、`discrepancies` は空の配列 `[]` である |
 | `CTR-TRC-008` | 2つの要求Issueの同じ sub-issue と、not planned で閉じた要求Issueの sub-issue を持つ要件の `implementation_issues`。sub-issue のない要件は 0 / 0 |
 | `CTR-TRC-009` | エラーを1つ含む文書。偽の GitHub への呼び出しが0回、標準出力が空、エラーの行がある、終了コード 1 |
 
