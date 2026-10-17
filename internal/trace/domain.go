@@ -22,6 +22,28 @@ type Issue struct {
 	// Milestone is the title of the milestone. It is empty for no milestone.
 	Milestone string
 	Body      string
+	SubIssues []SubIssue
+}
+
+// SubIssue is one implementation issue: a sub-issue of a requirement issue
+// (CTR-TRC-003).
+type SubIssue struct {
+	// Repository is the repository of the issue, as <owner>/<name>.
+	Repository string
+	Number     int
+	// Open is true for an open issue.
+	Open bool
+	// Milestone is the title of the milestone. It is empty for no milestone.
+	Milestone string
+	// ClosedBy is the pull request that closed the issue. It is nil for an
+	// open issue and for one that no pull request closed.
+	ClosedBy *PullRequest
+}
+
+// PullRequest is one pull request.
+type PullRequest struct {
+	Repository string `json:"repository"`
+	Number     int    `json:"number"`
 }
 
 // Output is the result of the trace, in the form of the JSON (CTR-TRC-008).
@@ -39,8 +61,16 @@ type RequirementOutput struct {
 	Progress *Progress `json:"progress"`
 	// Children is nil for a requirement without children and for a
 	// deprecated requirement.
-	Children          *ChildrenOutput `json:"children"`
-	RequirementIssues []IssueOutput   `json:"requirement_issues"`
+	Children             *ChildrenOutput      `json:"children"`
+	RequirementIssues    []IssueOutput        `json:"requirement_issues"`
+	ImplementationIssues ImplementationOutput `json:"implementation_issues"`
+}
+
+// ImplementationOutput counts the implementation issues of a requirement:
+// the closed ones and all (CTR-TRC-008).
+type ImplementationOutput struct {
+	Closed int `json:"closed"`
+	Total  int `json:"total"`
 }
 
 // Progress is how far a requirement has come (CTR-TRC-004).
@@ -67,6 +97,17 @@ type IssueOutput struct {
 	State       string  `json:"state"`
 	StateReason *string `json:"state_reason"`
 	Milestone   *string `json:"milestone"`
+	// SubIssues is in the order of repository, then number.
+	SubIssues []SubIssueOutput `json:"sub_issues"`
+}
+
+// SubIssueOutput is one implementation issue of a requirement issue.
+type SubIssueOutput struct {
+	Repository string       `json:"repository"`
+	Number     int          `json:"number"`
+	State      string       `json:"state"`
+	Milestone  *string      `json:"milestone"`
+	ClosedBy   *PullRequest `json:"closed_by"`
 }
 
 // Link links each requirement to the issues that list its ID in the
@@ -74,7 +115,8 @@ type IssueOutput struct {
 // many issues can list one ID. The requirements stay in the order of the
 // documents, and the issues of a requirement are in the order of their
 // numbers. An ID that no requirement has links to nothing. Each requirement
-// gets its progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005).
+// gets its progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005),
+// and the counts of its implementation issues (CTR-TRC-008).
 func Link(requirements []requirement.Requirement, issues []Issue, form requirement.IDForm, readAt, repository string) Output {
 	byID := map[string]int{}
 	linked := make([][]Issue, len(requirements))
@@ -96,6 +138,9 @@ func Link(requirements []requirement.Requirement, issues []Issue, form requireme
 		}
 	}
 	setProgress(requirements, linked, output.Requirements)
+	for i := range output.Requirements {
+		output.Requirements[i].ImplementationIssues = CountImplementation(linked[i])
+	}
 	return output
 }
 
@@ -113,6 +158,32 @@ func ProgressOf(issues []Issue) Progress {
 		}
 	}
 	return progress
+}
+
+// CountImplementation counts the sub-issues of the requirement issues: the
+// closed ones, for any reason, and all. A sub-issue of two requirement issues
+// counts once, by its repository and number.
+func CountImplementation(issues []Issue) ImplementationOutput {
+	var counts ImplementationOutput
+	type key struct {
+		repository string
+		number     int
+	}
+	seen := map[key]bool{}
+	for _, issue := range issues {
+		for _, subIssue := range issue.SubIssues {
+			key := key{subIssue.Repository, subIssue.Number}
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			counts.Total++
+			if !subIssue.Open {
+				counts.Closed++
+			}
+		}
+	}
+	return counts
 }
 
 // setProgress sets the progress of each requirement that is not deprecated
@@ -169,11 +240,34 @@ func issueOutput(issue Issue) IssueOutput {
 		}
 		out.StateReason = &reason
 	}
-	if issue.Milestone != "" {
-		milestone := issue.Milestone
-		out.Milestone = &milestone
+	out.Milestone = milestoneOutput(issue.Milestone)
+	sorted := append([]SubIssue(nil), issue.SubIssues...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].Repository != sorted[j].Repository {
+			return sorted[i].Repository < sorted[j].Repository
+		}
+		return sorted[i].Number < sorted[j].Number
+	})
+	out.SubIssues = make([]SubIssueOutput, 0, len(sorted))
+	for _, subIssue := range sorted {
+		state := "closed"
+		if subIssue.Open {
+			state = "open"
+		}
+		out.SubIssues = append(out.SubIssues, SubIssueOutput{
+			Repository: subIssue.Repository, Number: subIssue.Number, State: state,
+			Milestone: milestoneOutput(subIssue.Milestone), ClosedBy: subIssue.ClosedBy,
+		})
 	}
 	return out
+}
+
+// milestoneOutput returns the JSON form of a milestone: nil for no milestone.
+func milestoneOutput(milestone string) *string {
+	if milestone == "" {
+		return nil
+	}
+	return &milestone
 }
 
 var (

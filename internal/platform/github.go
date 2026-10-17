@@ -19,8 +19,9 @@ import (
 const DefaultGraphQLURL = "https://api.github.com/graphql"
 
 // requirementIssuesQuery reads the issues with a label, open and closed, 100
-// on one page, in the order of creation. It is a query and changes nothing
-// (CTR-TRC-001, CTR-TRC-007).
+// on one page, in the order of creation, with the first 100 sub-issues of
+// each. It is a query and changes nothing (CTR-TRC-001, CTR-TRC-003,
+// CTR-TRC-007).
 const requirementIssuesQuery = `query requirementIssues($owner: String!, $name: String!, $label: String!, $after: String) {
   repository(owner: $owner, name: $name) {
     issues(labels: [$label], states: [OPEN, CLOSED], first: 100, after: $after,
@@ -29,10 +30,51 @@ const requirementIssuesQuery = `query requirementIssues($owner: String!, $name: 
       nodes {
         id number state stateReason body
         milestone { title }
+        subIssues(first: 100) {
+          pageInfo { hasNextPage endCursor }
+          nodes {
+            id number state
+            repository { nameWithOwner }
+            milestone { title }
+          }
+        }
       }
     }
   }
 }`
+
+// moreSubIssuesQuery reads the sub-issues of one issue from the 101st on, 100
+// on one page (CTR-TRC-003).
+const moreSubIssuesQuery = `query moreSubIssues($id: ID!, $after: String) {
+  node(id: $id) {
+    ... on Issue {
+      subIssues(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
+        nodes { id number state repository { nameWithOwner } milestone { title } }
+      }
+    }
+  }
+}`
+
+// closersQuery reads the last closed event of each issue and the pull request
+// that closed the issue, if a pull request did (CTR-TRC-003).
+const closersQuery = `query closers($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on Issue {
+      id
+      timelineItems(itemTypes: [CLOSED_EVENT], last: 1) {
+        nodes {
+          ... on ClosedEvent {
+            closer { ... on PullRequest { number repository { nameWithOwner } } }
+          }
+        }
+      }
+    }
+  }
+}`
+
+// closersPerQuery is the number of issues in one closers query.
+const closersPerQuery = 100
 
 // Issue is one issue as GitHub gives it. The values are those of GitHub, such
 // as "OPEN" and "NOT_PLANNED".
@@ -44,6 +86,77 @@ type Issue struct {
 	Body        string
 	// Milestone is the title of the milestone. It is empty for no milestone.
 	Milestone string
+	SubIssues []SubIssue
+}
+
+// SubIssue is one sub-issue of an issue as GitHub gives it.
+type SubIssue struct {
+	ID string
+	// Repository is the repository of the sub-issue, as <owner>/<name>.
+	Repository string
+	Number     int
+	State      string
+	// Milestone is the title of the milestone. It is empty for no milestone.
+	Milestone string
+	// ClosedBy is the pull request that closed the sub-issue. It is nil for
+	// an open sub-issue and for one that no pull request closed.
+	ClosedBy *PullRequest
+}
+
+// PullRequest is one pull request.
+type PullRequest struct {
+	// Repository is the repository of the pull request, as <owner>/<name>.
+	Repository string
+	Number     int
+}
+
+// subIssuesPage is one page of the sub-issues of an issue in a response.
+type subIssuesPage struct {
+	PageInfo pageInfo `json:"pageInfo"`
+	Nodes    []struct {
+		ID         string `json:"id"`
+		Number     int    `json:"number"`
+		State      string `json:"state"`
+		Repository struct {
+			NameWithOwner string `json:"nameWithOwner"`
+		} `json:"repository"`
+		Milestone *struct {
+			Title string `json:"title"`
+		} `json:"milestone"`
+	} `json:"nodes"`
+}
+
+// subIssues returns the sub-issues of the page.
+func (p subIssuesPage) subIssues() []SubIssue {
+	subIssues := make([]SubIssue, 0, len(p.Nodes))
+	for _, node := range p.Nodes {
+		subIssue := SubIssue{ID: node.ID, Repository: node.Repository.NameWithOwner, Number: node.Number, State: node.State}
+		if node.Milestone != nil {
+			subIssue.Milestone = node.Milestone.Title
+		}
+		subIssues = append(subIssues, subIssue)
+	}
+	return subIssues
+}
+
+// pageInfo tells whether a connection has another page.
+type pageInfo struct {
+	HasNextPage bool   `json:"hasNextPage"`
+	EndCursor   string `json:"endCursor"`
+}
+
+// next returns the cursor of the next page, or nil after the last page. A
+// cursor that does not move would ask for the same page again without an
+// end, so it is an error.
+func (p pageInfo) next(after *string) (*string, error) {
+	if !p.HasNextPage {
+		return nil, nil
+	}
+	if p.EndCursor == "" || (after != nil && p.EndCursor == *after) {
+		return nil, errors.New("GitHub: invalid page cursor")
+	}
+	cursor := p.EndCursor
+	return &cursor, nil
 }
 
 // GitHubClient reads GitHub through the GraphQL API. It only sends queries.
@@ -60,19 +173,20 @@ func NewGitHubClient(url, token string) *GitHubClient {
 }
 
 // IssuesWithLabel returns the issues of the repository owner/name with the
-// label, open and closed, across every page.
+// label, open and closed, across every page. Each issue holds all its
+// sub-issues, and each closed sub-issue holds the pull request that closed it.
 func (c *GitHubClient) IssuesWithLabel(owner, name, label string) ([]Issue, error) {
 	var issues []Issue
+	// more holds the cursor of the next page of sub-issues, by the index of
+	// the issue.
+	more := map[int]*string{}
 	var after *string
 	for {
 		var data struct {
 			Repository *struct {
 				Issues struct {
-					PageInfo struct {
-						HasNextPage bool   `json:"hasNextPage"`
-						EndCursor   string `json:"endCursor"`
-					} `json:"pageInfo"`
-					Nodes []struct {
+					PageInfo pageInfo `json:"pageInfo"`
+					Nodes    []struct {
 						ID          string  `json:"id"`
 						Number      int     `json:"number"`
 						State       string  `json:"state"`
@@ -81,6 +195,7 @@ func (c *GitHubClient) IssuesWithLabel(owner, name, label string) ([]Issue, erro
 						Milestone   *struct {
 							Title string `json:"title"`
 						} `json:"milestone"`
+						SubIssues subIssuesPage `json:"subIssues"`
 					} `json:"nodes"`
 				} `json:"issues"`
 			} `json:"repository"`
@@ -93,27 +208,129 @@ func (c *GitHubClient) IssuesWithLabel(owner, name, label string) ([]Issue, erro
 			return nil, fmt.Errorf("GitHub: no repository %s/%s", owner, name)
 		}
 		for _, node := range data.Repository.Issues.Nodes {
-			issue := Issue{ID: node.ID, Number: node.Number, State: node.State, Body: node.Body}
+			issue := Issue{ID: node.ID, Number: node.Number, State: node.State, Body: node.Body, SubIssues: node.SubIssues.subIssues()}
 			if node.StateReason != nil {
 				issue.StateReason = *node.StateReason
 			}
 			if node.Milestone != nil {
 				issue.Milestone = node.Milestone.Title
 			}
+			next, err := node.SubIssues.PageInfo.next(nil)
+			if err != nil {
+				return nil, err
+			}
+			if next != nil {
+				more[len(issues)] = next
+			}
 			issues = append(issues, issue)
 		}
-		page := data.Repository.Issues.PageInfo
-		if !page.HasNextPage {
-			return issues, nil
+		next, err := data.Repository.Issues.PageInfo.next(after)
+		if err != nil {
+			return nil, err
 		}
-		// A cursor that does not move would ask for the same page again
-		// without an end.
-		if page.EndCursor == "" || (after != nil && page.EndCursor == *after) {
-			return nil, errors.New("GitHub: invalid page cursor")
+		if next == nil {
+			break
 		}
-		cursor := page.EndCursor
-		after = &cursor
+		after = next
 	}
+	for i := range issues {
+		if cursor, ok := more[i]; ok {
+			rest, err := c.moreSubIssues(issues[i].ID, cursor)
+			if err != nil {
+				return nil, err
+			}
+			issues[i].SubIssues = append(issues[i].SubIssues, rest...)
+		}
+	}
+	if err := c.setClosers(issues); err != nil {
+		return nil, err
+	}
+	return issues, nil
+}
+
+// moreSubIssues returns the sub-issues of the issue with the id, from the
+// page after the cursor to the last page.
+func (c *GitHubClient) moreSubIssues(id string, after *string) ([]SubIssue, error) {
+	var subIssues []SubIssue
+	for {
+		var data struct {
+			Node *struct {
+				SubIssues subIssuesPage `json:"subIssues"`
+			} `json:"node"`
+		}
+		if err := c.query(moreSubIssuesQuery, map[string]any{"id": id, "after": after}, &data); err != nil {
+			return nil, err
+		}
+		if data.Node == nil {
+			return nil, fmt.Errorf("GitHub: no issue %s", id)
+		}
+		subIssues = append(subIssues, data.Node.SubIssues.subIssues()...)
+		next, err := data.Node.SubIssues.PageInfo.next(after)
+		if err != nil {
+			return nil, err
+		}
+		if next == nil {
+			return subIssues, nil
+		}
+		after = next
+	}
+}
+
+// setClosers reads the pull request that closed each closed sub-issue, 100
+// sub-issues in one query, and each sub-issue once. It sends no query when no
+// sub-issue is closed.
+func (c *GitHubClient) setClosers(issues []Issue) error {
+	var ids []string
+	seen := map[string]bool{}
+	for _, issue := range issues {
+		for _, subIssue := range issue.SubIssues {
+			if subIssue.State == "CLOSED" && !seen[subIssue.ID] {
+				seen[subIssue.ID] = true
+				ids = append(ids, subIssue.ID)
+			}
+		}
+	}
+	closers := map[string]*PullRequest{}
+	for start := 0; start < len(ids); start += closersPerQuery {
+		var data struct {
+			Nodes []*struct {
+				ID            string `json:"id"`
+				TimelineItems struct {
+					Nodes []struct {
+						Closer *struct {
+							Number     *int `json:"number"`
+							Repository struct {
+								NameWithOwner string `json:"nameWithOwner"`
+							} `json:"repository"`
+						} `json:"closer"`
+					} `json:"nodes"`
+				} `json:"timelineItems"`
+			} `json:"nodes"`
+		}
+		batch := ids[start:min(start+closersPerQuery, len(ids))]
+		if err := c.query(closersQuery, map[string]any{"ids": batch}, &data); err != nil {
+			return err
+		}
+		for _, node := range data.Nodes {
+			if node == nil || len(node.TimelineItems.Nodes) == 0 {
+				continue
+			}
+			// A closer that is no pull request, such as a commit, has no number.
+			closer := node.TimelineItems.Nodes[len(node.TimelineItems.Nodes)-1].Closer
+			if closer != nil && closer.Number != nil {
+				closers[node.ID] = &PullRequest{Repository: closer.Repository.NameWithOwner, Number: *closer.Number}
+			}
+		}
+	}
+	for i := range issues {
+		for j := range issues[i].SubIssues {
+			subIssue := &issues[i].SubIssues[j]
+			if subIssue.State == "CLOSED" {
+				subIssue.ClosedBy = closers[subIssue.ID]
+			}
+		}
+	}
+	return nil
 }
 
 // query sends one query and decodes its data into data. An error holds the

@@ -65,13 +65,15 @@
 | `CTR-TRC-001` | `hasNextPage` が `true` で、`endCursor` が空か前と同じ。`GitHub: invalid page cursor` で止まり、JSON が出ない |
 | `CTR-TRC-002` | 2つのIDを書いた要求Issueと、同じIDを書いた2つの要求Issue。チェックボックスのある項目、ない項目、コードスパンのID |
 | `CTR-TRC-002` | ほかの節のID、項目の途中のID、節の中のコードブロックのID、後ろに空白のないチェックボックスの直後のIDが、対応にならない。`## Requirements` の節が次のレベル 2 の見出しで終わる |
-| `CTR-TRC-003` | sub-issue のある要求Issue (Pull Request で閉じたものと、開いたもの) と、sub-issue のない要求Issue |
+| `CTR-TRC-003` | sub-issue のある要求Issue (Pull Request で閉じたもの、コミットで閉じたもの、開いたもの、ほかのリポジトリのもの。2ページにまたがる) と、sub-issue のない要求Issue |
+| `CTR-TRC-003` | 2つの要求Issueの同じ閉じた sub-issue は、`closers` に1回だけ渡す。閉じた sub-issue がなければ、`closers` を呼ばない |
 | `CTR-TRC-004.1` | 要求Issueのない要件と、not planned で閉じた要求Issueだけを持つ要件 |
 | `CTR-TRC-004.2` | 開いた要求Issueと、completed で閉じた要求Issueを持つ要件 |
 | `CTR-TRC-004.3` | completed で閉じた要求Issueだけを持つ要件 |
 | `CTR-TRC-005` | 3つの進捗の子と、廃止した子を持つ要件 |
 | `CTR-TRC-006` | 文書にないIDを書いた要求Issueと、廃止した要件に対応する開いた要求Issue |
 | `CTR-TRC-008` | 上の状態をまとめた出力の全体を、決めた時刻で比べる |
+| `CTR-TRC-008` | 2つの要求Issueの同じ sub-issue と、not planned で閉じた要求Issueの sub-issue を持つ要件の `implementation_issues`。sub-issue のない要件は 0 / 0 |
 | `CTR-TRC-009` | エラーを1つ含む文書。偽の GitHub への呼び出しが0回、標準出力が空、エラーの行がある、終了コード 1 |
 
 `CTR-TRC-007` には、次のテストもある。
