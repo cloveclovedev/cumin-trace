@@ -1,6 +1,6 @@
 # GitHub の読み方
 
-[対応づけの設計](index.md) の細部。
+[要件と要求Issueの対応づけの設計](index.md) の細部。
 
 ## 呼び出し
 
@@ -87,9 +87,9 @@ query closers($ids: [ID!]!) {
 
 ## GitHub の値の変換
 
-`internal/platform/github.go` が、GitHub の値を `internal/core` のモデルに変える。GitHub の型は、このファイルの外に出さない。
+`internal/platform/github.go` は、GraphQL の応答を、このファイルで定義した Go の型に、値を変えずに移す。GraphQL の型は、このファイルの外に出さない。`internal/trace/convert.go` が、その値を `internal/trace/domain.go` のモデルに次のように変える。
 
-| GitHub | `internal/core` |
+| GitHub | `internal/trace` のモデル |
 |---|---|
 | `state` が `OPEN` | 開いている |
 | `state` が `CLOSED`、`stateReason` が `NOT_PLANNED` か `DUPLICATE` | not planned で閉じた |

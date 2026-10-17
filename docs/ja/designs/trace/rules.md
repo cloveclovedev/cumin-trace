@@ -1,6 +1,6 @@
 # 進捗と不整合
 
-[対応づけの設計](index.md) の細部。IDの見つけ方は `internal/requirement/markdown.go` の `ListedIDs(body []byte, form IDForm) []string` で、ほかの決まりは `internal/trace/domain.go` の純粋な関数である。
+[要件と要求Issueの対応づけの設計](index.md) の細部。IDの見つけ方は `internal/requirement/markdown.go` の `ListedIDs(body []byte, form IDForm) []string` で、ほかの決まりは `internal/trace/domain.go` の純粋な関数である。
 
 ## IDの見つけ方
 

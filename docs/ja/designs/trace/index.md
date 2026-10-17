@@ -1,4 +1,4 @@
-# 対応づけの設計
+# 要件と要求Issueの対応づけの設計
 
 `cumin-trace trace` が、要件文書と GitHub の要求Issueをどう読み、進捗と不整合をどう決めて JSON に出すかを決める。
 
@@ -24,21 +24,21 @@
 
 ## 全体像
 
-[ソースコード全体構成](../../architecture/overview.md) の `internal/trace`、`internal/platform`、`internal/core` にあたる。
+[ソースコード全体構成](../../architecture/overview.md) の `internal/trace`、`internal/platform`、`internal/core` (設定) にあたる。
 
-![対応づけのパッケージ](trace-packages.svg)
+![要件と要求Issueの対応づけのパッケージ](trace-packages.svg)
 
 図の元ファイル: [trace-packages.puml](trace-packages.puml)
 
 書式検査を先に済ませ、エラーがなければ GitHub を読む (`CTR-TRC-009`)。
 
-![対応づけのシーケンス](trace-sequence.svg)
+![要件と要求Issueの対応づけのシーケンス](trace-sequence.svg)
 
 図の元ファイル: [trace-sequence.puml](trace-sequence.puml)
 
 ## 決めたこと
 
-### 対応づけは、独立したコマンド `cumin-trace trace`
+### 要件と要求Issueの対応づけは、独立したコマンド `cumin-trace trace`
 
 引数を取らない。結果の JSON は標準出力に書く。
 
@@ -73,7 +73,9 @@
 
 ### パッケージは `internal/trace` と `internal/platform`
 
-GitHub の型と GraphQL の文は `internal/platform/github.go` で止める。`internal/core/issue.go` が、プロバイダを知らないIssueのモデルを持つ。
+GraphQL の client は `internal/platform/github.go` に置き、その中で定義した Go の型 (GraphQL の型ではない) を返す。Issueのモデルは `internal/trace/domain.go` に置き、`internal/trace/convert.go` が `internal/platform` の型からモデルに変える。
 
-- 理由: `CLAUDE.md` の構成のとおり、規則 (`internal/trace/domain.go`) が GitHub を知らずにテストできる。
+- 理由: プラットフォームのパッケージは具体的な型を返し、機能ごとに自分のモデルへ変える。GraphQL の型はプラットフォームで止まり、機能の規則 (`domain.go`) はほかのパッケージに依存しない。ほかの機能も、あとで同じ client で GitHub を読める。
+- 採らなかった案: 共有のモデルを `internal/core` に置く。使うのは対応づけだけで、プロバイダを知らない土台ではない。
+- 採らなかった案: `internal/trace` が持つ interface。2つ目の実装か、テストの本当の必要が出るまで作らない。テストは偽の GitHub の後ろに本物の client を置く。interface は、あとで `internal/trace` の側に、`internal/platform` を変えずに足せる。
 - 細部: [パッケージとファイル](packages.md)

@@ -1,5 +1,5 @@
 @startuml trace-sequence
-title Sequence of cumin-trace trace
+title Sequence of tracing requirements to issues (cumin-trace trace)
 skinparam shadowing false
 hide footbox
 
@@ -22,7 +22,7 @@ alt format errors
   note right of main : no GitHub call, no JSON
 else no format error
   service -> service : decide the repository\n(GITHUB_REPOSITORY, then origin),\ncheck the token
-  service -> github : RequirementIssues(owner, name, label)
+  service -> github : IssuesWithLabel(owner, name, label)
   loop pages of 100
     github -> api : query requirementIssues
     api --> github : issues, sub-issues
@@ -33,7 +33,8 @@ else no format error
   opt closed implementation issues
     github -> api : query closers (100 IDs each)
   end
-  github --> service : requirement issues (core model)
+  github --> service : platform types (Issue, SubIssue, PullRequest)
+  service -> service : convert.go: platform types to issue models
   service -> rules : link IDs, progress, discrepancies
   rules --> service : result
   service -> service : write the JSON to stdout
