@@ -39,7 +39,7 @@
 
 ## 全体像
 
-[ソースコード全体構成](../../architecture/overview.md) の `internal/trace`、`internal/platform`、`internal/core` (設定) にあたる。
+[ソースコード全体構成](../../architecture/overview.md) の `internal/trace`、`internal/export` (要件のオブジェクトと並べ方)、`internal/platform`、`internal/core` (設定) にあたる。
 
 ![要件と要求Issueの対応づけのパッケージ](trace-packages.svg)
 
