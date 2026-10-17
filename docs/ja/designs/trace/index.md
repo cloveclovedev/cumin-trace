@@ -29,11 +29,12 @@
 | 部分 | 状況 |
 |---|---|
 | コマンド、設定の `requirement_label`、環境変数、リポジトリの決め方 | 実装した |
-| 問い合わせ 1 `requirementIssues` (sub-issue を除く)、IDの見つけ方 (`ListedIDs`) | 実装した |
-| JSON の `read_at`、`repository`、`requirements` の `id`、`deprecated`、`progress`、`children`、`requirement_issues` (`sub_issues` を除く) | 実装した |
+| 問い合わせ 1 `requirementIssues`、2 `moreSubIssues`、3 `closers`、IDの見つけ方 (`ListedIDs`) | 実装した |
+| JSON の `read_at`、`repository`、`requirements` の `id`、`deprecated`、`progress`、`children`、`requirement_issues` (`sub_issues` を含む)、`implementation_issues` | 実装した |
 | 書式のエラーでの停止 (`CTR-TRC-009`) | 実装した |
 | 進捗 (`CTR-TRC-004`) と子の進捗の数 (`CTR-TRC-005`)。`ProgressOf` と `setProgress` (`internal/trace/domain.go`) | 実装した |
-| sub-issue と Pull Request (`CTR-TRC-003`)、`implementation_issues`、不整合 (`CTR-TRC-006`) | 未実装。JSON に、そのキーはまだない。文書にないIDは、いまは無視する |
+| sub-issue と Pull Request (`CTR-TRC-003`)、実装Issueの数 (`CountImplementation`) | 実装した |
+| 不整合 (`CTR-TRC-006`) | 未実装。JSON に `discrepancies` はまだない。文書にないIDは、いまは無視する |
 
 ## 全体像
 
@@ -71,7 +72,7 @@
 
 ### GitHub は GraphQL API だけで読む
 
-読むのは、要求Issueの一覧と sub-issue の一覧 (1種類の問い合わせ)、閉じた実装Issueを閉じた Pull Request (もう1種類の問い合わせ) である。問い合わせは `query` だけで、`mutation` を持たない。
+読むのは、要求Issueの一覧と sub-issue の一覧 (`requirementIssues` と、101件目からの `moreSubIssues`)、閉じた実装Issueを閉じた Pull Request (`closers`) である。問い合わせは `query` だけで、`mutation` を持たない。
 
 - 理由: ラベル、閉じた理由、マイルストーン、sub-issue を、100件の要求Issueにつき1回の呼び出しで読める。REST API では、要求Issueごとに sub-issue の呼び出しが、実装Issueごとに timeline の呼び出しが要る。
 - 細部: [GitHub の読み方](github.md)

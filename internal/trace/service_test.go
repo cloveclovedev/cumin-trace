@@ -25,10 +25,27 @@ type fakeIssue struct {
 	stateReason string
 	milestone   string
 	body        string
+	subIssues   []fakeSubIssue
+}
+
+// fakeSubIssue is one sub-issue on the fake GitHub.
+type fakeSubIssue struct {
+	// repository is empty for octocat/Hello-World.
+	repository string
+	number     int
+	state      string
+	milestone  string
+	// pullRequest is the number of the pull request in octocat/Hello-World
+	// that closed the sub-issue, or 0.
+	pullRequest int
+	// byCommit is true for a sub-issue that a commit closed.
+	byCommit bool
 }
 
 // fakeGitHub answers the query of the requirement issues with the issues that
-// have the label of the query, two on one page. It records each request.
+// have the label of the query, two on one page, and two sub-issues of each on
+// one page. It answers the queries of more sub-issues and of the closers too.
+// It records each request.
 type fakeGitHub struct {
 	t        *testing.T
 	issues   []fakeIssue
@@ -56,6 +73,15 @@ func (f *fakeGitHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.requests = append(f.requests, fakeRequest{r.Method, r.Header.Get("Authorization"), payload.Query, payload.Variables})
 	f.mu.Unlock()
 
+	query := strings.TrimSpace(payload.Query)
+	switch {
+	case strings.HasPrefix(query, "query moreSubIssues"):
+		f.serveMoreSubIssues(w, payload.Variables)
+		return
+	case strings.HasPrefix(query, "query closers"):
+		f.serveClosers(w, payload.Variables)
+		return
+	}
 	label, _ := payload.Variables["label"].(string)
 	var matched []fakeIssue
 	for _, issue := range f.issues {
@@ -76,6 +102,7 @@ func (f *fakeGitHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		node := map[string]any{
 			"id": "I_" + strconv.Itoa(issue.number), "number": issue.number, "state": issue.state,
 			"stateReason": nil, "body": issue.body, "milestone": nil,
+			"subIssues": subIssuesPage(issue.subIssues, 0),
 		}
 		if issue.stateReason != "" {
 			node["stateReason"] = issue.stateReason
@@ -90,6 +117,87 @@ func (f *fakeGitHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"nodes":    nodes,
 	}}}}
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// subIssuesPage returns two sub-issues from start, as one page.
+func subIssuesPage(subIssues []fakeSubIssue, start int) map[string]any {
+	end := min(start+2, len(subIssues))
+	nodes := []map[string]any{}
+	for _, subIssue := range subIssues[start:end] {
+		node := map[string]any{
+			"id": subIssueID(subIssue), "number": subIssue.number, "state": subIssue.state,
+			"repository": map[string]any{"nameWithOwner": repositoryOf(subIssue)}, "milestone": nil,
+		}
+		if subIssue.milestone != "" {
+			node["milestone"] = map[string]any{"title": subIssue.milestone}
+		}
+		nodes = append(nodes, node)
+	}
+	return map[string]any{
+		"pageInfo": map[string]any{"hasNextPage": end < len(subIssues), "endCursor": strconv.Itoa(end)},
+		"nodes":    nodes,
+	}
+}
+
+func repositoryOf(subIssue fakeSubIssue) string {
+	if subIssue.repository == "" {
+		return "octocat/Hello-World"
+	}
+	return subIssue.repository
+}
+
+func subIssueID(subIssue fakeSubIssue) string {
+	return "S_" + repositoryOf(subIssue) + "#" + strconv.Itoa(subIssue.number)
+}
+
+// serveMoreSubIssues answers the query of more sub-issues of one issue.
+func (f *fakeGitHub) serveMoreSubIssues(w http.ResponseWriter, variables map[string]any) {
+	id, _ := variables["id"].(string)
+	start := 0
+	if after, ok := variables["after"].(string); ok {
+		start, _ = strconv.Atoi(after)
+	}
+	for _, issue := range f.issues {
+		if "I_"+strconv.Itoa(issue.number) == id {
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"node": map[string]any{
+				"subIssues": subIssuesPage(issue.subIssues, start),
+			}}})
+			return
+		}
+	}
+	f.t.Errorf("more sub-issues of an unknown issue %q", id)
+}
+
+// serveClosers answers the query of the closers with the last closed event of
+// each sub-issue.
+func (f *fakeGitHub) serveClosers(w http.ResponseWriter, variables map[string]any) {
+	ids, _ := variables["ids"].([]any)
+	byID := map[string]fakeSubIssue{}
+	for _, issue := range f.issues {
+		for _, subIssue := range issue.subIssues {
+			byID[subIssueID(subIssue)] = subIssue
+		}
+	}
+	nodes := []any{}
+	for _, value := range ids {
+		subIssue, ok := byID[value.(string)]
+		if !ok || subIssue.state != "CLOSED" {
+			f.t.Errorf("got the closer of %v; want only closed sub-issues", value)
+			nodes = append(nodes, nil)
+			continue
+		}
+		events := []map[string]any{}
+		switch {
+		case subIssue.pullRequest != 0:
+			events = append(events, map[string]any{"closer": map[string]any{
+				"number": subIssue.pullRequest, "repository": map[string]any{"nameWithOwner": "octocat/Hello-World"},
+			}})
+		case subIssue.byCommit:
+			events = append(events, map[string]any{"closer": map[string]any{}})
+		}
+		nodes = append(nodes, map[string]any{"id": value, "timelineItems": map[string]any{"nodes": events}})
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"nodes": nodes}})
 }
 
 // writeRepository writes the settings and one requirement document into a new
@@ -260,15 +368,21 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
           "number": 9,
           "state": "closed",
           "state_reason": "not_planned",
-          "milestone": null
+          "milestone": null,
+          "sub_issues": []
         },
         {
           "number": 12,
           "state": "open",
           "state_reason": null,
-          "milestone": "v0.1"
+          "milestone": "v0.1",
+          "sub_issues": []
         }
-      ]
+      ],
+      "implementation_issues": {
+        "closed": 0,
+        "total": 0
+      }
     },
     {
       "id": "PC-TASK-002",
@@ -280,16 +394,25 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
           "number": 10,
           "state": "closed",
           "state_reason": "completed",
-          "milestone": null
+          "milestone": null,
+          "sub_issues": []
         }
-      ]
+      ],
+      "implementation_issues": {
+        "closed": 0,
+        "total": 0
+      }
     },
     {
       "id": "PC-TASK-003",
       "deprecated": false,
       "progress": "not_filed",
       "children": null,
-      "requirement_issues": []
+      "requirement_issues": [],
+      "implementation_issues": {
+        "closed": 0,
+        "total": 0
+      }
     },
     {
       "id": "PC-TASK-004",
@@ -301,9 +424,14 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
           "number": 12,
           "state": "open",
           "state_reason": null,
-          "milestone": "v0.1"
+          "milestone": "v0.1",
+          "sub_issues": []
         }
-      ]
+      ],
+      "implementation_issues": {
+        "closed": 0,
+        "total": 0
+      }
     }
   ]
 }
@@ -594,5 +722,119 @@ func TestAFormatErrorStopsTheTraceBeforeGitHub(t *testing.T) {
 	wantStderr := "docs/ja/requirements/index.md:" + strconv.Itoa(line) + ": PC-TASK-5: invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>\n"
 	if count != 1 || err != nil || stdout != "" || stderr != wantStderr || len(github.requests) != 0 {
 		t.Errorf("got %d, %v, stdout %q, stderr %q, %d requests; want 1 error, no JSON, the error line, and no request", count, err, stdout, stderr, len(github.requests))
+	}
+}
+
+// CTR-TRC-003: the trace reads every sub-issue of a requirement issue, across
+// two pages, with its repository, state, and milestone. A closed sub-issue
+// holds the pull request that closed it, and one that a commit closed holds
+// none. A requirement issue without sub-issues has none.
+func TestTheTraceReadsTheSubIssuesAndThePullRequestsThatClosedThem(t *testing.T) {
+	issue := requirementIssue(7, "OPEN", "", "PC-TASK-001")
+	issue.milestone = "v0.1"
+	issue.subIssues = []fakeSubIssue{
+		{number: 21, state: "OPEN", milestone: "v0.2"},
+		{number: 20, state: "CLOSED", milestone: "v0.1", pullRequest: 25},
+		{repository: "octocat/Other", number: 3, state: "CLOSED", byCommit: true},
+	}
+	github := &fakeGitHub{t: t, issues: []fakeIssue{issue, requirementIssue(8, "OPEN", "", "PC-TASK-002")}}
+	root := writeRepository(t, settingsOfTest, documentOfTest)
+
+	_, err, stdout, _ := runTrace(t, root, github)
+
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	output := decode(t, stdout)
+	got, _ := json.Marshal(output.Requirements[0].RequirementIssues[0].SubIssues)
+	want := `[{"repository":"octocat/Hello-World","number":20,"state":"closed","milestone":"v0.1","closed_by":{"repository":"octocat/Hello-World","number":25}},` +
+		`{"repository":"octocat/Hello-World","number":21,"state":"open","milestone":"v0.2","closed_by":null},` +
+		`{"repository":"octocat/Other","number":3,"state":"closed","milestone":null,"closed_by":null}]`
+	if string(got) != want {
+		t.Errorf("got the sub-issues\n%s\nwant\n%s", got, want)
+	}
+	if got := output.Requirements[1].RequirementIssues[0].SubIssues; got == nil || len(got) != 0 {
+		t.Errorf("got the sub-issues %v of the issue 8; want []", got)
+	}
+	var queries []string
+	for _, request := range github.requests {
+		name, _, _ := strings.Cut(strings.Fields(request.query)[1], "(")
+		queries = append(queries, name)
+	}
+	if strings.Join(queries, " ") != "requirementIssues moreSubIssues closers" {
+		t.Errorf("got the queries %v; want requirementIssues, moreSubIssues, and closers", queries)
+	}
+}
+
+// CTR-TRC-003: the trace asks for the closer of each closed sub-issue once,
+// and asks for no closer when no sub-issue is closed.
+func TestTheTraceAsksForTheCloserOfEachClosedSubIssueOnce(t *testing.T) {
+	shared := fakeSubIssue{number: 20, state: "CLOSED", pullRequest: 25}
+	first := requirementIssue(1, "OPEN", "", "PC-TASK-001")
+	first.subIssues = []fakeSubIssue{shared, {number: 21, state: "OPEN"}}
+	second := requirementIssue(2, "OPEN", "", "PC-TASK-002")
+	second.subIssues = []fakeSubIssue{shared}
+	github := &fakeGitHub{t: t, issues: []fakeIssue{first, second}}
+	root := writeRepository(t, settingsOfTest, documentOfTest)
+
+	if _, err, _, _ := runTrace(t, root, github); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	last := github.requests[len(github.requests)-1]
+	if ids, _ := last.variables["ids"].([]any); len(github.requests) != 2 || len(ids) != 1 {
+		t.Errorf("got %d requests and the last with the ids %v; want 2 requests and one id", len(github.requests), last.variables["ids"])
+	}
+
+	open := requirementIssue(1, "OPEN", "", "PC-TASK-001")
+	open.subIssues = []fakeSubIssue{{number: 21, state: "OPEN"}}
+	github = &fakeGitHub{t: t, issues: []fakeIssue{open}}
+	if _, err, _, _ := runTrace(t, root, github); err != nil || len(github.requests) != 1 {
+		t.Errorf("got error %v and %d requests; want no error and 1 request", err, len(github.requests))
+	}
+}
+
+// CTR-TRC-008: each requirement counts the closed and all implementation
+// issues of its requirement issues. A sub-issue of two requirement issues
+// counts once, and a sub-issue of an issue closed as not planned counts too.
+// A requirement without sub-issues counts 0 of 0. CTR-TRC-007: every request
+// is a query.
+func TestEachRequirementCountsItsClosedAndAllImplementationIssues(t *testing.T) {
+	first := requirementIssue(1, "OPEN", "", "PC-TASK-001")
+	first.subIssues = []fakeSubIssue{
+		{number: 20, state: "CLOSED", pullRequest: 25},
+		{number: 21, state: "OPEN"},
+	}
+	second := requirementIssue(2, "CLOSED", "NOT_PLANNED", "PC-TASK-001")
+	second.subIssues = []fakeSubIssue{
+		{number: 20, state: "CLOSED", pullRequest: 25},
+		{number: 22, state: "CLOSED"},
+	}
+	github := &fakeGitHub{t: t, issues: []fakeIssue{first, second, requirementIssue(3, "OPEN", "", "PC-TASK-002")}}
+	root := writeRepository(t, settingsOfTest, documentOfTest)
+
+	_, err, stdout, _ := runTrace(t, root, github)
+
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	got := map[string]ImplementationOutput{}
+	for _, req := range decode(t, stdout).Requirements {
+		got[req.ID] = req.ImplementationIssues
+	}
+	want := map[string]ImplementationOutput{
+		"PC-TASK-001": {Closed: 2, Total: 3},
+		"PC-TASK-002": {Closed: 0, Total: 0},
+		"PC-TASK-003": {Closed: 0, Total: 0},
+		"PC-TASK-004": {Closed: 0, Total: 0},
+	}
+	for id, w := range want {
+		if got[id] != w {
+			t.Errorf("got %+v for %s; want %+v", got[id], id, w)
+		}
+	}
+	for _, request := range github.requests {
+		if query := strings.TrimSpace(request.query); !strings.HasPrefix(query, "query ") || strings.Contains(query, "mutation") {
+			t.Errorf("got the query %q; want only queries", query)
+		}
 	}
 }
