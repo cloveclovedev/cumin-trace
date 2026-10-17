@@ -14,7 +14,7 @@ cumin-trace は、次のコマンドを持つ。
 
 | コマンド | すること | 振る舞いの要件 |
 |---|---|---|
-| `init <接頭辞> [<カテゴリ>]` | テンプレート、skill、図の描画のスクリプト、Pull Request の check の workflow を生成する | CTR-TPL-001、CTR-TPL-005、CTR-TPL-006、CTR-CHK-005 |
+| `init <接頭辞> [<カテゴリ>]` | テンプレート、skill、図の描画のスクリプト、Pull Request の check の workflow、サイトのテンプレートを生成する | CTR-TPL-001、CTR-TPL-005、CTR-TPL-006、CTR-CHK-005、CTR-SITE-001 |
 | `check` | 書式検査をする | CTR-CHK-001 |
 | `export` | 要件を JSON で出力する | CTR-EXP-001 |
 | `trace` | 要件と要求Issueを対応づけ、結果を JSON で出力する | CTR-TRC-008 |
