@@ -6,13 +6,17 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"runtime/debug"
+	"strings"
+	"time"
 
 	"github.com/cloveclovedev/cumin-trace/internal/check"
 	"github.com/cloveclovedev/cumin-trace/internal/scaffold"
+	"github.com/cloveclovedev/cumin-trace/internal/trace"
 )
 
-const usage = "cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace version"
+const usage = "cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version"
 
 // version is the version of the binary. A release build sets it with
 // -ldflags "-X main.version=<tag>".
@@ -22,6 +26,23 @@ func main() {
 	os.Exit(run(os.Args[1:], ".", os.Stdout, os.Stderr))
 }
 
+// traceEnv reads the environment of the trace. Only this function reads the
+// environment variables and runs git. A failure of git leaves Remote empty.
+func traceEnv(root string) trace.Env {
+	env := trace.Env{
+		Token:      os.Getenv("GITHUB_TOKEN"),
+		Repository: os.Getenv("GITHUB_REPOSITORY"),
+		GraphQLURL: os.Getenv("GITHUB_GRAPHQL_URL"),
+		Now:        time.Now,
+	}
+	cmd := exec.Command("git", "remote", "get-url", "origin")
+	cmd.Dir = root
+	if out, err := cmd.Output(); err == nil {
+		env.Remote = strings.TrimSpace(string(out))
+	}
+	return env
+}
+
 // run chooses the command from the arguments and returns the exit code.
 func run(args []string, root string, stdout, stderr io.Writer) int {
 	switch {
@@ -29,6 +50,8 @@ func run(args []string, root string, stdout, stderr io.Writer) int {
 		return runCheck(root, stdout, stderr)
 	case len(args) > 0 && args[0] == "init":
 		return runInit(args[1:], root, stdout, stderr)
+	case len(args) == 1 && args[0] == "trace":
+		return runTrace(root, traceEnv(root), stdout, stderr)
 	case len(args) == 1 && args[0] == "version":
 		return runVersion(stdout)
 	}
@@ -75,6 +98,21 @@ func runInit(args []string, root string, stdout, stderr io.Writer) int {
 	if err := scaffold.Run(root, prefix, area, binaryVersion(), stdout); err != nil {
 		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
 		return 2
+	}
+	return 0
+}
+
+// runTrace links the requirements to the requirement issues and writes the
+// JSON to stdout (CTR-TRC-008). It returns 0 when the JSON is written, and 2
+// when the trace cannot run.
+func runTrace(root string, env trace.Env, stdout, stderr io.Writer) int {
+	count, err := trace.Run(root, env, stdout, stderr)
+	if err != nil {
+		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
+		return 2
+	}
+	if count > 0 {
+		return 1
 	}
 	return 0
 }

@@ -22,6 +22,17 @@
 - [構造化データの出力](../../requirements/export/index.md)
   - `CTR-EXP-002` 同じ文書からは同じ出力 (要件の並べ方を借りる)
 
+## 実装の状況
+
+いまのコードは、この設計の一部だけを持つ。
+
+| 部分 | 状況 |
+|---|---|
+| コマンド、設定の `requirement_label`、環境変数、リポジトリの決め方 | 実装した |
+| 問い合わせ 1 `requirementIssues` (sub-issue を除く)、IDの見つけ方 (`ListedIDs`) | 実装した |
+| JSON の `read_at`、`repository`、`requirements` の `id`、`deprecated`、`requirement_issues` (`sub_issues` を除く) | 実装した |
+| 書式のエラーでの停止 (`CTR-TRC-009`)、進捗 (`CTR-TRC-004`、`CTR-TRC-005`)、sub-issue と Pull Request (`CTR-TRC-003`)、不整合 (`CTR-TRC-006`) | 未実装。JSON に、そのキーはまだない。文書にないIDは、いまは無視する |
+
 ## 全体像
 
 [ソースコード全体構成](../../architecture/overview.md) の `internal/trace`、`internal/platform`、`internal/core` (設定) にあたる。

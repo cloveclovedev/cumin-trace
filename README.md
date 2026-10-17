@@ -103,6 +103,26 @@ The check reads only the settings file and the requirement documents. It needs n
 
 The check finds the ten errors of `CTR-CHK-001`. The design is in [docs/ja/designs/check/index.md](docs/ja/designs/check/index.md).
 
+## Trace the requirements to the issues
+
+`cumin-trace trace` reads the requirement documents and the requirement issues on GitHub, links them, and writes JSON to the standard output. Run it at the top of a clone of the product.
+
+```sh
+GITHUB_TOKEN=$(gh auth token) cumin-trace trace > trace.json
+```
+
+A requirement issue is an issue with the label `cumin/type/requirement`, open or closed. Set another label with `requirement_label` in `.cumin-trace.toml`. An issue links to each ID that an item of its `## Requirements` section starts with.
+
+| Environment variable | Use |
+|---|---|
+| `GITHUB_TOKEN` | The token that reads GitHub. Required. It needs only read access to issues and pull requests |
+| `GITHUB_REPOSITORY` | The repository, as `<owner>/<name>`. Without it, the trace uses the github.com URL of the remote `origin` |
+| `GITHUB_GRAPHQL_URL` | The URL of the GraphQL API. The default is `https://api.github.com/graphql` |
+
+The JSON holds the time of the read, the repository, and each requirement with its requirement issues: number, state, reason of the close, and milestone. The trace only reads GitHub. It writes the token nowhere. The exit code is 0 when the JSON is written, and 2 when the trace cannot run.
+
+The progress, the sub-issues, the discrepancies, and the stop on a format error come later. The design is in [docs/ja/designs/trace/index.md](docs/ja/designs/trace/index.md).
+
 ## Print the version
 
 `cumin-trace version` prints the version of the binary in one line and exits with 0.
@@ -116,7 +136,7 @@ A release binary prints its tag, for example `v0.1.0`. A binary that `go build` 
 Wrong arguments print the usage line on the standard error and exit with 2:
 
 ```text
-cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace version
+cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version
 ```
 
 ## Check the documents of this repository

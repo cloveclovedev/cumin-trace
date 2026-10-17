@@ -259,3 +259,76 @@ func blankFrontmatter(source []byte) []byte {
 	}
 	return source
 }
+
+// ListedIDs returns the IDs that the items of the "## Requirements" sections
+// of an issue body start with, each ID once, in the order of the body
+// (CTR-TRC-002). An ID in another section, in the middle of an item, or in a
+// code block is not listed.
+func ListedIDs(body []byte, form IDForm) []string {
+	root := goldmark.New().Parser().Parse(text.NewReader(body))
+	var ids []string
+	seen := map[string]bool{}
+	inSection := false
+	for block := root.FirstChild(); block != nil; block = block.NextSibling() {
+		// Only a heading at the top level starts or ends a section.
+		if heading, ok := block.(*ast.Heading); ok {
+			if heading.Level <= 2 {
+				inSection = heading.Level == 2 && strings.TrimSpace(string(heading.Lines().Value(body))) == "Requirements"
+			}
+			continue
+		}
+		if _, ok := block.(*ast.List); !ok || !inSection {
+			continue
+		}
+		_ = ast.Walk(block, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+			if !entering {
+				return ast.WalkContinue, nil
+			}
+			if _, ok := node.(*ast.ListItem); !ok {
+				return ast.WalkContinue, nil
+			}
+			if id := leadingID(node, body, form); id != "" && !seen[id] {
+				seen[id] = true
+				ids = append(ids, id)
+			}
+			return ast.WalkContinue, nil
+		})
+	}
+	return ids
+}
+
+// leadingID returns the ID that a list item starts with, or an empty string.
+// The item must start with a paragraph. A check box and a code span around
+// the ID are allowed.
+func leadingID(item ast.Node, source []byte, form IDForm) string {
+	block := item.FirstChild()
+	switch block.(type) {
+	case *ast.TextBlock, *ast.Paragraph:
+	default:
+		return ""
+	}
+	if block.Lines().Len() == 0 {
+		return ""
+	}
+	first := block.Lines().At(0)
+	start, end := first.Start, first.Stop
+	skipSpaces := func() {
+		for start < end && (source[start] == ' ' || source[start] == '\t') {
+			start++
+		}
+	}
+	skipSpaces()
+	if end-start >= 3 && source[start] == '[' && source[start+2] == ']' &&
+		(source[start+1] == ' ' || source[start+1] == 'x' || source[start+1] == 'X') {
+		start += 3
+		skipSpaces()
+	}
+	if start < end && source[start] == '`' {
+		start++
+	}
+	refs := form.References(source, start, end)
+	if len(refs) == 0 || refs[0][0] != start {
+		return ""
+	}
+	return string(source[refs[0][0]:refs[0][1]])
+}
