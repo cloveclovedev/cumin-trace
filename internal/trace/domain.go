@@ -51,7 +51,29 @@ type Output struct {
 	ReadAt       string              `json:"read_at"`
 	Repository   string              `json:"repository"`
 	Requirements []RequirementOutput `json:"requirements"`
+	// Discrepancies is in the order of the issue number, the ID, then the
+	// kind (CTR-TRC-006).
+	Discrepancies []Discrepancy `json:"discrepancies"`
 }
+
+// Discrepancy is one requirement issue that does not match the documents
+// (CTR-TRC-006).
+type Discrepancy struct {
+	Kind  DiscrepancyKind `json:"kind"`
+	Issue int             `json:"issue"`
+	ID    string          `json:"id"`
+}
+
+// DiscrepancyKind is the kind of a discrepancy (CTR-TRC-006).
+type DiscrepancyKind string
+
+const (
+	// UnknownID is an ID that no requirement in the documents has.
+	UnknownID DiscrepancyKind = "unknown_id"
+	// OpenIssueForDeprecated is an open requirement issue for a deprecated
+	// requirement.
+	OpenIssueForDeprecated DiscrepancyKind = "open_issue_for_deprecated"
+)
 
 // RequirementOutput is one requirement and its requirement issues.
 type RequirementOutput struct {
@@ -114,34 +136,70 @@ type SubIssueOutput struct {
 // "## Requirements" section (CTR-TRC-002). One issue can list many IDs, and
 // many issues can list one ID. The requirements stay in the order of the
 // documents, and the issues of a requirement are in the order of their
-// numbers. An ID that no requirement has links to nothing. Each requirement
+// numbers. Of two issues with one number, only the first counts. An ID that no
+// requirement has links to nothing and is a
+// discrepancy, and so is an open issue for a deprecated requirement
+// (CTR-TRC-006). Each requirement
 // gets its progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005),
 // and the counts of its implementation issues (CTR-TRC-008).
 func Link(requirements []requirement.Requirement, issues []Issue, form requirement.IDForm, readAt, repository string) Output {
 	byID := map[string]int{}
 	linked := make([][]Issue, len(requirements))
-	output := Output{ReadAt: readAt, Repository: repository, Requirements: make([]RequirementOutput, len(requirements))}
+	output := Output{ReadAt: readAt, Repository: repository, Requirements: make([]RequirementOutput, len(requirements)), Discrepancies: []Discrepancy{}}
 	for i, req := range requirements {
 		byID[req.ID] = i
 		output.Requirements[i] = RequirementOutput{ID: req.ID, Deprecated: req.Deprecated, RequirementIssues: []IssueOutput{}}
 	}
-	sorted := append([]Issue(nil), issues...)
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Number < sorted[j].Number })
-	for _, issue := range sorted {
+	for _, issue := range uniqueByNumber(issues) {
 		for _, id := range requirement.ListedIDs([]byte(issue.Body), form) {
 			i, ok := byID[id]
 			if !ok {
+				output.Discrepancies = append(output.Discrepancies, Discrepancy{Kind: UnknownID, Issue: issue.Number, ID: id})
 				continue
+			}
+			if requirements[i].Deprecated && issue.Open {
+				output.Discrepancies = append(output.Discrepancies, Discrepancy{Kind: OpenIssueForDeprecated, Issue: issue.Number, ID: id})
 			}
 			linked[i] = append(linked[i], issue)
 			output.Requirements[i].RequirementIssues = append(output.Requirements[i].RequirementIssues, issueOutput(issue))
 		}
 	}
+	sortDiscrepancies(output.Discrepancies)
 	setProgress(requirements, linked, output.Requirements)
 	for i := range output.Requirements {
 		output.Requirements[i].ImplementationIssues = CountImplementation(linked[i])
 	}
 	return output
+}
+
+// uniqueByNumber returns the issues in the order of their numbers, with only
+// the first issue of each number. A page can return an issue twice.
+func uniqueByNumber(issues []Issue) []Issue {
+	sorted := append([]Issue(nil), issues...)
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Number < sorted[j].Number })
+	unique := sorted[:0]
+	for i, issue := range sorted {
+		if i > 0 && issue.Number == sorted[i-1].Number {
+			continue
+		}
+		unique = append(unique, issue)
+	}
+	return unique
+}
+
+// sortDiscrepancies sorts the discrepancies by the issue number, the ID, then
+// the kind.
+func sortDiscrepancies(discrepancies []Discrepancy) {
+	sort.Slice(discrepancies, func(i, j int) bool {
+		a, b := discrepancies[i], discrepancies[j]
+		if a.Issue != b.Issue {
+			return a.Issue < b.Issue
+		}
+		if a.ID != b.ID {
+			return a.ID < b.ID
+		}
+		return a.Kind < b.Kind
+	})
 }
 
 // ProgressOf returns the progress of a requirement without children from its

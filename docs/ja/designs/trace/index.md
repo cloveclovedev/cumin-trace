@@ -24,7 +24,7 @@
 
 ## 実装の状況
 
-いまのコードは、この設計の一部だけを持つ。
+いまのコードは、この設計のすべてを持つ。
 
 | 部分 | 状況 |
 |---|---|
@@ -34,7 +34,7 @@
 | 書式のエラーでの停止 (`CTR-TRC-009`) | 実装した |
 | 進捗 (`CTR-TRC-004`) と子の進捗の数 (`CTR-TRC-005`)。`ProgressOf` と `setProgress` (`internal/trace/domain.go`) | 実装した |
 | sub-issue と Pull Request (`CTR-TRC-003`)、実装Issueの数 (`CountImplementation`) | 実装した |
-| 不整合 (`CTR-TRC-006`) | 未実装。JSON に `discrepancies` はまだない。文書にないIDは、いまは無視する |
+| 不整合 (`CTR-TRC-006`) と JSON の `discrepancies`。`Link` と `sortDiscrepancies` (`internal/trace/domain.go`) | 実装した |
 
 ## 全体像
 
