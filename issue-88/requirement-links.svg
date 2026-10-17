@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420" style="background:#fff">
+<defs><marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#181818"/></marker><marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#D62728"/></marker></defs>
+<rect width="1000" height="420" fill="#fff"/>
+<rect x="10" y="10" width="250" height="300" fill="none" stroke="#888" stroke-dasharray="4,3"/>
+<text x="20" y="28" font-family="sans-serif" font-size="12" fill="#555">product repository</text>
+<rect x="30" y="40" width="210" height="50" rx="2" fill="#F1F1F1" stroke="#181818" stroke-width="1"/>
+<text x="135.0" y="62.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">docs/ja/**/*.md</text>
+<text x="135.0" y="78.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">(no frontmatter)</text>
+<rect x="30" y="120" width="210" height="50" rx="2" fill="#F1F1F1" stroke="#181818" stroke-width="1"/>
+<text x="135.0" y="142.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">*.svg next to</text>
+<text x="135.0" y="158.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">the documents</text>
+<rect x="30" y="220" width="210" height="60" rx="2" fill="#F1F1F1" stroke="#181818" stroke-width="1"/>
+<text x="135.0" y="247.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">site/</text>
+<text x="135.0" y="263.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">(Astro + Starlight template)</text>
+<rect x="30" y="340" width="210" height="50" rx="8" fill="#F1F1F1" stroke="#181818" stroke-width="1"/>
+<text x="135.0" y="370.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">cumin-trace init</text>
+<line x1="135" y1="340" x2="135" y2="282" stroke="#181818" stroke-width="1.2" marker-end="url(#b)"/><text x="135.0" y="305.0" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#181818">writes</text>
+<rect x="330" y="280" width="170" height="50" rx="2" fill="#F1F1F1" stroke="#181818" stroke-width="1"/>
+<text x="415.0" y="302.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">trace result</text>
+<text x="415.0" y="318.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">(JSON)</text>
+<rect x="330" y="110" width="230" height="90" rx="2" fill="#FDECEC" stroke="#D62728" stroke-width="3"/>
+<text x="445.0" y="144.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#D62728" font-weight="bold">Starlight build</text>
+<text x="445.0" y="160.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#D62728">(adds the title, an anchor for each ID,</text>
+<text x="445.0" y="176.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#D62728">links on ID references)</text>
+<line x1="240" y1="65" x2="330" y2="140" stroke="#181818" stroke-width="1.2" marker-end="url(#b)"/>
+<line x1="240" y1="145" x2="330" y2="160" stroke="#181818" stroke-width="1.2" marker-end="url(#b)"/>
+<line x1="240" y1="250" x2="330" y2="180" stroke="#181818" stroke-width="1.2" marker-end="url(#b)"/>
+<line x1="415" y1="280" x2="415" y2="202" stroke="#181818" stroke-width="1.2" marker-end="url(#b)"/><text x="415.0" y="235.0" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#181818">dashboard only</text>
+<rect x="640" y="120" width="170" height="70" rx="2" fill="#F1F1F1" stroke="#181818" stroke-width="1"/>
+<text x="725.0" y="152.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">static site:</text>
+<text x="725.0" y="168.0" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#000">documents + dashboard</text>
+<line x1="560" y1="155" x2="640" y2="155" stroke="#181818" stroke-width="1.2" marker-end="url(#b)"/>
+<text x="330" y="240" font-family="sans-serif" font-size="13" font-style="italic" fill="#D62728"></text><text x="580" y="240" font-family="sans-serif" font-size="13" font-style="italic" fill="#D62728">an anchor for each requirement ID,</text>
+<text x="580" y="256" font-family="sans-serif" font-size="13" font-style="italic" fill="#D62728">a link on each ID reference,</text>
+<text x="580" y="272" font-family="sans-serif" font-size="13" font-style="italic" fill="#D62728">also across pages</text>
+</svg>
