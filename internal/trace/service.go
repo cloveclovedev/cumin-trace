@@ -3,7 +3,6 @@ package trace
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -42,10 +41,8 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	form := requirement.NewIDForm(settings.Prefix)
 	// A format error stops the trace before any GitHub call (CTR-TRC-009).
 	if errs := check.Find(docs, form, settings.Areas); len(errs) > 0 {
-		for _, e := range errs {
-			if _, err := fmt.Fprintln(stderr, e); err != nil {
-				return 0, err
-			}
+		if err := check.WriteErrors(stderr, errs); err != nil {
+			return 0, err
 		}
 		return len(errs), nil
 	}

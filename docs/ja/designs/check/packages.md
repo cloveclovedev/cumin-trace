@@ -23,3 +23,5 @@
 ## 入口
 
 `check.Run(root string, stdout io.Writer) (int, error)` が入口である。`root` はリポジトリの最上位のディレクトリ、戻り値はエラーの件数である。`main.go` は `root` に `.` を渡す。
+
+`check.WriteErrors(w io.Writer, errs []check.Error) error` は、エラーを1つにつき1行で `w` に書く。`check.Run` と `trace.Run` の両方が使い、同じ行を出す (`CTR-TRC-009`)。

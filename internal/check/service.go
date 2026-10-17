@@ -22,10 +22,19 @@ func Run(root string, stdout io.Writer) (int, error) {
 		return 0, err
 	}
 	errs := Find(docs, requirement.NewIDForm(settings.Prefix), settings.Areas)
-	for _, e := range errs {
-		if _, err := fmt.Fprintln(stdout, e); err != nil {
-			return 0, err
-		}
+	if err := WriteErrors(stdout, errs); err != nil {
+		return 0, err
 	}
 	return len(errs), nil
+}
+
+// WriteErrors writes one line for each error to w. The check and the trace
+// both use it, so that they write the same lines (CTR-TRC-009).
+func WriteErrors(w io.Writer, errs []Error) error {
+	for _, e := range errs {
+		if _, err := fmt.Fprintln(w, e); err != nil {
+			return err
+		}
+	}
+	return nil
 }
