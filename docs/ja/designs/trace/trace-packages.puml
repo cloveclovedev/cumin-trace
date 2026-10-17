@@ -1,0 +1,50 @@
+@startuml trace-packages
+title Packages of tracing requirements to issues
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "cmd/cumin-trace" {
+  [main.go\nchoose the command,\nread the environment,\nrun git remote get-url origin,\nset the exit code] as main
+}
+
+package "internal/trace" #LightYellow {
+  [service.go\nrun the trace,\nwrite the JSON] as service
+  [domain.go\nissue models, repository from origin,\nprogress, discrepancies (pure)] as rules
+  [convert.go\nplatform types to issue models] as convert
+}
+
+package "internal/platform" #LightYellow {
+  [github.go\nGraphQL queries only,\nreturns its own Go types\n(Issue, SubIssue, PullRequest)] as github
+}
+
+package "internal/core" #LightYellow {
+  [settings.go\nadd requirement_label] as settings
+}
+
+package "internal/check" {
+  [domain.go\nthe ten rules (Find)] as check
+}
+
+package "internal/requirement" {
+  [read the requirement documents,\nListedIDs (IDs of an issue body)] as requirement
+}
+
+cloud "GitHub GraphQL API" as api
+
+main --> service
+service --> settings
+service --> requirement
+service --> check
+service --> rules
+service --> github
+service --> convert
+convert --> github : platform types
+convert --> rules : issue models
+rules --> requirement
+github --> api : POST query (read only)
+
+legend right
+  yellow = designed in this document
+  arrow = imports, or calls the API
+endlegend
+@enduml
