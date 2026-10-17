@@ -22,6 +22,7 @@
 | 12 | `.claude/skills/cumin-trace-docs/templates/<名前>` | `docs/<名前>` の9つ (下の表) | 2 から 7、10 と同じ | `CTR-TPL-005`、`CTR-TPL-008` |
 | 13 | `scripts/render-diagrams.sh` | `scripts/render-diagrams.sh` | なし | `CTR-TPL-006` |
 | 14 | `tools/plantuml/Dockerfile` | `tools/plantuml/Dockerfile` | なし | `CTR-TPL-006` |
+| 14a | `site/` の下のファイル ([サイトのファイルと設定](../site/files.md)) | `site/` の下の同じパス (先頭の `.` を除いた名前) | なし | `CTR-SITE-001` |
 | 15 | `.github/workflows/cumin-trace-check.yml` | `workflows/cumin-trace-check.yml` | `{{version}}` | `CTR-CHK-005` |
 
 12 は、次の9つを、この順に書く。
