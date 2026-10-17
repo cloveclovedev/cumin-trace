@@ -112,15 +112,78 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 
 ### `CTR-TRC-008` 結果の出力
 
-対応づけの結果を、GitHub を読んだ時刻とともに JSON で出力する。要件ごとに、進捗、対応する要求Issueとそのマイルストーン、実装Issueの数 (閉じた数と全体の数) を持つ。不整合 (`CTR-TRC-006`) の一覧も持つ。不整合ごとに、種類、要求Issueの番号、IDを持つ。
+対応づけの結果を、読んだリポジトリと GitHub を読んだ時刻とともに JSON で出力する。要件ごとに、構造化データの出力 (`CTR-EXP-001`) と同じキーをすべて同じ順に持ち、その後ろに対応づけのキーを足す。対応づけのキーは、進捗、子の進捗の数 (`CTR-TRC-005`)、対応する要求Issue (状態、マイルストーン、実装Issue)、実装Issueの数 (閉じた数と全体の数) である。不整合 (`CTR-TRC-006`) の一覧も持つ。不整合ごとに、種類、要求Issueの番号、IDを持つ。
 
-![出力するデータ](trace-json.svg)
+この出力だけで、要件の構造と進捗が分かる。
 
-図の元ファイル: [trace-json.puml](trace-json.puml)
+例は、[構造化データの出力](../export/index.md) の例と同じ2つの要件である。キーの名前と値の形は、この例のとおりとする。短くするため、実装Issueは1つだけを載せた。不整合の2件は、形を示すための仮の例である。
 
-キーの名前は、設計で決める。図は、持つ内容を示す例である。
+```json
+{
+  "repository": "cloveclovedev/cumin-trace",
+  "read_at": "2026-10-17T09:10:55Z",
+  "requirements": [
+    {
+      "id": "CTR-TRC-004",
+      "parent": null,
+      "title": "進捗",
+      "text": "子を持たない要件ごとに、進捗を次の3つのうちの1つに決める。廃止した要件には、進捗を付けない。廃止した要件は、未起票の一覧にも出ない。",
+      "verifications": [],
+      "status": "active",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/trace/index.md",
+      "line": 58,
+      "progress": null,
+      "children": {"not_filed": 0, "in_progress": 0, "done": 3, "total": 3},
+      "requirement_issues": [],
+      "implementation_issues": {"closed": 0, "total": 0}
+    },
+    {
+      "id": "CTR-TRC-004.1",
+      "parent": "CTR-TRC-004",
+      "title": "未起票",
+      "text": "対応する要求Issueが1つもない要件は、未起票とする。対応する要求Issueがすべて not planned で閉じている要件も、未起票とする。",
+      "verifications": [
+        {"method": "test", "how": "要求Issueのない要件と、not planned で閉じた要求Issueだけを持つ要件が、未起票になる"}
+      ],
+      "status": "active",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/trace/index.md",
+      "line": 62,
+      "progress": "done",
+      "children": null,
+      "requirement_issues": [
+        {
+          "number": 4,
+          "state": "closed",
+          "state_reason": "completed",
+          "milestone": "v0.1",
+          "sub_issues": [
+            {
+              "repository": "cloveclovedev/cumin-trace",
+              "number": 63,
+              "state": "closed",
+              "milestone": "v0.1",
+              "closed_by": {"repository": "cloveclovedev/cumin-trace", "number": 70}
+            }
+          ]
+        }
+      ],
+      "implementation_issues": {"closed": 1, "total": 1}
+    }
+  ],
+  "discrepancies": [
+    {"kind": "unknown_id", "issue": 31, "id": "CTR-TRC-099"},
+    {"kind": "open_issue_for_deprecated", "issue": 18, "id": "CTR-TRC-002"}
+  ]
+}
+```
 
-- 検証: `test` 偽の GitHub で、出力を確かめる。不整合を1つ含む状態で、一覧に出る
+- `progress` は `not_filed`、`in_progress`、`done` のどれかである。子を持つ要件と廃止した要件では `null` になる。
+- `children` は、子を持つ要件だけが持つ。子を持たない要件では `null` になる。
+- 1つの要求Issueが複数の要件を挙げているときは、その要件ごとに、同じ要求Issueを sub-issue まで含めて繰り返す。
+
+- 検証: `test` 偽の GitHub で、出力を確かめる。要件ごとに、構造化データの出力と同じキーと値を持つ。不整合を1つ含む状態で、一覧に出る
 
 ---
 
