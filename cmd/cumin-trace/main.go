@@ -67,6 +67,12 @@ func runCheck(root string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
 		return 2
 	}
+	return countExit(count, stderr)
+}
+
+// countExit prints the number of the format errors to stderr and returns 1
+// when there is an error, and 0 when there is none.
+func countExit(count int, stderr io.Writer) int {
 	if count == 1 {
 		fmt.Fprintln(stderr, "cumin-trace: 1 error")
 		return 1
@@ -103,18 +109,15 @@ func runInit(args []string, root string, stdout, stderr io.Writer) int {
 }
 
 // runTrace links the requirements to the requirement issues and writes the
-// JSON to stdout (CTR-TRC-008). It returns 0 when the JSON is written, and 2
-// when the trace cannot run.
+// JSON to stdout (CTR-TRC-008). It returns 0 when the JSON is written, 1 with
+// a format error (CTR-TRC-009), and 2 when the trace cannot run.
 func runTrace(root string, env trace.Env, stdout, stderr io.Writer) int {
 	count, err := trace.Run(root, env, stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
 		return 2
 	}
-	if count > 0 {
-		return 1
-	}
-	return 0
+	return countExit(count, stderr)
 }
 
 // runVersion prints the version of the binary in one line and returns 0

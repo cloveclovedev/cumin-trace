@@ -2,9 +2,12 @@ package main
 
 import (
 	"bytes"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -224,5 +227,25 @@ func TestTraceWithoutATokenExitsWithTwo(t *testing.T) {
 
 	if code != 2 || stdout.String() != "" || stderr.String() != "cumin-trace: GITHUB_TOKEN is not set\n" {
 		t.Errorf("got exit code %d, stdout %q, stderr %q; want 2 and the message of the token", code, stdout.String(), stderr.String())
+	}
+}
+
+// CTR-TRC-009: on a format error, the trace prints the same error line as
+// the check, calls no GitHub, writes no JSON, and exits with 1.
+func TestTraceWithAFormatErrorExitsWithOne(t *testing.T) {
+	root := writeRepository(t, "### `CTR-FMT-1` A wrong ID\n")
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1) }))
+	defer server.Close()
+	var checkStdout, checkStderr, stdout, stderr bytes.Buffer
+	if code := run([]string{"check"}, root, &checkStdout, &checkStderr); code != 1 || checkStdout.Len() == 0 {
+		t.Fatalf("check: got exit code %d, stdout %q; want 1 and an error line", code, checkStdout.String())
+	}
+
+	code := runTrace(root, trace.Env{Token: "test-token", Repository: "octocat/Hello-World", GraphQLURL: server.URL, Now: time.Now}, &stdout, &stderr)
+
+	wantStderr := checkStdout.String() + "cumin-trace: 1 error\n"
+	if code != 1 || stdout.String() != "" || stderr.String() != wantStderr || requests.Load() != 0 {
+		t.Errorf("got exit code %d, stdout %q, stderr %q, %d requests; want 1, no JSON, stderr %q, and no request", code, stdout.String(), stderr.String(), requests.Load(), wantStderr)
 	}
 }

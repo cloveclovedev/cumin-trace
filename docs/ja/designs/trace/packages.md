@@ -34,7 +34,7 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error)
 
 ## 依存
 
-- `internal/trace/` は、`internal/check/`、`internal/requirement/`、`internal/core/`、`internal/platform/` を使う。書式検査は `check.Find` をそのまま使い、同じエラーを出す (`CTR-TRC-009`)。
+- `internal/trace/` は、`internal/check/`、`internal/requirement/`、`internal/core/`、`internal/platform/` を使う。書式検査は `check.Find` をそのまま使い、エラーの行も `check` と同じ `check.WriteErrors` で書く。こうして同じエラーを出す (`CTR-TRC-009`)。
 - `internal/trace/domain.go` は、`net/http`、`os`、`internal/platform/` を import しない。`internal/platform/` を import するのは、`service.go` と `convert.go` だけである。
 - `internal/platform/` は、ほかの `internal/` のパッケージを import しない。
 - GraphQL の応答の型は `internal/platform/github.go` で止め、外にはこのファイルで定義した Go の型だけを返す。値は GitHub のまま (`OPEN`、`NOT_PLANNED` など) で、意味づけは `convert.go` がする。
