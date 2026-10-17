@@ -5,21 +5,16 @@ skinparam shadowing false
 package "product repository" {
   file "docs/ja/**/*.md\n(no frontmatter)" as md
   file "*.svg next to\nthe documents" as svg
-  folder "site/\n(Starlight)" as tpl
+  folder "site/\n(Astro + Starlight template)" as tpl
 }
 
-rectangle "cumin-trace" as ct
-file "pages with a title,\nan anchor for each ID,\nlinks on ID references" as pages
-file "requirements.json\nand the trace result" as data
-rectangle "Starlight build" as build
+file "trace result\n(JSON)" as data
+rectangle "Starlight build\n(adds the title, an anchor for each ID,\nlinks on ID references)" as build
 folder "static site:\ndocuments + dashboard" as out
 
-md --> ct
-svg --> ct
-ct --> pages
-ct --> data
-pages --> build
-data --> build
+md --> build
+svg --> build
 tpl --> build
+data --> build : dashboard only
 build --> out
 @enduml

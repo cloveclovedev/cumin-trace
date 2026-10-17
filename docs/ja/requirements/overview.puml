@@ -35,7 +35,6 @@ impl --> trace : state
 pr --> trace : merged or not
 req -- impl
 impl -- pr
-export --> site
 trace --> site
 docs --> site
 site --> Maintainer : whole picture, progress
