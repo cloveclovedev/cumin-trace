@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -95,6 +96,9 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 	// seen holds the references of the document, so that the same ID on one
 	// line is one reference.
 	seen := map[Reference]bool{}
+	// headings holds the place in docs.Requirements of each requirement
+	// heading with an ID of the right form, for the reading of the text.
+	headings := map[ast.Node]int{}
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -165,9 +169,14 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 		if form.Valid(id) {
 			open[len(open)-1].ID = id
 			open[len(open)-1].index = len(docs.Requirements)
+			headings[heading] = len(docs.Requirements)
+			// The split of a 検証 value also splits the heading into the
+			// code span and the title after it.
+			_, title := ParseVerification(strings.TrimSpace(string(heading.Lines().Value(source))))
 			docs.Requirements = append(docs.Requirements, Requirement{
 				ID:       id,
 				ParentID: ParentID(id),
+				Title:    title,
 				File:     file,
 				Line:     line,
 				Level:    heading.Level,
@@ -178,6 +187,7 @@ func readDocument(docs *Documents, file string, source []byte, prefix string, fo
 		}
 		return ast.WalkSkipChildren, nil
 	})
+	readTexts(docs.Requirements, root, source, headings)
 }
 
 // readFields adds the fields of a list to the requirement: each item whose
@@ -212,6 +222,172 @@ func readFields(req *Requirement, list *ast.List, source []byte, form IDForm, st
 			}
 		}
 	}
+}
+
+// isField reports whether a list item of a list at the top level is a field:
+// an item of a list without numbers whose first line starts with "検証:" or
+// "状態:" (CTR-FMT-005).
+func isField(item ast.Node, source []byte) bool {
+	if list, ok := item.Parent().(*ast.List); !ok || list.IsOrdered() {
+		return false
+	}
+	block := item.FirstChild()
+	switch block.(type) {
+	case *ast.TextBlock, *ast.Paragraph:
+	default:
+		return false
+	}
+	if block.Lines().Len() == 0 {
+		return false
+	}
+	line := block.Lines().At(0)
+	first := string(line.Value(source))
+	return strings.HasPrefix(first, "検証:") || strings.HasPrefix(first, "状態:")
+}
+
+// thematicBreak matches a line that is a thematic break in CommonMark.
+var thematicBreak = regexp.MustCompile(`\A {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})\r?\n?\z`)
+
+// readTexts sets the text of each requirement: the Markdown source of the
+// blocks at the top level between its heading and the next heading at the top
+// level. The fields and the thematic breaks are left out. The blocks are
+// joined with one blank line, and the ends are trimmed. The headings map each
+// requirement heading to its place in requirements.
+func readTexts(requirements []Requirement, root ast.Node, source []byte, headings map[ast.Node]int) {
+	lines := bytes.SplitAfter(source, []byte("\n"))
+	blank := func(line int) bool {
+		return len(bytes.TrimSpace(lines[line-1])) == 0
+	}
+	// text returns the source of the lines from and to, both included.
+	text := func(from, to int) string {
+		return strings.TrimRight(string(bytes.Join(lines[from-1:to], nil)), "\r\n")
+	}
+	// The start of each block at the top level, except the thematic breaks.
+	// A block without a position in the tree, such as an empty heading,
+	// starts at the first line after the block before it that is neither
+	// blank nor a thematic break.
+	var blocks []ast.Node
+	var starts []int
+	previousLast := 0
+	for block := root.FirstChild(); block != nil; block = block.NextSibling() {
+		if _, ok := block.(*ast.ThematicBreak); ok {
+			continue
+		}
+		first, last := lineRange(block, source)
+		if first == 0 {
+			first = previousLast + 1
+			for first < len(lines) && (blank(first) || thematicBreak.Match(lines[first-1])) {
+				first++
+			}
+			last = first
+		}
+		previousLast = last
+		blocks = append(blocks, block)
+		starts = append(starts, first)
+	}
+	// end returns the last line of the range from the start of a node to the
+	// line before next. Blank lines and thematic breaks at the end are left
+	// out, but never a line that holds the content of the node.
+	end := func(node ast.Node, next int) int {
+		_, last := lineRange(node, source)
+		line := next - 1
+		for line > last && (blank(line) || thematicBreak.Match(lines[line-1])) {
+			line--
+		}
+		return line
+	}
+	current := -1
+	var parts []string
+	finish := func() {
+		if current >= 0 {
+			requirements[current].Text = strings.TrimSpace(strings.Join(parts, "\n\n"))
+		}
+		parts = nil
+	}
+	for i, block := range blocks {
+		next := len(lines) + 1
+		if i+1 < len(blocks) {
+			next = starts[i+1]
+		}
+		switch block := block.(type) {
+		case *ast.Heading:
+			finish()
+			current = -1
+			if index, ok := headings[block]; ok {
+				current = index
+			}
+			continue
+		case *ast.List:
+			if current < 0 {
+				continue
+			}
+			// A run of items that are no field is one part.
+			from, to := 0, 0
+			for item := block.FirstChild(); item != nil; item = item.NextSibling() {
+				itemNext := next
+				if item.NextSibling() != nil {
+					itemNext, _ = lineRange(item.NextSibling(), source)
+				}
+				if isField(item, source) {
+					if from > 0 {
+						parts = append(parts, text(from, to))
+					}
+					from = 0
+					continue
+				}
+				if from == 0 {
+					from, _ = lineRange(item, source)
+				}
+				to = end(item, itemNext)
+			}
+			if from > 0 {
+				parts = append(parts, text(from, to))
+			}
+			continue
+		}
+		if current >= 0 {
+			parts = append(parts, text(starts[i], end(block, next)))
+		}
+	}
+	finish()
+}
+
+// lineRange returns the first and the last line of the content of a node, as
+// the positions in the tree give them. The opening line of a fenced code
+// block counts, but not its closing line. It returns 0 and 0 for a node
+// without a position, such as a thematic break.
+func lineRange(node ast.Node, source []byte) (first, last int) {
+	add := func(start, stop int) {
+		from, to := lineAt(source, start), lineAt(source, max(start, stop-1))
+		if first == 0 || from < first {
+			first = from
+		}
+		last = max(last, to)
+	}
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		if n.Type() == ast.TypeBlock && n.Lines().Len() > 0 {
+			add(n.Lines().At(0).Start, n.Lines().At(n.Lines().Len()-1).Stop)
+		}
+		if code, ok := n.(*ast.FencedCodeBlock); ok {
+			if code.Info != nil {
+				add(code.Info.Segment.Start, code.Info.Segment.Stop)
+			} else if code.Lines().Len() > 0 {
+				// The opening line is the line before the content.
+				opening := lineAt(source, code.Lines().At(0).Start) - 1
+				if first == 0 || opening < first {
+					first = opening
+				}
+			}
+		}
+		if t, ok := n.(*ast.Text); ok {
+			add(t.Segment.Start, t.Segment.Stop)
+		}
+		return ast.WalkContinue, nil
+	})
+	return first, last
 }
 
 // codeSpanText returns the content of a code span, as GitHub shows it. The
