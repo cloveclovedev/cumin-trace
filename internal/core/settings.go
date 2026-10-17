@@ -20,6 +20,10 @@ const SettingsFile = ".cumin-trace.toml"
 // the settings do not name one (CTR-FMT-001).
 const DefaultRequirementsDir = "docs/ja/requirements"
 
+// DefaultRequirementLabel is the label of a requirement issue when the
+// settings do not name one (CTR-TRC-001).
+const DefaultRequirementLabel = "cumin/type/requirement"
+
 // Settings is the content of the settings file (CTR-FMT-011).
 type Settings struct {
 	// Prefix is the prefix of the product, the first part of every ID.
@@ -29,6 +33,9 @@ type Settings struct {
 	// RequirementsDir is the directory of the requirement documents,
 	// relative to the top of the repository, with "/" as the separator.
 	RequirementsDir string
+	// RequirementLabel is the label that marks a requirement issue. The
+	// format check does not check it; the trace does (CTR-TRC-001).
+	RequirementLabel string
 }
 
 var namePattern = regexp.MustCompile(`\A[A-Z0-9]+\z`)
@@ -44,9 +51,10 @@ func IsName(text string) bool {
 // does not go unseen.
 func LoadSettings(root string) (Settings, error) {
 	var file struct {
-		Prefix          string   `toml:"prefix"`
-		Areas           []string `toml:"areas"`
-		RequirementsDir string   `toml:"requirements_dir"`
+		Prefix           string   `toml:"prefix"`
+		Areas            []string `toml:"areas"`
+		RequirementsDir  string   `toml:"requirements_dir"`
+		RequirementLabel string   `toml:"requirement_label"`
 	}
 	meta, err := toml.DecodeFile(filepath.Join(root, SettingsFile), &file)
 	if err != nil {
@@ -100,5 +108,10 @@ func LoadSettings(root string) (Settings, error) {
 		dir = path.Clean(dir)
 	}
 
-	return Settings{Prefix: file.Prefix, Areas: file.Areas, RequirementsDir: dir}, nil
+	label := DefaultRequirementLabel
+	if meta.IsDefined("requirement_label") {
+		label = file.RequirementLabel
+	}
+
+	return Settings{Prefix: file.Prefix, Areas: file.Areas, RequirementsDir: dir, RequirementLabel: label}, nil
 }

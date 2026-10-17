@@ -22,6 +22,17 @@
 - [構造化データの出力](../../requirements/export/index.md)
   - `CTR-EXP-002` 同じ文書からは同じ出力 (要件の並べ方を借りる)
 
+## 実装の状況
+
+いまのコードは、この設計の一部だけを持つ。
+
+| 部分 | 状況 |
+|---|---|
+| コマンド、設定の `requirement_label`、環境変数、リポジトリの決め方 | 実装した |
+| 問い合わせ 1 `requirementIssues` (sub-issue を除く)、IDの見つけ方 (`ListedIDs`) | 実装した |
+| JSON の `read_at`、`repository`、`requirements` の `id`、`deprecated`、`requirement_issues` (`sub_issues` を除く) | 実装した |
+| 書式のエラーでの停止 (`CTR-TRC-009`)、進捗 (`CTR-TRC-004`、`CTR-TRC-005`)、sub-issue と Pull Request (`CTR-TRC-003`)、不整合 (`CTR-TRC-006`) | 未実装。JSON に、そのキーはまだない。文書にないIDは、いまは無視する |
+
 ## 全体像
 
 [ソースコード全体構成](../../architecture/overview.md) の `internal/trace`、`internal/platform`、`internal/core` (設定) にあたる。
@@ -75,7 +86,7 @@
 
 GraphQL の client は `internal/platform/github.go` に置き、その中で定義した Go の型 (GraphQL の型ではない) を返す。Issueのモデルは `internal/trace/domain.go` に置き、`internal/trace/convert.go` が `internal/platform` の型からモデルに変える。
 
-- 理由: プラットフォームのパッケージは具体的な型を返し、機能ごとに自分のモデルへ変える。GraphQL の型はプラットフォームで止まり、機能の規則 (`domain.go`) はほかのパッケージに依存しない。ほかの機能も、あとで同じ client で GitHub を読める。
+- 理由: プラットフォームのパッケージは具体的な型を返し、機能ごとに自分のモデルへ変える。GraphQL の型はプラットフォームで止まり、機能の規則 (`domain.go`) は、プロバイダのパッケージにも `internal/platform` の型にも依存しない。ほかの機能も、あとで同じ client で GitHub を読める。
 - 採らなかった案: 共有のモデルを `internal/core` に置く。使うのは対応づけだけで、プロバイダを知らない土台ではない。
 - 採らなかった案: `internal/trace` が持つ interface。2つ目の実装か、テストの本当の必要が出るまで作らない。テストは偽の GitHub の後ろに本物の client を置く。interface は、あとで `internal/trace` の側に、`internal/platform` を変えずに足せる。
 - 細部: [パッケージとファイル](packages.md)

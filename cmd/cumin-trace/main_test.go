@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/cloveclovedev/cumin-trace/internal/trace"
 )
 
 // writeRepository writes the settings and one requirement document into a new
@@ -61,7 +64,7 @@ func TestExitsWithTwoWhenTheCheckCannotRun(t *testing.T) {
 	}{
 		{"no settings file", []string{"check"}, t.TempDir()},
 		{"no command", nil, writeRepository(t, "")},
-		{"an unknown command", []string{"trace"}, writeRepository(t, "")},
+		{"an unknown command", []string{"show"}, writeRepository(t, "")},
 		{"an extra argument", []string{"check", "docs"}, writeRepository(t, "")},
 	}
 	for _, test := range tests {
@@ -187,8 +190,9 @@ func TestWrongArgumentsPrintTheUsageAndWriteNoFile(t *testing.T) {
 		args []string
 	}{
 		{"no command", nil},
-		{"an unknown command", []string{"trace"}},
+		{"an unknown command", []string{"show"}},
 		{"an extra argument to check", []string{"check", "docs"}},
+		{"an extra argument to trace", []string{"trace", "now"}},
 		{"an extra argument to version", []string{"version", "now"}},
 	}
 	for _, test := range tests {
@@ -207,5 +211,18 @@ func TestWrongArgumentsPrintTheUsageAndWriteNoFile(t *testing.T) {
 				t.Errorf("got exit code %d, stdout %q, stderr %q, %d files; want not 0, stderr %q, and no file", code, stdout.String(), stderr.String(), len(entries), wantStderr)
 			}
 		})
+	}
+}
+
+// CTR-TRC-007: without a token, the trace calls no GitHub, writes no JSON,
+// and exits with 2.
+func TestTraceWithoutATokenExitsWithTwo(t *testing.T) {
+	root := writeRepository(t, "### `CTR-FMT-001` A good requirement\n- 検証: `test` It works\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runTrace(root, trace.Env{Repository: "octocat/Hello-World", Now: time.Now}, &stdout, &stderr)
+
+	if code != 2 || stdout.String() != "" || stderr.String() != "cumin-trace: GITHUB_TOKEN is not set\n" {
+		t.Errorf("got exit code %d, stdout %q, stderr %q; want 2 and the message of the token", code, stdout.String(), stderr.String())
 	}
 }

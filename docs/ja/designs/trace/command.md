@@ -83,7 +83,11 @@ token の扱い (`CTR-TRC-007`):
 | 2 | 引数の誤り、設定や要件文書を読めない、リポジトリが決まらない、token がない、GitHub を読めない | なし | `cumin-trace: <message>` |
 
 - 書式のエラーの行は、`check` と同じ `<file>:<line>: <ID>: <message>` である ([エラーと出力](../check/errors.md))。`check` と違って標準エラー出力に書く。標準出力をファイルにリダイレクトしても、JSON でないものがファイルに入らないためである。
-- GitHub のエラーは、`GitHub: HTTP <status>`、または GraphQL の `errors` の最初の `message` を `GitHub: <message>` として出す。再試行しない。
+- GitHub のエラーは、次のどれかとして出す。再試行しない。
+  - `GitHub: HTTP <status>`
+  - GraphQL の `errors` の最初の `message` を `GitHub: <message>`
+  - 接続の失敗を `GitHub: cannot connect (<kind>)`。`<kind>` は `timeout`、`DNS lookup failed`、`TLS failed`、`connection failed` のどれかで、URL も token も入れない
+  - `hasNextPage` が `true` なのに、`endCursor` が空か前と同じなら `GitHub: invalid page cursor`。同じページを読み続けないためである
 - JSON は、すべてを読み終えてから1度に書く。途中で失敗したときは、何も書かない。
 
 ## JSON
