@@ -1,6 +1,5 @@
 // Package requirement holds the model of a requirement and reads the
-// requirement documents into it. The check and the trace use it today; the
-// export uses it later.
+// requirement documents into it. The check, the export, and the trace use it.
 package requirement
 
 import (

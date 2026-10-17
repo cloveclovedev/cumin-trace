@@ -103,6 +103,16 @@ The check reads only the settings file and the requirement documents. It needs n
 
 The check finds the ten errors of `CTR-CHK-001`. The design is in [docs/ja/designs/check/index.md](docs/ja/designs/check/index.md).
 
+## Export the requirements
+
+`cumin-trace export` writes every requirement of the documents as JSON to the standard output. Run it at the top of the repository.
+
+```sh
+cumin-trace export > requirements.json
+```
+
+Each requirement holds its ID, the parent ID, the title, the text, the verifications, the status (`active` or `deprecated`), the replacement ID, the file, and the line. The requirements follow the order of `areas` in `.cumin-trace.toml`, then the order of the documents. The same documents give the same bytes. The export needs no token and no network. The exit code is 0 when the JSON is written, 1 when the documents have a format error, and 2 when the export cannot run. On a format error, the export writes no JSON and writes the errors to the standard error. The design is in [docs/ja/designs/export/index.md](docs/ja/designs/export/index.md).
+
 ## Trace the requirements to the issues
 
 `cumin-trace trace` reads the requirement documents and the requirement issues on GitHub, links them, and writes JSON to the standard output. Run it at the top of a clone of the product.
@@ -136,7 +146,7 @@ A release binary prints its tag, for example `v0.1.0`. A binary that `go build` 
 Wrong arguments print the usage line on the standard error and exit with 2:
 
 ```text
-cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version
+cumin-trace: usage: cumin-trace check | cumin-trace export | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version
 ```
 
 ## Check the documents of this repository

@@ -13,6 +13,7 @@ package "cumin-trace" {
   [internal/check\nformat check] as check
   [internal/requirement\nread requirements (shared)] as requirement
   [internal/core\nread settings] as core
+  [internal/export\nwrite requirements as JSON] as export
   [internal/scaffold\nwrite the templates (init)] as scaffold
   [templates\nembedded text (top level)] as templates
   [internal/trace\ntrace requirements to issues\n(not implemented)] as trace #LightYellow
@@ -22,8 +23,12 @@ package "cumin-trace" {
 cloud "GitHub GraphQL API" as api
 
 cmd --> check : run
+cmd --> export : run
 cmd --> scaffold : run
 cmd --> trace : run
+export --> check : format check
+export --> requirement : read requirements
+export --> core : read settings
 trace --> check : format check
 trace --> requirement : read requirements
 trace --> core : read settings
