@@ -94,52 +94,103 @@ token の扱い (`CTR-TRC-007`):
 
 `encoding/json` で、2文字の字下げと、最後の改行を付けて書く。キーの順は、下の表の順で固定する。配列は、空でも `null` ではなく `[]` にする。
 
+[要件の例](../../requirements/trace/index.md) と同じ2つの要件では、次の JSON を出す。要件ごとに、[構造化データの出力](../export/index.md) と同じキーと値を同じ順に持ち、その後ろに対応づけのキーを持つ (`CTR-TRC-008`)。
+
 ```json
 {
-  "read_at": "2026-10-20T09:00:00Z",
-  "repository": "octocat/Hello-World",
+  "repository": "cloveclovedev/cumin-trace",
+  "read_at": "2026-10-17T09:10:55Z",
   "requirements": [
     {
-      "id": "PC-TASK-003",
-      "deprecated": false,
+      "id": "CTR-TRC-004",
+      "parent": null,
+      "title": "進捗",
+      "text": "子を持たない要件ごとに、進捗を次の3つのうちの1つに決める。廃止した要件には、進捗を付けない。廃止した要件は、未起票の一覧にも出ない。",
+      "verifications": [],
+      "status": "active",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/trace/index.md",
+      "line": 58,
       "progress": null,
-      "children": {"not_filed": 0, "in_progress": 1, "done": 1, "total": 2},
+      "children": {
+        "not_filed": 0,
+        "in_progress": 0,
+        "done": 3,
+        "total": 3
+      },
       "requirement_issues": [],
-      "implementation_issues": {"closed": 0, "total": 0}
+      "implementation_issues": {
+        "closed": 0,
+        "total": 0
+      }
     },
     {
-      "id": "PC-TASK-003.1",
-      "deprecated": false,
-      "progress": "in_progress",
+      "id": "CTR-TRC-004.1",
+      "parent": "CTR-TRC-004",
+      "title": "未起票",
+      "text": "対応する要求Issueが1つもない要件は、未起票とする。対応する要求Issueがすべて not planned で閉じている要件も、未起票とする。",
+      "verifications": [
+        {
+          "method": "test",
+          "how": "要求Issueのない要件と、not planned で閉じた要求Issueだけを持つ要件が、未起票になる"
+        }
+      ],
+      "status": "active",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/trace/index.md",
+      "line": 62,
+      "progress": "done",
       "children": null,
       "requirement_issues": [
         {
-          "number": 12,
-          "state": "open",
-          "state_reason": null,
+          "number": 4,
+          "state": "closed",
+          "state_reason": "completed",
           "milestone": "v0.1",
           "sub_issues": [
-            {"repository": "octocat/Hello-World", "number": 20, "state": "closed", "milestone": "v0.1",
-             "closed_by": {"repository": "octocat/Hello-World", "number": 25}}
+            {
+              "repository": "cloveclovedev/cumin-trace",
+              "number": 63,
+              "state": "closed",
+              "milestone": "v0.1",
+              "closed_by": {
+                "repository": "cloveclovedev/cumin-trace",
+                "number": 70
+              }
+            }
           ]
         }
       ],
-      "implementation_issues": {"closed": 1, "total": 1}
+      "implementation_issues": {
+        "closed": 1,
+        "total": 1
+      }
     }
   ],
   "discrepancies": [
-    {"kind": "open_issue_for_deprecated", "issue": 18, "id": "PC-TASK-002"},
-    {"kind": "unknown_id", "issue": 31, "id": "PC-TASK-099"}
+    {
+      "kind": "open_issue_for_deprecated",
+      "issue": 18,
+      "id": "CTR-TRC-002"
+    },
+    {
+      "kind": "unknown_id",
+      "issue": 31,
+      "id": "CTR-TRC-099"
+    }
   ]
 }
 ```
+
+- 不整合の2件は、形を示すための仮の例である。`discrepancies` は要求Issueの番号の順に並ぶ。
+- 1つの要求Issueが複数の要件を挙げているときは、その要件ごとに、同じ要求Issueを sub-issue まで含めて繰り返す。
 
 最上位:
 
 | キー | 型 | 意味 |
 |---|---|---|
-| `read_at` | 文字列 | GitHub への最初の呼び出しの直前の時刻。UTC、RFC 3339、秒まで (`CTR-TRC-008`) |
 | `repository` | 文字列 | 読んだリポジトリ (`<owner>/<name>`) |
+| `read_at` | 文字列 | GitHub への最初の呼び出しの直前の時刻。UTC、RFC 3339、秒まで (`CTR-TRC-008`) |
 | `requirements` | 配列 | すべての要件。廃止した要件も入る |
 | `discrepancies` | 配列 | 不整合 (`CTR-TRC-006`) |
 
@@ -147,8 +198,7 @@ token の扱い (`CTR-TRC-007`):
 
 | キー | 型 | 意味 |
 |---|---|---|
-| `id` | 文字列 | 要件のID |
-| `deprecated` | 真偽値 | 廃止した要件か |
+| `id` から `line` まで | | 構造化データの出力の要件と同じキー、同じ値、同じ順 ([JSON の全体の例](../export/index.md#json-の全体の例))。`export.Of` で作る。廃止した要件は `status` が `deprecated` になる |
 | `progress` | 文字列か `null` | `not_filed`、`in_progress`、`done` (`CTR-TRC-004`)。子を持つ要件と、廃止した要件は `null` |
 | `children` | オブジェクトか `null` | 子を持つ要件では、廃止していない子の進捗ごとの数と、その合計 (`total`) (`CTR-TRC-005`)。子を持たない要件と、廃止した要件は `null` |
 | `requirement_issues` | 配列 | `## Requirements` の節の項目の先頭にこのIDを書いた要求Issue ([IDの見つけ方](rules.md#idの見つけ方))。番号の順 |
@@ -186,7 +236,7 @@ token の扱い (`CTR-TRC-007`):
 
 同じ文書と同じ GitHub の状態からは、`read_at` のほかは同じ JSON になる。
 
-- `requirements`: 設定の `areas` の順、その中では要件文書を読んだ順。`CTR-EXP-002` と同じ並べ方である。
+- `requirements`: 設定の `areas` の順、その中では要件文書を読んだ順。`CTR-EXP-002` と同じ並べ方で、`export.Sort` で並べる。
 - `requirement_issues`: 番号の順。
 - `sub_issues`: リポジトリ、番号の順。
 - `discrepancies`: 要求Issueの番号、ID、`kind` の順。

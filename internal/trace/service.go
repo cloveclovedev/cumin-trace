@@ -67,7 +67,7 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	output := Link(docs.Requirements, fromPlatform(issues), form, readAt, repository)
+	output := Link(docs.Requirements, settings.Areas, fromPlatform(issues), form, readAt, repository)
 
 	encoded, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {

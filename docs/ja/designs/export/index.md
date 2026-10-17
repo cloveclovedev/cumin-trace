@@ -51,12 +51,12 @@
 
 `domain.go` の `Of` が、1つの要件を JSON のオブジェクトにする。キーの順は、[要件の例](../../requirements/export/index.md#全体像) と同じである。空の一覧は `[]`、ない値は `null` にする。
 
-- 理由: 対応づけ (`trace`) も、あとで同じ関数で要件のオブジェクトを作る。形を1か所に置けば、2つの出力が食い違わない。
+- 理由: 対応づけ (`trace`) も、同じ関数で要件のオブジェクトを作る。形を1か所に置けば、2つの出力が食い違わない。
 - 採らなかった案: `internal/requirement` の `Requirement` に JSON のタグを付ける。読み取りのモデルには、書式検査だけが使う値 (`Above`、`Statuses` など) もあり、出力の形と分けたい。
 
 ### 要件は、設定のカテゴリの順、その中では文書の順に並べる
 
-`Build` は、要件を `.cumin-trace.toml` の `areas` の順に安定ソートする。同じカテゴリの中では、読んだ順 (ファイルの名前の順、ファイルの中は行の順) のままである (`CTR-EXP-002`)。出力した日時は含めない。
+`Build` は、`Sort` で要件を `.cumin-trace.toml` の `areas` の順に安定ソートする。同じカテゴリの中では、読んだ順 (ファイルの名前の順、ファイルの中は行の順) のままである (`CTR-EXP-002`)。出力した日時は含めない。
 
 - 理由: ファイルの名前の順では、カテゴリの順が文書の目次と合わない。安定ソートなら、同じ文書から常に同じバイトが出る。
 
@@ -107,7 +107,7 @@
 |---|---|
 | `cmd/cumin-trace/main.go` | `export` を選び、結果を終了コードにする |
 | `internal/export/service.go` | `Run(root string, stdout, stderr io.Writer) (int, error)`。設定と要件文書を読み、書式検査を適用し、JSON を書く。戻り値の数は書式のエラーの件数で、`error` は出力ができないことを表す |
-| `internal/export/domain.go` | 要件の JSON の構造 (`Output`、`Requirement`、`Verification`)、`Of`、`Build`。純粋な関数で、I/O を持たない |
+| `internal/export/domain.go` | 要件の JSON の構造 (`Output`、`Requirement`、`Verification`)、`Of`、`Sort`、`Build`。`trace` も `Of` と `Sort` を使う。純粋な関数で、I/O を持たない |
 
 - `internal/export/` は、`internal/check/`、`internal/requirement/`、`internal/core/` を使う。
 - 新しいライブラリは使わない。interface は作らない。

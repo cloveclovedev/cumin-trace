@@ -40,6 +40,18 @@ type Verification struct {
 // of the documents inside one area (CTR-EXP-002). A requirement of an area
 // outside areas comes last; the format check reports such an area first.
 func Build(requirements []requirement.Requirement, areas []string) Output {
+	sorted := Sort(requirements, areas)
+	output := Output{Requirements: make([]Requirement, 0, len(sorted))}
+	for _, req := range sorted {
+		output.Requirements = append(output.Requirements, Of(req))
+	}
+	return output
+}
+
+// Sort returns a copy of the requirements in the order of the areas, and in
+// the order of the documents inside one area (CTR-EXP-002). The trace uses the
+// same order.
+func Sort(requirements []requirement.Requirement, areas []string) []requirement.Requirement {
 	sorted := slices.Clone(requirements)
 	rank := func(req requirement.Requirement) int {
 		if i := slices.Index(areas, requirement.Area(req.ID)); i >= 0 {
@@ -50,11 +62,7 @@ func Build(requirements []requirement.Requirement, areas []string) Output {
 	slices.SortStableFunc(sorted, func(a, b requirement.Requirement) int {
 		return rank(a) - rank(b)
 	})
-	output := Output{Requirements: make([]Requirement, 0, len(sorted))}
-	for _, req := range sorted {
-		output.Requirements = append(output.Requirements, Of(req))
-	}
-	return output
+	return sorted
 }
 
 // Of returns the JSON object of one requirement (CTR-EXP-001). An empty list
