@@ -444,7 +444,8 @@ func TestAFormatErrorStopsTheTraceBeforeGitHub(t *testing.T) {
 
 	count, err, stdout, stderr := runTrace(t, root, github)
 
-	wantStderr := "docs/ja/requirements/index.md:28: PC-TASK-5: invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>\n"
+	line := strings.Count(documentOfTest, "\n") + 4
+	wantStderr := "docs/ja/requirements/index.md:" + strconv.Itoa(line) + ": PC-TASK-5: invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>\n"
 	if count != 1 || err != nil || stdout != "" || stderr != wantStderr || len(github.requests) != 0 {
 		t.Errorf("got %d, %v, stdout %q, stderr %q, %d requests; want 1 error, no JSON, the error line, and no request", count, err, stdout, stderr, len(github.requests))
 	}
