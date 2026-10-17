@@ -13,7 +13,7 @@ cumin-trace trace
 使い方の行は、`trace` を足して次のようにする。
 
 ```text
-cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version
+cumin-trace: usage: cumin-trace check | cumin-trace export | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version
 ```
 
 ## 設定

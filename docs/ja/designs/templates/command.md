@@ -63,7 +63,7 @@ written .github/workflows/cumin-trace-check.yml
 | 2 | 接頭辞、またはカテゴリが決まりに合わない | `cumin-trace: invalid prefix "<値>": want upper-case letters and digits` (カテゴリは `invalid area`) |
 | 2 | ファイルかディレクトリを作れない | `cumin-trace: <OS のエラー>`。そのファイルで止まり、それまでに書いたファイルは残す。作ったあとで書き込みか close に失敗したファイルは消すので、次の実行で書き直せる |
 
-全体の使い方の行は、`cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace version` である。コマンドがないとき、知らないコマンドのとき、`check` と `version` の引数の数が合わないときに、標準エラー出力に出し、終了コード 2 で終わる (`CTR-CMD-003`)。どの場合も、ファイルを書かない。
+全体の使い方の行は、`cumin-trace: usage: cumin-trace check | cumin-trace export | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version` である。コマンドがないとき、知らないコマンドのとき、`check`、`export`、`trace`、`version` の引数の数が合わないときに、標準エラー出力に出し、終了コード 2 で終わる (`CTR-CMD-003`)。どの場合も、ファイルを書かない。
 
 ## `version`
 

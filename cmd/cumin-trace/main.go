@@ -12,11 +12,12 @@ import (
 	"time"
 
 	"github.com/cloveclovedev/cumin-trace/internal/check"
+	"github.com/cloveclovedev/cumin-trace/internal/export"
 	"github.com/cloveclovedev/cumin-trace/internal/scaffold"
 	"github.com/cloveclovedev/cumin-trace/internal/trace"
 )
 
-const usage = "cumin-trace: usage: cumin-trace check | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version"
+const usage = "cumin-trace: usage: cumin-trace check | cumin-trace export | cumin-trace init <prefix> [<area>] | cumin-trace trace | cumin-trace version"
 
 // version is the version of the binary. A release build sets it with
 // -ldflags "-X main.version=<tag>".
@@ -48,6 +49,8 @@ func run(args []string, root string, stdout, stderr io.Writer) int {
 	switch {
 	case len(args) == 1 && args[0] == "check":
 		return runCheck(root, stdout, stderr)
+	case len(args) == 1 && args[0] == "export":
+		return runExport(root, stdout, stderr)
 	case len(args) > 0 && args[0] == "init":
 		return runInit(args[1:], root, stdout, stderr)
 	case len(args) == 1 && args[0] == "trace":
@@ -82,6 +85,18 @@ func countExit(count int, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+// runExport writes every requirement as JSON to stdout (CTR-EXP-001). It
+// returns 0 when the JSON is written, 1 with a format error (CTR-EXP-003),
+// and 2 when the export cannot run.
+func runExport(root string, stdout, stderr io.Writer) int {
+	count, err := export.Run(root, stdout, stderr)
+	if err != nil {
+		fmt.Fprintf(stderr, "cumin-trace: %v\n", err)
+		return 2
+	}
+	return countExit(count, stderr)
 }
 
 // runInit writes the templates and returns the exit code (CTR-TPL-001): 0
