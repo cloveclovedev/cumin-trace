@@ -53,5 +53,6 @@ requirement --> docs : reads
 legend right
   each box in cumin-trace is one Go package
   arrow = imports, reads, or writes a file
+  yellow = designed, not implemented
 endlegend
 @enduml

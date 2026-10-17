@@ -14,9 +14,9 @@
 | 4 | `site/astro.config.mjs` | 設定を読み、`base`、`unified()`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
 | 5 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う | `CTR-SITE-002` |
 | 6 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
-| 7 | `site/src/remark-requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007` |
+| 7 | `site/src/remark-requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
 | 8 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
-| 9 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-009` |
+| 9 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
 
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` は書かない。プロダクトの最初の `npm install` が作り、プロダクトがコミットする。
@@ -69,7 +69,10 @@ base = "/cumin-trace/"
 | ビルドの前とあとで、`docs_dir` の下のファイルの中身が同じである (SHA-256 で比べる) | `CTR-SITE-002` |
 | `<h1>` が1つだけで、タイトルが2回出ない | `CTR-SITE-002` |
 | 各要件の見出しに、ID と同じ `id` がある。各要件が `section.requirement` の中にある | `CTR-SITE-003`、`CTR-SITE-006` |
-| ID の参照のリンクと文書のリンクが、`base` で始まり、行き先のページと `id` が出力にある | `CTR-SITE-003`、`CTR-SITE-008` |
+| ID の参照のリンクが、`base` で始まり、行き先のページと `id` が出力にある | `CTR-SITE-003`、`CTR-SITE-008` |
+| 元の文書の相対 `.md` のリンクが、`base` で始まるページへのリンクになり、行き先のページがある。`#見出し` 付きのリンクは、行き先のページにその `id` がある | `CTR-SITE-010`、`CTR-SITE-008` |
+| 元の文書の相対 `.puml` のリンクごとに、閉じた `<details>` があり、中のコードブロックがその `.puml` の中身と同じである。ページに `.puml` へのリンクがない | `CTR-SITE-010` |
+| 元の文書の、ほかの相対パスへのリンク (`.md`、`.puml`、画像のほか) が、出力では `<a>` のない文字である | `CTR-SITE-010` |
 | 各図の `<img>` の `src` のファイルが出力にある。各ページに、図を開くスクリプトがある | `CTR-SITE-004`、`CTR-SITE-007` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js`、`_functions/`、`functions/`、`server/` がない | `CTR-SITE-008` |
 

@@ -14,6 +14,7 @@
   - `CTR-SITE-007` 図の拡大 ([ビルド](build.md))
   - `CTR-SITE-008` 配信先で動く ([ファイルと設定](files.md))
   - `CTR-SITE-009` 文書だけから作る ([ビルド](build.md))
+  - `CTR-SITE-010` 文書の間のリンク ([ビルド](build.md))
 - [コマンド](../../requirements/command/index.md)
   - `CTR-CMD-001` コマンドの一覧 (`init` がサイトのテンプレートも書く)
 
@@ -42,7 +43,6 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 | Starlight の `customCss` で CSS を、`head` でタグを足せる。`markdown.processedDirs` で、`src/content/docs/` の外のディレクトリにも Starlight の Markdown の処理をかける | Starlight [Configuration Reference](https://starlight.astro.build/reference/configuration/) |
 | `base` は、開発とビルドの両方で、ページと資産の根になる | Astro [Configuration Reference](https://docs.astro.build/en/reference/configuration-reference/) |
 | Astro は Node.js `v22.22.0` 以上を求め、奇数のバージョンを対象にしない | Astro [Install and set up](https://docs.astro.build/en/install-and-setup/) |
-| 構文木のノードの位置は、`offset` (0 から数える文字の位置) を持つ | [unist](https://github.com/syntax-tree/unist) の Position と Point |
 
 上の表にない Astro と Starlight の振る舞いは、この文書では推測として書き、「推測」と記す。実装の Issue で、確認のコマンド (`npm run check-site`) で確かめる。
 
@@ -77,11 +77,11 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 
 ### ID のアンカー、参照のリンク、要件の枠は、1つの remark のプラグインで作る
 
-`site/src/remark-requirements.mjs` が、要件の見出しに ID のアンカーを付け、要件を `<section>` で囲み、ID の参照をリンクにする。参照を読む場所と決まりは、書式検査と同じにする。参照は、テキストのノードの元の文字 (バックスラッシュのエスケープを含む) で読む。Markdown の処理系は、`unified()` に切り替える。
+`site/src/remark-requirements.mjs` が、要件の見出しに ID のアンカーを付け、要件を `<section>` で囲み、ID の参照をリンクにする。文書の間のリンク (`CTR-SITE-010`) も、同じプラグインで書き換える。参照を読む場所と4つの決まりは、書式検査と同じにする。参照は、テキストとコードスパンのノードの値 (表示される文字) で読む。Markdown の処理系は、`unified()` に切り替える。
 
-- 理由: 書式検査は、エスケープの前の文字で参照を読む ([文書の読み方](../check/reading.md))。`CTR-FMT-202\.1` を検査は `CTR-FMT-202` への参照と読み、`CTR\-FMT-200` を参照と読まない。サイトが表示の文字で読むと、検査とリンクの結果が食い違う。unist のノードは元の文字の位置 (`offset`) を持つので、元の文字を取り出せる。
-- 採らなかった案: 既定の Sätteri の `mdastPlugins`。ノードが元の文字の位置を持つことを、公式文書で確かめられなかった。
-- 採らなかった案: 表示の文字 (エスケープのあと) で参照を読む。検査と違う参照がリンクになる。
+- 理由: 値で読むのが最も簡単である。書式検査はエスケープの前の文字で読む ([文書の読み方](../check/reading.md)) ので、エスケープした ID だけは検査と結果が違いうる。このリポジトリの要件文書は ID をエスケープして書かないので、その違いを受け入れる。`unified()` にするのは、公式文書が remark のプラグインの使い方を `unified()` で示しているためである。
+- 採らなかった案: ノードの元の文字の位置 (unist の `offset`) から元の文字を取り出し、検査と同じ文字で読んで、値の位置に写す。エスケープ、文字参照、行頭の空白を数える写し方が要るが、このリポジトリにはそれを要する文書がない。
+- 採らなかった案: 既定の Sätteri の `mdastPlugins`。remark のプラグインと同じ構文木で動くことを、公式文書で確かめられなかった。
 - 細部: [ビルド](build.md)
 
 ### 図は、文書の隣の SVG をそのまま使い、クリックで SVG のファイルを開く
@@ -115,6 +115,6 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 
 `npm --prefix site run check-site` が、文書のハッシュを取り、サイトをビルドし、もう一度ハッシュを取り、出力の HTML を調べる。調べるのは、タイトル、アンカー、リンクの行き先、図のファイル、要件の枠、元の文書が変わらないことである。Node.js の標準の機能だけで書く。
 
-- 理由: `CTR-SITE-001` から `CTR-SITE-009` の検証はすべて `demo` で、毎回ブラウザで見るのは繰り返せない。HTML の形で確かめられる部分を、どの手元でも同じ結果になるコマンドにする。
+- 理由: `CTR-SITE-001` から `CTR-SITE-010` の検証はすべて `demo` で、毎回ブラウザで見るのは繰り返せない。HTML の形で確かめられる部分を、どの手元でも同じ結果になるコマンドにする。
 - 採らなかった案: Playwright でブラウザを動かす。大きな依存が増える。クリックの見た目は `demo` で Maintainer が見る。
 - 細部: [ファイルと設定](files.md)
