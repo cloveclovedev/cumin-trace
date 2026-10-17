@@ -4,7 +4,7 @@
 
 ## テンプレートのファイル
 
-`init` は、[テンプレートの生成のファイルの一覧](../templates/files.md) の 14 (`tools/plantuml/Dockerfile`) のあと、15 (workflow) の前に、次の順に書く。埋め込みは `templates/site/` の下で、書く先は `site/` の下の同じパスである。差し込む値はない。権限は `0644` である。
+`init` は、[テンプレートの生成のファイルの一覧](../templates/files.md) の 14 (`tools/plantuml/Dockerfile`) のあと、15 (workflow) の前に、次の順に書く。埋め込みは `templates/site/` の下で、書く先は `site/` の下の同じパスである。ただし、2 と 3 は、埋め込みでは先頭の `.` のない名前 (`site/node-version`、`site/gitignore`) にする。Go の `embed` は、ディレクトリの指定から `.` で始まるファイルを除くので、埋め込むファイルの名前を `.` で始めない決まり ([ファイルと埋め込み](../templates/files.md)) に合わせる。書く先のパスは `internal/scaffold/domain.go` の表が持つ。`templates.go` の `//go:embed` の指示に `site` を足す。差し込む値はない。権限は `0644` である。
 
 | # | 書く先 | 中身 | 要件 |
 |---|---|---|---|
@@ -50,25 +50,35 @@ base = "/cumin-trace/"
 | `npm --prefix site run dev` | 手元のプレビュー (`astro dev`)。`CTR-SITE-005` の1つのコマンド |
 | `npm --prefix site run build` | 静的なファイルを `site/dist/` に書く (`astro build`)。`CTR-SITE-008` |
 | `npm --prefix site run preview` | `site/dist/` を手元で配信する (`astro preview`)。配信先と同じ base path で見る |
-| `npm --prefix site run check-site` | `build` のあと、`scripts/check-site.mjs` を動かす |
+| `npm --prefix site run check-site` | `node scripts/check-site.mjs`。スクリプトが自分でビルドする (下の「確かめるコマンド」) |
 
 ## 確かめるコマンド
 
-`scripts/check-site.mjs` は、`site/dist/` の HTML を読み、次を確かめる。1つでも合わなければ、ファイルと理由を1行ずつ出し、終了コード 1 で終わる。
+`scripts/check-site.mjs` は、次の順に動く。
+
+1. `docs_dir` の下のすべてのファイルの SHA-256 を取る。
+2. `astro build` を子のプロセスで動かす (`node_modules/.bin/astro build`)。失敗したら、その終了コードで終わる。
+3. もう一度 SHA-256 を取り、1 と比べる。
+4. `site/dist/` の HTML を読む。
+
+確かめるのは次のことである。1つでも合わなければ、ファイルと理由を1行ずつ出し、終了コード 1 で終わる。
 
 | 確かめること | 要件 |
 |---|---|
 | `docs_dir` の下の各文書に、ページがある。ページの `<title>` に、文書の最初の見出しが入る | `CTR-SITE-002` |
 | ビルドの前とあとで、`docs_dir` の下のファイルの中身が同じである (SHA-256 で比べる) | `CTR-SITE-002` |
+| `<h1>` が1つだけで、タイトルが2回出ない | `CTR-SITE-002` |
 | 各要件の見出しに、ID と同じ `id` がある。各要件が `section.requirement` の中にある | `CTR-SITE-003`、`CTR-SITE-006` |
 | ID の参照のリンクと文書のリンクが、`base` で始まり、行き先のページと `id` が出力にある | `CTR-SITE-003`、`CTR-SITE-008` |
 | 各図の `<img>` の `src` のファイルが出力にある。各ページに、図を開くスクリプトがある | `CTR-SITE-004`、`CTR-SITE-007` |
-| 出力に、`.html`、CSS、JavaScript、画像のほかのファイル (サーバの関数) がない | `CTR-SITE-008` |
+| サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js`、`_functions/`、`functions/`、`server/` がない | `CTR-SITE-008` |
+
+ファイルの種類は限らない。Starlight は既定で、検索の索引 (Pagefind) の `.pf_meta`、`.pf_fragment`、`.pf_index`、`.wasm` などを `site/dist/pagefind/` に書く (推測)。これらは静的なファイルである。
 
 `CTR-SITE-007` の拡大の見た目と、配信先での動き (`CTR-SITE-008`) は、Maintainer が `demo` で見る。
 
 ## このリポジトリ
 
 - `site/` は、`go run ./cmd/cumin-trace init CTR` で書く。すでにあるファイルは飛ばされる。
-- Go のテスト (`templates` のパッケージ) が、`site/` の9つのファイルと `templates/site/` が同じバイトであることを確かめる。`go test ./...` はネットワークも Node.js も使わない。
+- Go のテスト (`templates` のパッケージ) が、`site/` の9つのファイルが、`templates/site/` の対応するファイル (2 と 3 は `.` のない名前) と同じバイトであることを確かめる。`go test ./...` はネットワークも Node.js も使わない。
 - GitHub Pages への公開と、Pull Request でのサイトのビルドの workflow は、Maintainer が書く (要求Issue #88 の制約)。workflow は `npm --prefix site ci` と `npm --prefix site run check-site` を動かし、`site/dist/` を公開する。
