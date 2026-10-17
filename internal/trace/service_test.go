@@ -395,11 +395,12 @@ func TestATokenInTheRemoteURLStaysOutOfTheRepository(t *testing.T) {
 // with an error, instead of asking for the same page again.
 func TestACursorThatDoesNotMoveStopsTheReading(t *testing.T) {
 	tests := []struct {
-		name   string
-		cursor string
+		name     string
+		cursor   string
+		requests int
 	}{
-		{"an empty cursor", ""},
-		{"the same cursor", "same"},
+		{"an empty cursor", "", 1},
+		{"the same cursor", "same", 2},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -414,8 +415,8 @@ func TestACursorThatDoesNotMoveStopsTheReading(t *testing.T) {
 
 			_, err := Run(root, Env{Token: token, Repository: "octocat/Hello-World", GraphQLURL: server.URL, Now: readAtOfTest}, &stdout, &stderr)
 
-			if err == nil || err.Error() != "GitHub: invalid page cursor" || stdout.Len() != 0 || requests > 2 {
-				t.Errorf("got error %v, stdout %q, %d requests; want GitHub: invalid page cursor, no JSON, and at most 2 requests", err, stdout.String(), requests)
+			if err == nil || err.Error() != "GitHub: invalid page cursor" || stdout.Len() != 0 || requests != test.requests {
+				t.Errorf("got error %v, stdout %q, %d requests; want GitHub: invalid page cursor, no JSON, and %d requests", err, stdout.String(), requests, test.requests)
 			}
 		})
 	}

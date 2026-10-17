@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -31,7 +33,10 @@ func TestATransportErrorNamesItsKindWithoutTheURLOrTheToken(t *testing.T) {
 		})
 	}
 
-	_, err := NewGitHubClient("http://127.0.0.1:1/graphql", token).IssuesWithLabel("octocat", "Hello-World", "req")
+	// A closed server refuses the connection on any machine.
+	server := httptest.NewServer(http.NotFoundHandler())
+	server.Close()
+	_, err := NewGitHubClient(server.URL, token).IssuesWithLabel("octocat", "Hello-World", "req")
 	if err == nil || err.Error() != "GitHub: cannot connect (connection failed)" || strings.Contains(err.Error(), token) {
 		t.Errorf("got %v; want GitHub: cannot connect (connection failed)", err)
 	}

@@ -20,6 +20,7 @@
 | 項目の途中のID | `- see PC-TASK-003 for the reason` |
 | コードブロックの中のID | 節の中のフェンス、または項目の中のコードブロック |
 | 段落ではなく、見出しやコードブロックで始まる項目 | `- ## PC-TASK-003` |
+| 後ろに空白のないチェックボックスの直後のID | `- [x]PC-TASK-003` |
 
 - 設定の `prefix` のIDだけを見つける。ほかのプロダクトのIDは無視する。
 - 1つの本文で同じIDを何度書いても、1つと数える。
@@ -61,8 +62,9 @@
 | 要件 | 確かめる状態 |
 |---|---|
 | `CTR-TRC-001` | ラベルのあるIssueとないIssue。ラベルで絞った問い合わせだけを偽の GitHub が答え、ラベルのあるIssueだけが出る |
+| `CTR-TRC-001` | `hasNextPage` が `true` で、`endCursor` が空か前と同じ。`GitHub: invalid page cursor` で止まり、JSON が出ない |
 | `CTR-TRC-002` | 2つのIDを書いた要求Issueと、同じIDを書いた2つの要求Issue。チェックボックスのある項目、ない項目、コードスパンのID |
-| `CTR-TRC-002` | ほかの節のID、項目の途中のID、節の中のコードブロックのIDが、対応にならない。`## Requirements` の節が次のレベル 2 の見出しで終わる |
+| `CTR-TRC-002` | ほかの節のID、項目の途中のID、節の中のコードブロックのID、後ろに空白のないチェックボックスの直後のIDが、対応にならない。`## Requirements` の節が次のレベル 2 の見出しで終わる |
 | `CTR-TRC-003` | sub-issue のある要求Issue (Pull Request で閉じたものと、開いたもの) と、sub-issue のない要求Issue |
 | `CTR-TRC-004.1` | 要求Issueのない要件と、not planned で閉じた要求Issueだけを持つ要件 |
 | `CTR-TRC-004.2` | 開いた要求Issueと、completed で閉じた要求Issueを持つ要件 |
@@ -72,4 +74,14 @@
 | `CTR-TRC-008` | 上の状態をまとめた出力の全体を、決めた時刻で比べる |
 | `CTR-TRC-009` | エラーを1つ含む文書。偽の GitHub への呼び出しが0回、標準出力が空、エラーの行がある、終了コード 1 |
 
-`CTR-TRC-007` は `inspection` で、`internal/platform/github.go` の問い合わせの文に `mutation` がないことと、token がヘッダの外に出ないことを読んで確かめる。
+`CTR-TRC-007` には、次のテストもある。
+
+| 要件 | 確かめる状態 |
+|---|---|
+| `CTR-TRC-007` | token がヘッダにだけ入り、問い合わせが `query` の `POST` だけである。HTTP 401 のエラーにも token が入らない (`internal/trace/service_test.go`) |
+| `CTR-TRC-007` | `origin` の URL の token が、リポジトリに入らない (`internal/trace/service_test.go`) |
+| `CTR-TRC-007` | 接続の失敗が種類 (`timeout` など) を持ち、URL も token も持たない (`internal/platform/github_test.go`) |
+
+リポジトリの決め方は、要件ではなく [コマンドと出力](command.md#リポジトリ) の決まりで、`internal/trace/service_test.go` で確かめる。
+
+`CTR-TRC-007` の要件の検証は `inspection` で、`internal/platform/github.go` の問い合わせの文に `mutation` がないことと、token がヘッダの外に出ないことを読んで確かめる。
