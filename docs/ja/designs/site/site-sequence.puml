@@ -1,0 +1,37 @@
+@startuml site-sequence
+title Sequence of npm --prefix site run build
+skinparam shadowing false
+hide footbox
+
+participant "Astro + Starlight" as astro
+participant "src/settings.mjs" as settings
+participant "src/content.config.mjs\nloader" as loader
+participant "src/remark-requirements.mjs" as remark
+database "docs_dir\n(documents, SVG)" as docs
+
+astro -> settings : read .cumin-trace.toml
+settings --> astro : prefix, requirements_dir,\ndocs_dir, base
+astro -> loader : load the docs collection
+loader -> docs : glob **/*.md
+loop each document
+  loader -> loader : no title: take the first heading
+  loader -> astro : parseData (docsSchema)
+end
+remark -> docs : read all requirement headings once
+remark -> remark : table ID -> page URL
+loop each page
+  astro -> remark : the Markdown tree (unified)
+  remark -> remark : id = ID on each requirement heading
+  remark -> remark : <section class="requirement">\nfrom the heading to ---
+  remark -> remark : read references in the source text\n(with backslash escapes), add links
+  remark -> remark : .md links -> page URLs,\nadd ./ to relative image paths
+  remark --> astro : the changed tree
+  astro -> docs : read the SVG next to the document
+  astro -> astro : write the HTML page with base\nand the head script (click opens the SVG)
+end
+
+note over astro, docs
+  inputs: documents, diagrams, .cumin-trace.toml, site/ only
+  the source files are never written
+end note
+@enduml

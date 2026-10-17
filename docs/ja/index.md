@@ -8,3 +8,4 @@
   - [書式検査の設計](designs/check/index.md)
   - [テンプレートの生成の設計](designs/templates/index.md)
   - [要件と要求Issueの対応づけの設計](designs/trace/index.md)
+  - [サイトの設計](designs/site/index.md)

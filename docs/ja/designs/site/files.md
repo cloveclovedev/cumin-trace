@@ -1,0 +1,74 @@
+# ファイルと設定
+
+[サイトの設計](index.md) の細部。
+
+## テンプレートのファイル
+
+`init` は、[テンプレートの生成のファイルの一覧](../templates/files.md) の 14 (`tools/plantuml/Dockerfile`) のあと、15 (workflow) の前に、次の順に書く。埋め込みは `templates/site/` の下で、書く先は `site/` の下の同じパスである。差し込む値はない。権限は `0644` である。
+
+| # | 書く先 | 中身 | 要件 |
+|---|---|---|---|
+| 1 | `site/package.json` | 固定したバージョン、`engines`、スクリプト (下の表) | `CTR-SITE-001`、`CTR-SITE-005` |
+| 2 | `site/.node-version` | `24` の1行 | `CTR-SITE-001` |
+| 3 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/` | `CTR-SITE-001` |
+| 4 | `site/astro.config.mjs` | 設定を読み、`base`、`unified()`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
+| 5 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う | `CTR-SITE-002` |
+| 6 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
+| 7 | `site/src/remark-requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007` |
+| 8 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
+| 9 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-009` |
+
+- 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
+- `site/package-lock.json` は書かない。プロダクトの最初の `npm install` が作り、プロダクトがコミットする。
+- Starlight の既定の見た目のまま使う (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
+
+## 設定
+
+`.cumin-trace.toml` に、省略できる表 `[site]` を足す。`internal/core` は、この2つのキーを知っているキーとして読み、ほかのキーと同じく、知らないキーをエラーにする ([設定ファイル](../check/settings.md))。
+
+| キー | 型 | 既定 | 決まり |
+|---|---|---|---|
+| `docs_dir` | 文字列 | `docs/ja` | `requirements_dir` と同じ決まりの相対パス。`requirements_dir` は、その中になければならない (`CTR-SITE-002`) |
+| `base` | 文字列 | `/` | `/` で始まり `/` で終わる |
+
+このリポジトリの値:
+
+```toml
+[site]
+base = "/cumin-trace/"
+```
+
+`site/src/settings.mjs` は、`site/` の親をリポジトリの最上位として、`.cumin-trace.toml` を `smol-toml` で読む。`prefix`、`requirements_dir` (既定 `docs/ja/requirements`)、`docs_dir`、`base` を返す。値を確かめるのは Go の `check` で、サイトは確かめない。
+
+## コマンド
+
+`site/package.json` のスクリプト。すべて `site/` で動き、token もネットワークの GitHub も使わない (`CTR-SITE-005`、`CTR-SITE-009`)。
+
+| コマンド | すること |
+|---|---|
+| `npm --prefix site install` | 最初に1回。依存を入れ、`package-lock.json` を作る。CI では `npm --prefix site ci` |
+| `npm --prefix site run dev` | 手元のプレビュー (`astro dev`)。`CTR-SITE-005` の1つのコマンド |
+| `npm --prefix site run build` | 静的なファイルを `site/dist/` に書く (`astro build`)。`CTR-SITE-008` |
+| `npm --prefix site run preview` | `site/dist/` を手元で配信する (`astro preview`)。配信先と同じ base path で見る |
+| `npm --prefix site run check-site` | `build` のあと、`scripts/check-site.mjs` を動かす |
+
+## 確かめるコマンド
+
+`scripts/check-site.mjs` は、`site/dist/` の HTML を読み、次を確かめる。1つでも合わなければ、ファイルと理由を1行ずつ出し、終了コード 1 で終わる。
+
+| 確かめること | 要件 |
+|---|---|
+| `docs_dir` の下の各文書に、ページがある。ページの `<title>` に、文書の最初の見出しが入る | `CTR-SITE-002` |
+| ビルドの前とあとで、`docs_dir` の下のファイルの中身が同じである (SHA-256 で比べる) | `CTR-SITE-002` |
+| 各要件の見出しに、ID と同じ `id` がある。各要件が `section.requirement` の中にある | `CTR-SITE-003`、`CTR-SITE-006` |
+| ID の参照のリンクと文書のリンクが、`base` で始まり、行き先のページと `id` が出力にある | `CTR-SITE-003`、`CTR-SITE-008` |
+| 各図の `<img>` の `src` のファイルが出力にある。各ページに、図を開くスクリプトがある | `CTR-SITE-004`、`CTR-SITE-007` |
+| 出力に、`.html`、CSS、JavaScript、画像のほかのファイル (サーバの関数) がない | `CTR-SITE-008` |
+
+`CTR-SITE-007` の拡大の見た目と、配信先での動き (`CTR-SITE-008`) は、Maintainer が `demo` で見る。
+
+## このリポジトリ
+
+- `site/` は、`go run ./cmd/cumin-trace init CTR` で書く。すでにあるファイルは飛ばされる。
+- Go のテスト (`templates` のパッケージ) が、`site/` の9つのファイルと `templates/site/` が同じバイトであることを確かめる。`go test ./...` はネットワークも Node.js も使わない。
+- GitHub Pages への公開と、Pull Request でのサイトのビルドの workflow は、Maintainer が書く (要求Issue #88 の制約)。workflow は `npm --prefix site ci` と `npm --prefix site run check-site` を動かし、`site/dist/` を公開する。

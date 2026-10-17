@@ -6,6 +6,7 @@ skinparam componentStyle rectangle
 package "product repository" {
   file ".cumin-trace.toml" as toml
   file "docs/ja/requirements/**/*.md" as docs
+  folder "site/\nAstro + Starlight (not implemented)" as site #LightYellow
 }
 
 package "cumin-trace" {
@@ -15,6 +16,7 @@ package "cumin-trace" {
   [internal/core\nread settings] as core
   [internal/scaffold\nwrite the templates (init)] as scaffold
   [templates\nembedded text (top level)] as templates
+  [templates/site\nsite template (not implemented)] as tsite #LightYellow
   [internal/trace\ntrace requirements to issues\n(not implemented)] as trace #LightYellow
   [internal/platform\nread GitHub (not implemented)] as platform #LightYellow
 }
@@ -33,6 +35,10 @@ scaffold --> templates : reads
 scaffold --> core : name rule, paths
 scaffold --> toml : writes
 scaffold --> docs : writes
+scaffold --> tsite : reads
+scaffold --> site : writes
+site --> toml : reads
+site --> docs : reads (build)
 check --> requirement : read requirements
 check --> core : read settings
 core --> toml : reads
