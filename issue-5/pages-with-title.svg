@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="950" height="360" viewBox="0 0 950 360" font-family="sans-serif" font-size="13">
+<defs><marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#333"/></marker><marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#D62728"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<rect x="8" y="10" width="194" height="320" fill="none" stroke="#555" rx="4"/><text x="16" y="28" font-weight="bold">product repository</text>
+<line x1="190" y1="72" x2="238" y2="137" stroke="#D62728" stroke-width="3.5" marker-end="url(#r)"/>
+<line x1="190" y1="172" x2="238" y2="137" stroke="#333" stroke-width="1.3" marker-end="url(#a)"/>
+<line x1="380" y1="137" x2="418" y2="70" stroke="#D62728" stroke-width="3.5" marker-end="url(#r)"/>
+<line x1="380" y1="137" x2="418" y2="197" stroke="#333" stroke-width="1.3" marker-end="url(#a)"/>
+<line x1="610" y1="70" x2="648" y2="167" stroke="#333" stroke-width="1.3" marker-end="url(#a)"/>
+<line x1="610" y1="197" x2="648" y2="167" stroke="#333" stroke-width="1.3" marker-end="url(#a)"/>
+<polyline points="190,282 620,282 690,197" fill="none" stroke="#333" stroke-width="1.3" marker-end="url(#a)"/>
+<line x1="770" y1="167" x2="798" y2="167" stroke="#333" stroke-width="1.3" marker-end="url(#a)"/>
+<rect x="20" y="45" width="170" height="55" rx="5" fill="#F4F4F4" stroke="#555" stroke-width="1.2"/>
+<text x="105" y="68" text-anchor="middle" fill="#222">docs/ja/**/*.md</text>
+<text x="105" y="84" text-anchor="middle" fill="#222">(no frontmatter)</text>
+<rect x="20" y="145" width="170" height="55" rx="5" fill="#F4F4F4" stroke="#555" stroke-width="1.2"/>
+<text x="105" y="168" text-anchor="middle" fill="#222">*.svg next to</text>
+<text x="105" y="184" text-anchor="middle" fill="#222">the documents</text>
+<rect x="20" y="255" width="170" height="55" rx="5" fill="#F4F4F4" stroke="#555" stroke-width="1.2"/>
+<text x="105" y="278" text-anchor="middle" fill="#222">site/</text>
+<text x="105" y="294" text-anchor="middle" fill="#222">(Starlight)</text>
+<rect x="240" y="110" width="140" height="55" rx="5" fill="#F4F4F4" stroke="#555" stroke-width="1.2"/>
+<text x="310" y="141" text-anchor="middle" fill="#222">cumin-trace</text>
+<rect x="420" y="30" width="190" height="80" rx="5" fill="#FDECEC" stroke="#D62728" stroke-width="3.5"/>
+<text x="515" y="58" text-anchor="middle" fill="#D62728" font-weight="bold">pages with a title,</text>
+<text x="515" y="74" text-anchor="middle" fill="#D62728" font-weight="bold">an anchor for each ID,</text>
+<text x="515" y="90" text-anchor="middle" fill="#D62728" font-weight="bold">links on ID references</text>
+<rect x="420" y="170" width="190" height="55" rx="5" fill="#F4F4F4" stroke="#555" stroke-width="1.2"/>
+<text x="515" y="193" text-anchor="middle" fill="#222">requirements.json</text>
+<text x="515" y="209" text-anchor="middle" fill="#222">and the trace result</text>
+<rect x="650" y="140" width="120" height="55" rx="5" fill="#F4F4F4" stroke="#555" stroke-width="1.2"/>
+<text x="710" y="171" text-anchor="middle" fill="#222">Starlight build</text>
+<rect x="800" y="130" width="130" height="75" rx="5" fill="#F4F4F4" stroke="#555" stroke-width="1.2"/>
+<text x="865" y="155" text-anchor="middle" fill="#222">static site:</text>
+<text x="865" y="171" text-anchor="middle" fill="#222">documents +</text>
+<text x="865" y="187" text-anchor="middle" fill="#222">dashboard</text>
+<text x="240" y="345" fill="#D62728" font-weight="bold">Pages with a title from the first heading; one preview command</text>
+</svg>
