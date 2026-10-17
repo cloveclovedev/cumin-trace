@@ -96,7 +96,7 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 
 ### バージョンは正確な値で固定し、cumin-trace のリリースと一緒に上げる
 
-`site/package.json` は、`astro` を `7.4.0`、`@astrojs/starlight` を `0.42.6`、`smol-toml` を `1.9.1` に、範囲 (`^`) なしで書く。Node.js は、`site/.node-version` に `24` を書き、`engines` に `>=22.22.0` を書く。プロダクトは、最初の `npm install` で作る `site/package-lock.json` をコミットする。上げるときは、Maintainer が、このリポジトリのテンプレートと `site/` を同じ Pull Request で上げ、`npm run check-site` を通す。すでにテンプレートを書いたプロダクトは、`init` が上書きしないので、自分で上げる。
+`site/package.json` は、`astro` を `7.4.0`、`@astrojs/starlight` を `0.42.6`、`smol-toml` を `1.9.1` に、範囲 (`^`) なしで書く。Node.js は、`site/.node-version` に `24` を書き、`engines` に `>=22.22.0` を書く。`site/package-lock.json` もテンプレートに含め、`npm ci` が同じ依存を入れる。上げるときは、Maintainer が、このリポジトリのテンプレートと `site/` を同じ Pull Request で上げ、`npm run check-site` を通す。すでにテンプレートを書いたプロダクトは、`init` が上書きしないので、自分で上げる。
 
 - 理由: `technology.md` は、固定したバージョンの公式文書を読むことを求める。範囲で書くと、`npm install` のたびに読むべき文書が変わる。Node.js の `24` は偶数のバージョンで、Astro の求める `v22.22.0` 以上に入る。`smol-toml` は `.cumin-trace.toml` を読むためで、依存のない小さな TOML のパーサである。
 - 採らなかった案: `^` の範囲。プロダクトごとに違うバージョンが入る。
