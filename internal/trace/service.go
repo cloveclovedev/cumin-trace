@@ -3,10 +3,12 @@ package trace
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"time"
 
+	"github.com/cloveclovedev/cumin-trace/internal/check"
 	"github.com/cloveclovedev/cumin-trace/internal/core"
 	"github.com/cloveclovedev/cumin-trace/internal/platform"
 	"github.com/cloveclovedev/cumin-trace/internal/requirement"
@@ -24,8 +26,9 @@ type Env struct {
 
 // Run reads the requirement documents of the repository at root and the
 // requirement issues on GitHub, links them, and writes the JSON to stdout
-// (CTR-TRC-008). It writes the JSON at once, only after every read. The
-// returned number is the number of the format errors. The returned error says
+// (CTR-TRC-008). It writes the JSON at once, only after every read. On a
+// format error, it writes the error lines to stderr and reads no GitHub
+// (CTR-TRC-009). The returned number is the number of the format errors. The returned error says
 // that the trace cannot run.
 func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	settings, err := core.LoadSettings(root)
@@ -35,6 +38,16 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	docs, err := requirement.Read(root, settings.RequirementsDir, settings.Prefix)
 	if err != nil {
 		return 0, err
+	}
+	form := requirement.NewIDForm(settings.Prefix)
+	// A format error stops the trace before any GitHub call (CTR-TRC-009).
+	if errs := check.Find(docs, form, settings.Areas); len(errs) > 0 {
+		for _, e := range errs {
+			if _, err := fmt.Fprintln(stderr, e); err != nil {
+				return 0, err
+			}
+		}
+		return len(errs), nil
 	}
 	if settings.RequirementLabel == "" {
 		return 0, errors.New("invalid requirement_label: want a non-empty string")
@@ -57,7 +70,7 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	output := Link(docs.Requirements, fromPlatform(issues), requirement.NewIDForm(settings.Prefix), readAt, repository)
+	output := Link(docs.Requirements, fromPlatform(issues), form, readAt, repository)
 
 	encoded, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {

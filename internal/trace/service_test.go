@@ -433,3 +433,19 @@ func equalInts(a, b []int) bool {
 	}
 	return true
 }
+
+// CTR-TRC-009: a document with one format error stops the trace before any
+// GitHub call. The trace writes no JSON and writes the error line to stderr.
+func TestAFormatErrorStopsTheTraceBeforeGitHub(t *testing.T) {
+	github := &fakeGitHub{t: t, issues: []fakeIssue{
+		{number: 1, labels: []string{"cumin/type/requirement"}, state: "OPEN", body: "## Requirements\n\n- PC-TASK-001\n"},
+	}}
+	root := writeRepository(t, settingsOfTest, documentOfTest+"\n---\n\n### `PC-TASK-5` Wrong\n\n- 検証: `test` It works\n")
+
+	count, err, stdout, stderr := runTrace(t, root, github)
+
+	wantStderr := "docs/ja/requirements/index.md:28: PC-TASK-5: invalid ID format: want <prefix>-<area>-<3 digits>, or that with .<child number>\n"
+	if count != 1 || err != nil || stdout != "" || stderr != wantStderr || len(github.requests) != 0 {
+		t.Errorf("got %d, %v, stdout %q, stderr %q, %d requests; want 1 error, no JSON, the error line, and no request", count, err, stdout, stderr, len(github.requests))
+	}
+}
