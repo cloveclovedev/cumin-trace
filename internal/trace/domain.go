@@ -136,7 +136,8 @@ type SubIssueOutput struct {
 // "## Requirements" section (CTR-TRC-002). One issue can list many IDs, and
 // many issues can list one ID. The requirements stay in the order of the
 // documents, and the issues of a requirement are in the order of their
-// numbers. An ID that no requirement has links to nothing and is a
+// numbers. Of two issues with one number, only the first counts. An ID that no
+// requirement has links to nothing and is a
 // discrepancy, and so is an open issue for a deprecated requirement
 // (CTR-TRC-006). Each requirement
 // gets its progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005),
@@ -149,9 +150,7 @@ func Link(requirements []requirement.Requirement, issues []Issue, form requireme
 		byID[req.ID] = i
 		output.Requirements[i] = RequirementOutput{ID: req.ID, Deprecated: req.Deprecated, RequirementIssues: []IssueOutput{}}
 	}
-	sorted := append([]Issue(nil), issues...)
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Number < sorted[j].Number })
-	for _, issue := range sorted {
+	for _, issue := range uniqueByNumber(issues) {
 		for _, id := range requirement.ListedIDs([]byte(issue.Body), form) {
 			i, ok := byID[id]
 			if !ok {
@@ -171,6 +170,21 @@ func Link(requirements []requirement.Requirement, issues []Issue, form requireme
 		output.Requirements[i].ImplementationIssues = CountImplementation(linked[i])
 	}
 	return output
+}
+
+// uniqueByNumber returns the issues in the order of their numbers, with only
+// the first issue of each number. A page can return an issue twice.
+func uniqueByNumber(issues []Issue) []Issue {
+	sorted := append([]Issue(nil), issues...)
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Number < sorted[j].Number })
+	unique := sorted[:0]
+	for i, issue := range sorted {
+		if i > 0 && issue.Number == sorted[i-1].Number {
+			continue
+		}
+		unique = append(unique, issue)
+	}
+	return unique
 }
 
 // sortDiscrepancies sorts the discrepancies by the issue number, the ID, then

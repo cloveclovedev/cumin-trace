@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -482,14 +483,32 @@ func TestTheTraceReportsAnUnknownIDAndAnOpenIssueForADeprecatedRequirement(t *te
 		{Kind: UnknownID, Issue: 3, ID: "PC-TASK-099"},
 		{Kind: OpenIssueForDeprecated, Issue: 7, ID: "PC-TASK-004"},
 	}
-	if len(got) != len(want) {
-		t.Fatalf("got the discrepancies %v; want %v", got, want)
+	if !slices.Equal(got, want) {
+		t.Errorf("got the discrepancies %v; want %v", got, want)
 	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("got the discrepancies %v; want %v", got, want)
-			break
-		}
+}
+
+// CTR-TRC-006: an issue that the pages return twice gives one requirement
+// issue and one discrepancy. The first copy counts.
+func TestAnIssueThatThePagesReturnTwiceCountsOnce(t *testing.T) {
+	first := requirementIssue(7, "OPEN", "", "PC-TASK-004")
+	second := requirementIssue(7, "OPEN", "", "PC-TASK-001")
+	github := &fakeGitHub{t: t, issues: []fakeIssue{first, requirementIssue(8, "CLOSED", "COMPLETED", "PC-TASK-002"), second}}
+	root := writeRepository(t, settingsOfTest, documentOfTest)
+
+	_, err, stdout, _ := runTrace(t, root, github)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	output := decode(t, stdout)
+	numbers := issueNumbers(output)
+	if !slices.Equal(numbers["PC-TASK-004"], []int{7}) || len(numbers["PC-TASK-001"]) != 0 {
+		t.Errorf("got the requirement issues %v of PC-TASK-004 and %v of PC-TASK-001; want [7] and []", numbers["PC-TASK-004"], numbers["PC-TASK-001"])
+	}
+	want := []Discrepancy{{Kind: OpenIssueForDeprecated, Issue: 7, ID: "PC-TASK-004"}}
+	if !slices.Equal(output.Discrepancies, want) {
+		t.Errorf("got the discrepancies %v; want %v", output.Discrepancies, want)
 	}
 }
 
