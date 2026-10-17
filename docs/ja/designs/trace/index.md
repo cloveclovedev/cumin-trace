@@ -20,6 +20,7 @@
 - [書式検査](../../requirements/check/index.md)
   - `CTR-CHK-001` 検出するエラー (対応づけの前に適用する)
 - [構造化データの出力](../../requirements/export/index.md)
+  - `CTR-EXP-001` 出力する内容 (要件のキーと値を借りる)
   - `CTR-EXP-002` 同じ文書からは同じ出力 (要件の並べ方を借りる)
 
 ## 実装の状況
@@ -30,7 +31,7 @@
 |---|---|
 | コマンド、設定の `requirement_label`、環境変数、リポジトリの決め方 | 実装した |
 | 問い合わせ 1 `requirementIssues`、2 `moreSubIssues`、3 `closers`、IDの見つけ方 (`ListedIDs`) | 実装した |
-| JSON の `read_at`、`repository`、`requirements` の `id`、`deprecated`、`progress`、`children`、`requirement_issues` (`sub_issues` を含む)、`implementation_issues` | 実装した |
+| JSON の `repository`、`read_at`、`requirements` の出力のキー (`export.Of`)、`progress`、`children`、`requirement_issues` (`sub_issues` を含む)、`implementation_issues` | 実装した |
 | 書式のエラーでの停止 (`CTR-TRC-009`) | 実装した |
 | 進捗 (`CTR-TRC-004`) と子の進捗の数 (`CTR-TRC-005`)。`ProgressOf` と `setProgress` (`internal/trace/domain.go`) | 実装した |
 | sub-issue と Pull Request (`CTR-TRC-003`)、実装Issueの数 (`CountImplementation`) | 実装した |
@@ -51,6 +52,14 @@
 図の元ファイル: [trace-sequence.puml](trace-sequence.puml)
 
 ## 決めたこと
+
+### 要件のオブジェクトは、構造化データの出力の関数で作る
+
+`Link` は、要件を `export.Sort` で並べ、`export.Of` で作ったオブジェクトの後ろに、対応づけのキーを足す (`CTR-TRC-008`)。Go では、`RequirementOutput` が `export.Requirement` を埋め込む。`encoding/json` は、埋め込んだ構造体のキーを、その位置に同じ順で書く。
+
+- 理由: 要件の JSON の形を1か所に置けば、`export` と `trace` の出力が食い違わない。廃止したかどうかは `status` が持つので、`deprecated` のキーは持たない。
+- 採らなかった案: `export` が書いた JSON のファイルを読む。ファイルの受け渡しが要り、`trace` は文書を読んで書式検査をするままでよい。
+- 細部: [コマンドと出力](command.md#json)
 
 ### 要件と要求Issueの対応づけは、独立したコマンド `cumin-trace trace`
 

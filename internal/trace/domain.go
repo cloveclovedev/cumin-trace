@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cloveclovedev/cumin-trace/internal/export"
 	"github.com/cloveclovedev/cumin-trace/internal/requirement"
 )
 
@@ -48,8 +49,8 @@ type PullRequest struct {
 
 // Output is the result of the trace, in the form of the JSON (CTR-TRC-008).
 type Output struct {
-	ReadAt       string              `json:"read_at"`
 	Repository   string              `json:"repository"`
+	ReadAt       string              `json:"read_at"`
 	Requirements []RequirementOutput `json:"requirements"`
 	// Discrepancies is in the order of the issue number, the ID, then the
 	// kind (CTR-TRC-006).
@@ -75,10 +76,11 @@ const (
 	OpenIssueForDeprecated DiscrepancyKind = "open_issue_for_deprecated"
 )
 
-// RequirementOutput is one requirement and its requirement issues.
+// RequirementOutput is one requirement and its requirement issues: the keys
+// of the export first, in the same order, then the keys of the trace
+// (CTR-TRC-008).
 type RequirementOutput struct {
-	ID         string `json:"id"`
-	Deprecated bool   `json:"deprecated"`
+	export.Requirement
 	// Progress is nil for a parent and for a deprecated requirement.
 	Progress *Progress `json:"progress"`
 	// Children is nil for a requirement without children and for a
@@ -134,21 +136,22 @@ type SubIssueOutput struct {
 
 // Link links each requirement to the issues that list its ID in the
 // "## Requirements" section (CTR-TRC-002). One issue can list many IDs, and
-// many issues can list one ID. The requirements stay in the order of the
-// documents, and the issues of a requirement are in the order of their
+// many issues can list one ID. The requirements are in the order of the
+// export (CTR-EXP-002), and each starts with the keys of the export
+// (CTR-TRC-008). The issues of a requirement are in the order of their
 // numbers. Of two issues with one number, only the first counts. An ID that no
-// requirement has links to nothing and is a
-// discrepancy, and so is an open issue for a deprecated requirement
-// (CTR-TRC-006). Each requirement
-// gets its progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005),
-// and the counts of its implementation issues (CTR-TRC-008).
-func Link(requirements []requirement.Requirement, issues []Issue, form requirement.IDForm, readAt, repository string) Output {
+// requirement has links to nothing and is a discrepancy, and so is an open
+// issue for a deprecated requirement (CTR-TRC-006). Each requirement gets its
+// progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005), and the
+// counts of its implementation issues (CTR-TRC-008).
+func Link(requirements []requirement.Requirement, areas []string, issues []Issue, form requirement.IDForm, readAt, repository string) Output {
+	requirements = export.Sort(requirements, areas)
 	byID := map[string]int{}
 	linked := make([][]Issue, len(requirements))
-	output := Output{ReadAt: readAt, Repository: repository, Requirements: make([]RequirementOutput, len(requirements)), Discrepancies: []Discrepancy{}}
+	output := Output{Repository: repository, ReadAt: readAt, Requirements: make([]RequirementOutput, len(requirements)), Discrepancies: []Discrepancy{}}
 	for i, req := range requirements {
 		byID[req.ID] = i
-		output.Requirements[i] = RequirementOutput{ID: req.ID, Deprecated: req.Deprecated, RequirementIssues: []IssueOutput{}}
+		output.Requirements[i] = RequirementOutput{Requirement: export.Of(req), RequirementIssues: []IssueOutput{}}
 	}
 	for _, issue := range uniqueByNumber(issues) {
 		for _, id := range requirement.ListedIDs([]byte(issue.Body), form) {

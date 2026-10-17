@@ -32,6 +32,7 @@ export --> core : read settings
 trace --> check : format check
 trace --> requirement : read requirements
 trace --> core : read settings
+trace --> export : requirement object
 trace --> platform : read issues
 platform --> api : reads
 scaffold --> templates : reads
