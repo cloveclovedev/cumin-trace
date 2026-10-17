@@ -40,9 +40,9 @@ cumin-trace: usage: cumin-trace check | cumin-trace export | cumin-trace init <p
 
 `encoding/json` の `Encoder` で、`SetIndent("", "  ")` と `SetEscapeHTML(false)` を付けて書く。`Encode` が最後の改行を付ける。
 
-- `SetEscapeHTML(false)` は、本文の `<`、`>`、`&` を `<` などに変えず、そのまま書くためである。JSON として同じ値で、人が読みやすい。
+- `SetEscapeHTML(false)` は、本文の `<`、`>`、`&` を `\u003c` などに変えず、そのまま書くためである。JSON として同じ値で、人が読みやすい。
 - キーの順は、下の表の順で固定する。Go の構造体のフィールドの順で決まる。
-- 配列は、空でも `null` ではなく `[]` にする。
+- 配列は、空でも `null` ではなく `[]` にする。`nil` のスライスは `null` になるので、空のスライスを入れる。
 - 出力した日時のように、実行のたびに変わる値は持たない (`CTR-EXP-002`)。
 
 ```json
@@ -140,3 +140,12 @@ func Build(requirements []requirement.Requirement, areas []string) Output
 - `Build` は、カテゴリを `requirement.Area` でIDから取り出す。
 - `internal/export/` は、`internal/check/`、`internal/requirement/`、`internal/core/` を使う。`net/http`、`os/exec`、`internal/platform/` を import せず、環境変数を読まない。
 - 新しいライブラリは使わない。interface は作らない。テストは、一時ディレクトリに書いた文書と設定を、本物の読み取りで読む。
+
+## 確かめたこと
+
+- 公式ページ: <https://pkg.go.dev/encoding/json> を、Go 1.27.2 の `go doc encoding/json` で読んだ。
+  - `Encoder.SetIndent`: 書く値を、`Indent(dst, src, prefix, indent)` と同じに字下げする。
+  - `Encoder.SetEscapeHTML`: 既定では、文字列の中の `&`、`<`、`>` を `\u0026`、`\u003c`、`\u003e` に変える。`false` で変えなくなる。
+  - `Encoder.Encode`: 値の JSON を書き、続けて改行を1つ書く。
+  - `Marshal`: 構造体は JSON のオブジェクトになり、公開したフィールドが1つずつメンバーになる。`nil` のスライスは `null` になる。
+- 未確認: オブジェクトのキーが、構造体のフィールドの順に並ぶこと。`Marshal` のページは、この順を書いていない。`internal/trace` の JSON が、いまこの順で出ている (`internal/trace/service_test.go`)。次の Issue のテストで、出力の全体を比べて確かめる。

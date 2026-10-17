@@ -11,7 +11,7 @@ package "product repository" {
 package "cumin-trace" {
   [cmd/cumin-trace\nchoose the command] as cmd
   [internal/check\nformat check] as check
-  [internal/requirement\nread requirements (shared)] as requirement
+  [internal/requirement\nread requirements (shared)\n(title and text not implemented)] as requirement
   [internal/core\nread settings] as core
   [internal/scaffold\nwrite the templates (init)] as scaffold
   [templates\nembedded text (top level)] as templates
