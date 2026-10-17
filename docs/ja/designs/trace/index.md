@@ -72,7 +72,7 @@
 
 ### GitHub は GraphQL API だけで読む
 
-読むのは、要求Issueの一覧と sub-issue の一覧 (1種類の問い合わせ)、閉じた実装Issueを閉じた Pull Request (もう1種類の問い合わせ) である。問い合わせは `query` だけで、`mutation` を持たない。
+読むのは、要求Issueの一覧と sub-issue の一覧 (`requirementIssues` と、101件目からの `moreSubIssues`)、閉じた実装Issueを閉じた Pull Request (`closers`) である。問い合わせは `query` だけで、`mutation` を持たない。
 
 - 理由: ラベル、閉じた理由、マイルストーン、sub-issue を、100件の要求Issueにつき1回の呼び出しで読める。REST API では、要求Issueごとに sub-issue の呼び出しが、実装Issueごとに timeline の呼び出しが要る。
 - 細部: [GitHub の読み方](github.md)

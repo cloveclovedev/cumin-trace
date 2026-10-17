@@ -113,7 +113,7 @@ type PullRequest struct {
 // subIssuesPage is one page of the sub-issues of an issue in a response.
 type subIssuesPage struct {
 	PageInfo pageInfo `json:"pageInfo"`
-	Nodes    []struct {
+	Nodes    []*struct {
 		ID         string `json:"id"`
 		Number     int    `json:"number"`
 		State      string `json:"state"`
@@ -130,6 +130,11 @@ type subIssuesPage struct {
 func (p subIssuesPage) subIssues() []SubIssue {
 	subIssues := make([]SubIssue, 0, len(p.Nodes))
 	for _, node := range p.Nodes {
+		// A connection can hold a null node, such as an issue that the token
+		// cannot read.
+		if node == nil {
+			continue
+		}
 		subIssue := SubIssue{ID: node.ID, Repository: node.Repository.NameWithOwner, Number: node.Number, State: node.State}
 		if node.Milestone != nil {
 			subIssue.Milestone = node.Milestone.Title
@@ -219,10 +224,11 @@ func (c *GitHubClient) IssuesWithLabel(owner, name, label string) ([]Issue, erro
 			if err != nil {
 				return nil, err
 			}
-			if next != nil {
-				more[len(issues)] = next
-			}
+			index := len(issues)
 			issues = append(issues, issue)
+			if next != nil {
+				more[index] = next
+			}
 		}
 		next, err := data.Repository.Issues.PageInfo.next(after)
 		if err != nil {

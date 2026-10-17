@@ -796,7 +796,8 @@ func TestTheTraceAsksForTheCloserOfEachClosedSubIssueOnce(t *testing.T) {
 // CTR-TRC-008: each requirement counts the closed and all implementation
 // issues of its requirement issues. A sub-issue of two requirement issues
 // counts once, and a sub-issue of an issue closed as not planned counts too.
-// A requirement without sub-issues counts 0 of 0.
+// A requirement without sub-issues counts 0 of 0. CTR-TRC-007: every request
+// is a query.
 func TestEachRequirementCountsItsClosedAndAllImplementationIssues(t *testing.T) {
 	first := requirementIssue(1, "OPEN", "", "PC-TASK-001")
 	first.subIssues = []fakeSubIssue{
