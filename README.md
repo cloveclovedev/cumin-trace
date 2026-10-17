@@ -121,7 +121,7 @@ A requirement issue is an issue with the label `cumin/type/requirement`, open or
 
 The JSON holds the time of the read, the repository, and each requirement with its progress and its requirement issues: number, state, reason of the close, and milestone. Each requirement issue holds its sub-issues (the implementation issues), each with the pull request that closed it. Each requirement holds the count of its closed and all implementation issues. The trace only reads GitHub. It writes the token nowhere. The exit code is 0 when the JSON is written, 1 when the documents have a format error, and 2 when the trace cannot run.
 
-The discrepancies come later. The design is in [docs/ja/designs/trace/index.md](docs/ja/designs/trace/index.md).
+The JSON also lists the discrepancies, each with its kind, the number of the requirement issue, and the ID: `unknown_id` (an ID outside the documents) and `open_issue_for_deprecated` (an open issue for a deprecated requirement). The design is in [docs/ja/designs/trace/index.md](docs/ja/designs/trace/index.md).
 
 ## Print the version
 
