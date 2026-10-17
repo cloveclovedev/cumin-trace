@@ -8,7 +8,7 @@
 |---|---|
 | `cmd/cumin-trace/main.go` | `trace` を選び、環境変数と `origin` の URL を `trace.Env` に入れ、結果を終了コードにする |
 | `internal/trace/service.go` | 設定と要件文書を読み、書式検査を適用し、GitHub を読み、JSON を書く |
-| `internal/trace/domain.go` | Issueのモデル (要求Issue、実装Issue、閉じた Pull Request)。`origin` の URL からリポジトリを決める規則、進捗、不整合、実装Issueの数、JSON の構造と並べ方。純粋な関数で、I/O を持たない |
+| `internal/trace/domain.go` | Issueのモデル (要求Issue、実装Issue、閉じた Pull Request)。`origin` の URL からリポジトリを決める規則、進捗、不整合、実装Issueの数、JSON の構造と並べ方。要件のオブジェクトは `export.Requirement` を埋め込む。純粋な関数で、I/O を持たない |
 | `internal/trace/convert.go` | `internal/platform` の型を、`domain.go` のモデルに変える ([GitHub の値の変換](github.md#github-の値の変換)) |
 | `internal/requirement/markdown.go` | 要求Issueの本文の `## Requirements` の節から、項目の先頭のIDを読む関数 (`ListedIDs`) を足す |
 | `internal/platform/github.go` | GraphQL の3つの問い合わせとページの繰り返し。問い合わせが読む値をすべて持つ、このファイルで定義した Go の型 (`Issue`、`SubIssue`、`PullRequest`) を返す |
@@ -34,7 +34,7 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error)
 
 ## 依存
 
-- `internal/trace/` は、`internal/check/`、`internal/requirement/`、`internal/core/`、`internal/platform/` を使う。書式検査は `check.Find` をそのまま使い、エラーの行も `check` と同じ `check.WriteErrors` で書く。こうして同じエラーを出す (`CTR-TRC-009`)。
+- `internal/trace/` は、`internal/check/`、`internal/requirement/`、`internal/core/`、`internal/platform/`、`internal/export/` を使う。要件のオブジェクトと並べ方は、`domain.go` が `export.Of` と `export.Sort` で作る (`CTR-TRC-008`)。書式検査は `check.Find` をそのまま使い、エラーの行も `check` と同じ `check.WriteErrors` で書く。こうして同じエラーを出す (`CTR-TRC-009`)。
 - `internal/trace/domain.go` は、`net/http`、`os`、`internal/platform/` を import しない。`internal/platform/` を import するのは、`service.go` と `convert.go` だけである。
 - `internal/platform/` は、ほかの `internal/` のパッケージを import しない。
 - GraphQL の応答の型は `internal/platform/github.go` で止め、外にはこのファイルで定義した Go の型だけを返す。値は GitHub のまま (`OPEN`、`NOT_PLANNED` など) で、意味づけは `convert.go` がする。

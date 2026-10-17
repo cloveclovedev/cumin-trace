@@ -13,6 +13,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/cloveclovedev/cumin-trace/internal/export"
 )
 
 // token is the token of the tests. It is no real token.
@@ -337,9 +339,9 @@ func TestAnIssueLinksToEachIDThatItsRequirementsSectionLists(t *testing.T) {
 	}
 }
 
-// CTR-TRC-008: the JSON holds the time of the read and each requirement with
-// its progress and its requirement issues: number, state, reason, and
-// milestone. It lists each discrepancy with its kind, issue, and ID. The same
+// CTR-TRC-008: the JSON holds the repository, the time of the read, and each
+// requirement with the keys of the export, its progress, and its requirement
+// issues: number, state, reason, and milestone. It lists each discrepancy with its kind, issue, and ID. The same
 // input gives the same JSON.
 func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	github := &fakeGitHub{t: t, issues: []fakeIssue{
@@ -356,12 +358,24 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	_, _, again, _ := runTrace(t, root, github)
 
 	want := `{
-  "read_at": "2026-10-20T09:00:00Z",
   "repository": "octocat/Hello-World",
+  "read_at": "2026-10-20T09:00:00Z",
   "requirements": [
     {
       "id": "PC-TASK-001",
-      "deprecated": false,
+      "parent": null,
+      "title": "One",
+      "text": "",
+      "verifications": [
+        {
+          "method": "test",
+          "how": "It works"
+        }
+      ],
+      "status": "active",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/index.md",
+      "line": 3,
       "progress": "in_progress",
       "children": null,
       "requirement_issues": [
@@ -387,7 +401,19 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
     },
     {
       "id": "PC-TASK-002",
-      "deprecated": false,
+      "parent": null,
+      "title": "Two",
+      "text": "",
+      "verifications": [
+        {
+          "method": "test",
+          "how": "It works"
+        }
+      ],
+      "status": "active",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/index.md",
+      "line": 9,
       "progress": "done",
       "children": null,
       "requirement_issues": [
@@ -406,7 +432,19 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
     },
     {
       "id": "PC-TASK-003",
-      "deprecated": false,
+      "parent": null,
+      "title": "Three",
+      "text": "",
+      "verifications": [
+        {
+          "method": "test",
+          "how": "It works"
+        }
+      ],
+      "status": "active",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/index.md",
+      "line": 15,
       "progress": "not_filed",
       "children": null,
       "requirement_issues": [],
@@ -417,7 +455,19 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
     },
     {
       "id": "PC-TASK-004",
-      "deprecated": true,
+      "parent": null,
+      "title": "Four",
+      "text": "",
+      "verifications": [
+        {
+          "method": "test",
+          "how": "It works"
+        }
+      ],
+      "status": "deprecated",
+      "replaced_by": null,
+      "file": "docs/ja/requirements/index.md",
+      "line": 21,
       "progress": null,
       "children": null,
       "requirement_issues": [
@@ -457,6 +507,71 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	}
 	if again != stdout {
 		t.Errorf("got another JSON on the second run\n%s", again)
+	}
+}
+
+// CTR-TRC-008: each requirement of the trace starts with the same keys and
+// values as the export of the same documents, in the same order, and in the
+// order of the areas. The JSON has no key deprecated, and its top-level keys
+// follow the example. An issue that lists two requirements repeats in both,
+// with its sub-issues.
+func TestEachRequirementStartsWithTheKeysAndValuesOfTheExport(t *testing.T) {
+	document := "# Tasks\n\n" +
+		"### `PC-TASK-001` Parent\n\nA parent has children.\n\n" +
+		"#### `PC-TASK-001.1` Child\n\nA child has a text.\n\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-002` Old\n\n- 検証: `inspection` Read it\n- 状態: 廃止。`PC-TASK-001` に置き換え\n\n---\n\n" +
+		"### `PC-NOTE-001` Note\n\n- 検証: `demo` Show it\n"
+	issue := requirementIssue(5, "OPEN", "", "PC-TASK-001.1", "PC-NOTE-001")
+	issue.subIssues = []fakeSubIssue{{number: 20, state: "CLOSED", pullRequest: 25}}
+	github := &fakeGitHub{t: t, issues: []fakeIssue{issue}}
+	root := writeRepository(t, "prefix = \"PC\"\nareas = [\"NOTE\", \"TASK\"]\n", document)
+	var exported, exportErr bytes.Buffer
+	if _, err := export.Run(root, &exported, &exportErr); err != nil {
+		t.Fatalf("export: %v", err)
+	}
+
+	_, err, stdout, _ := runTrace(t, root, github)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	var want export.Output
+	if err := json.Unmarshal(exported.Bytes(), &want); err != nil {
+		t.Fatal(err)
+	}
+	if len(want.Requirements) != 4 || want.Requirements[0].ID != "PC-NOTE-001" {
+		t.Fatalf("got the export\n%s\nwant 4 requirements and PC-NOTE-001 first", exported.String())
+	}
+	at := 0
+	for _, req := range want.Requirements {
+		encoded, err := json.MarshalIndent(req, "    ", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		head := strings.TrimSuffix(string(encoded), "\n    }") + ",\n      \"progress\": "
+		i := strings.Index(stdout[at:], head)
+		if i < 0 {
+			t.Fatalf("got the JSON\n%s\nwant the keys of the export of %s, in order, then progress:\n%s", stdout, req.ID, head)
+		}
+		at += i + len(head)
+	}
+	if strings.Contains(stdout, `"deprecated":`) {
+		t.Errorf("got the key deprecated in the JSON\n%s", stdout)
+	}
+	if !strings.HasPrefix(stdout, "{\n  \"repository\": ") || !strings.Contains(stdout, "\n  \"read_at\": ") ||
+		strings.Index(stdout, "\n  \"read_at\": ") > strings.Index(stdout, "\n  \"requirements\": ") ||
+		strings.Index(stdout, "\n  \"requirements\": ") > strings.Index(stdout, "\n  \"discrepancies\": ") {
+		t.Errorf("got the JSON\n%s\nwant the top-level keys repository, read_at, requirements, discrepancies", stdout)
+	}
+	output := decode(t, stdout)
+	numbers := issueNumbers(output)
+	if !equalInts(numbers["PC-TASK-001.1"], []int{5}) || !equalInts(numbers["PC-NOTE-001"], []int{5}) {
+		t.Errorf("got the issues %v of PC-TASK-001.1 and %v of PC-NOTE-001; want [5] for both", numbers["PC-TASK-001.1"], numbers["PC-NOTE-001"])
+	}
+	for _, req := range output.Requirements {
+		if len(req.RequirementIssues) == 1 && len(req.RequirementIssues[0].SubIssues) != 1 {
+			t.Errorf("got the sub-issues %v of %s; want the sub-issue 20", req.RequirementIssues[0].SubIssues, req.ID)
+		}
 	}
 }
 

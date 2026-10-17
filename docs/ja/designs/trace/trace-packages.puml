@@ -9,7 +9,7 @@ package "cmd/cumin-trace" {
 
 package "internal/trace" #LightYellow {
   [service.go\nrun the trace,\nwrite the JSON] as service
-  [domain.go\nissue models, repository from origin,\nprogress, discrepancies (pure)] as rules
+  [domain.go\nissue models, repository from origin,\nprogress, discrepancies (pure),\nexport keys first, then trace keys] as rules
   [convert.go\nplatform types to issue models] as convert
 }
 
@@ -19,6 +19,10 @@ package "internal/platform" #LightYellow {
 
 package "internal/core" #LightYellow {
   [settings.go\nadd requirement_label] as settings
+}
+
+package "internal/export" {
+  [domain.go\nOf (keys of one requirement),\nSort (order of the areas)] as export
 }
 
 package "internal/check" {
@@ -41,6 +45,7 @@ service --> convert
 convert --> github : platform types
 convert --> rules : issue models
 rules --> requirement
+rules --> export : requirement object, order
 github --> api : POST query (read only)
 
 legend right

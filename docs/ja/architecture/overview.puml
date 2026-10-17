@@ -18,8 +18,8 @@ package "cumin-trace" {
   [internal/scaffold\nwrite the templates (init)] as scaffold
   [templates\nembedded text (top level)] as templates
   [templates/site\nsite template (not implemented)] as tsite #LightYellow
-  [internal/trace\ntrace requirements to issues\n(not implemented)] as trace #LightYellow
-  [internal/platform\nread GitHub (not implemented)] as platform #LightYellow
+  [internal/trace\ntrace requirements to issues] as trace
+  [internal/platform\nread GitHub] as platform
 }
 
 cloud "GitHub GraphQL API" as api
@@ -34,6 +34,7 @@ export --> core : read settings
 trace --> check : format check
 trace --> requirement : read requirements
 trace --> core : read settings
+trace --> export : requirement object
 trace --> platform : read issues
 platform --> api : reads
 scaffold --> templates : reads
@@ -52,6 +53,5 @@ requirement --> docs : reads
 legend right
   each box in cumin-trace is one Go package
   arrow = imports, reads, or writes a file
-  yellow = designed, not implemented
 endlegend
 @enduml
