@@ -202,13 +202,13 @@ func TestTheDefaultLabelIsTheRequirementLabelOfCumin(t *testing.T) {
 }
 
 // CTR-TRC-002: an issue that lists two IDs links to both, and two issues
-// that list one ID both link to it. A check box and a code span are allowed.
-// An ID in another section, in the middle of an item, or in a code block
-// links to nothing.
+// that list one ID both link to it. A check box with a space after it and a
+// code span are allowed. An ID in another section, in the middle of an item,
+// in a code block, or right after a check box links to nothing.
 func TestAnIssueLinksToEachIDThatItsRequirementsSectionLists(t *testing.T) {
 	github := &fakeGitHub{t: t, issues: []fakeIssue{
 		{number: 7, labels: []string{"cumin/type/requirement"}, state: "OPEN",
-			body: "## Context\n\nPC-TASK-003 is the reason.\n\n## Requirements\n\n- [ ] PC-TASK-001 One\n- [x] `PC-TASK-002` Two\n- see PC-TASK-003\n\n```\n- PC-TASK-003\n```\n\n## Notes\n\n- PC-TASK-003\n"},
+			body: "## Context\n\nPC-TASK-003 is the reason.\n\n## Requirements\n\n- [ ] PC-TASK-001 One\n- [x] `PC-TASK-002` Two\n- see PC-TASK-003\n- [x]PC-TASK-003\n\n```\n- PC-TASK-003\n```\n\n## Notes\n\n- PC-TASK-003\n"},
 		{number: 8, labels: []string{"cumin/type/requirement"}, state: "OPEN",
 			body: "## Requirements\n- PC-TASK-002\n"},
 	}}
@@ -355,16 +355,14 @@ func TestTheTokenStaysInTheHeaderAndTheClientSendsOnlyQueries(t *testing.T) {
 	}
 }
 
-// CTR-TRC-007: the repository comes from GITHUB_REPOSITORY, else from a
-// github.com URL of the remote origin. A token in the URL stays out of the
-// result and out of the errors.
+// The repository comes from GITHUB_REPOSITORY, else from a github.com URL of
+// the remote origin. The design decides this rule (docs/ja/designs/trace/command.md).
 func TestTheRepositoryComesFromTheEnvironmentOrTheRemote(t *testing.T) {
 	tests := []struct {
 		env, remote, want, wantErr string
 	}{
 		{"octocat/Hello-World", "git@github.com:other/repo.git", "octocat/Hello-World", ""},
 		{"", "https://github.com/octocat/Hello-World.git", "octocat/Hello-World", ""},
-		{"", "https://user:" + token + "@github.com/octocat/Hello-World", "octocat/Hello-World", ""},
 		{"", "git@github.com:octocat/Hello-World.git", "octocat/Hello-World", ""},
 		{"", "ssh://git@github.com/octocat/Hello-World.git", "octocat/Hello-World", ""},
 		{"", "https://gitlab.com/octocat/Hello-World.git", "", "no repository: set GITHUB_REPOSITORY to <owner>/<name>"},
@@ -380,6 +378,46 @@ func TestTheRepositoryComesFromTheEnvironmentOrTheRemote(t *testing.T) {
 		if got != test.want || gotErr != test.wantErr {
 			t.Errorf("Repository(%q, %q) = %q, %q; want %q, %q", test.env, test.remote, got, gotErr, test.want, test.wantErr)
 		}
+	}
+}
+
+// CTR-TRC-007: a token in the URL of the remote origin stays out of the
+// repository.
+func TestATokenInTheRemoteURLStaysOutOfTheRepository(t *testing.T) {
+	got, err := Repository("", "https://user:"+token+"@github.com/octocat/Hello-World")
+
+	if got != "octocat/Hello-World" || err != nil {
+		t.Errorf("got %q, %v; want octocat/Hello-World and no error", got, err)
+	}
+}
+
+// CTR-TRC-001: a cursor that does not move stops the reading of the pages
+// with an error, instead of asking for the same page again.
+func TestACursorThatDoesNotMoveStopsTheReading(t *testing.T) {
+	tests := []struct {
+		name   string
+		cursor string
+	}{
+		{"an empty cursor", ""},
+		{"the same cursor", "same"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				_, _ = w.Write([]byte(`{"data":{"repository":{"issues":{"pageInfo":{"hasNextPage":true,"endCursor":"` + test.cursor + `"},"nodes":[]}}}}`))
+			}))
+			defer server.Close()
+			root := writeRepository(t, settingsOfTest, documentOfTest)
+			var stdout, stderr bytes.Buffer
+
+			_, err := Run(root, Env{Token: token, Repository: "octocat/Hello-World", GraphQLURL: server.URL, Now: readAtOfTest}, &stdout, &stderr)
+
+			if err == nil || err.Error() != "GitHub: invalid page cursor" || stdout.Len() != 0 || requests > 2 {
+				t.Errorf("got error %v, stdout %q, %d requests; want GitHub: invalid page cursor, no JSON, and at most 2 requests", err, stdout.String(), requests)
+			}
+		})
 	}
 }
 

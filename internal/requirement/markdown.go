@@ -318,8 +318,10 @@ func leadingID(item ast.Node, source []byte, form IDForm) string {
 		}
 	}
 	skipSpaces()
-	if end-start >= 3 && source[start] == '[' && source[start+2] == ']' &&
-		(source[start+1] == ' ' || source[start+1] == 'x' || source[start+1] == 'X') {
+	// A check box counts only with a space or a tab after it.
+	if end-start >= 4 && source[start] == '[' && source[start+2] == ']' &&
+		(source[start+1] == ' ' || source[start+1] == 'x' || source[start+1] == 'X') &&
+		(source[start+3] == ' ' || source[start+3] == '\t') {
 		start += 3
 		skipSpaces()
 	}

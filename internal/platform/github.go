@@ -4,9 +4,13 @@ package platform
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 )
@@ -102,6 +106,11 @@ func (c *GitHubClient) IssuesWithLabel(owner, name, label string) ([]Issue, erro
 		if !page.HasNextPage {
 			return issues, nil
 		}
+		// A cursor that does not move would ask for the same page again
+		// without an end.
+		if page.EndCursor == "" || (after != nil && page.EndCursor == *after) {
+			return nil, errors.New("GitHub: invalid page cursor")
+		}
 		cursor := page.EndCursor
 		after = &cursor
 	}
@@ -123,7 +132,7 @@ func (c *GitHubClient) query(query string, variables map[string]any, data any) e
 	request.Header.Set("User-Agent", "cumin-trace")
 	response, err := c.http.Do(request)
 	if err != nil {
-		return fmt.Errorf("GitHub: cannot connect")
+		return fmt.Errorf("GitHub: cannot connect (%s)", failureKind(err))
 	}
 	defer response.Body.Close()
 	body, err := io.ReadAll(response.Body)
@@ -149,4 +158,27 @@ func (c *GitHubClient) query(query string, variables map[string]any, data any) e
 		return fmt.Errorf("GitHub: invalid response")
 	}
 	return nil
+}
+
+// failureKind names the kind of a failure of the transport. The name holds
+// neither the URL nor the token.
+func failureKind(err error) string {
+	var dnsErr *net.DNSError
+	var certErr *tls.CertificateVerificationError
+	var unknownAuthority x509.UnknownAuthorityError
+	var hostnameErr x509.HostnameError
+	var invalidCert x509.CertificateInvalidError
+	var recordErr tls.RecordHeaderError
+	var netErr net.Error
+	switch {
+	case errors.As(err, &netErr) && netErr.Timeout():
+		return "timeout"
+	case errors.As(err, &dnsErr):
+		return "DNS lookup failed"
+	case errors.As(err, &certErr), errors.As(err, &unknownAuthority), errors.As(err, &hostnameErr),
+		errors.As(err, &invalidCert), errors.As(err, &recordErr):
+		return "TLS failed"
+	default:
+		return "connection failed"
+	}
 }
