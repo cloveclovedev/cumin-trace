@@ -1,6 +1,8 @@
 package requirement
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -228,5 +230,89 @@ func TestTakesAHeadingInABlockQuoteAsNoHeading(t *testing.T) {
 	want := []Reference{{ID: "CTR-FMT-002", File: "requirements/index.md", Line: 5}}
 	if !reflect.DeepEqual(docs.References, want) {
 		t.Errorf("got the references %+v, want %+v", docs.References, want)
+	}
+}
+
+// CTR-EXP-001: the title and the text of each requirement are read. The text
+// of a parent stops at the heading of its first child. The fields and the
+// thematic breaks are left out, and a list item with another name stays.
+func TestReadsTheTitleAndTheTextOfEachRequirement(t *testing.T) {
+	requirements := readDocumentOfTest(t, "## `CTR-FMT-001`  A parent  \n\n"+
+		"The first paragraph.\n\n"+
+		"| A | B |\n"+
+		"|---|---|\n"+
+		"| 1 | 2 |\n\n"+
+		"### `CTR-FMT-001.1` A child ###\n\n"+
+		"Body text\n"+
+		"on two lines.\n\n\n"+
+		"- 備考: A list item with another name\n"+
+		"- 検証: `test` It works\n"+
+		"  on two lines\n"+
+		"- Another item\n"+
+		"  - A nested item\n\n"+
+		"```text\n"+
+		"Code\n\n"+
+		"- 検証: in a code block\n"+
+		"```\n\n"+
+		"---\n\n"+
+		"## `CTR-FMT-002` Deprecated\n\n"+
+		"- 状態: 廃止。\n"+
+		"  `CTR-FMT-001` に置き換え\n\n"+
+		"It is no longer used.\n\n"+
+		"***\n\n"+
+		"## A grouping heading\n\n"+
+		"Text of no requirement.\n")
+
+	type titleText struct{ ID, Title, Text string }
+	want := []titleText{
+		{"CTR-FMT-001", "A parent", "The first paragraph.\n\n| A | B |\n|---|---|\n| 1 | 2 |"},
+		{"CTR-FMT-001.1", "A child", "Body text\non two lines.\n\n" +
+			"- 備考: A list item with another name\n\n" +
+			"- Another item\n  - A nested item\n\n" +
+			"```text\nCode\n\n- 検証: in a code block\n```"},
+		{"CTR-FMT-002", "Deprecated", "It is no longer used."},
+	}
+	var got []titleText
+	for _, req := range requirements {
+		got = append(got, titleText{req.ID, req.Title, req.Text})
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %q\nwant %q", got, want)
+	}
+}
+
+// CTR-EXP-001: the title and the text of the requirements in the example of
+// the export equal what the reading gives from the documents of this
+// repository.
+func TestReadsTheTitleAndTheTextOfTheExampleOfTheExport(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "..", "docs", "ja", "requirements", "export", "index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, block, _ := bytes.Cut(page, []byte("```json\n"))
+	block, _, _ = bytes.Cut(block, []byte("```"))
+	var example struct {
+		Requirements []struct {
+			ID    string `json:"id"`
+			Title string `json:"title"`
+			Text  string `json:"text"`
+		} `json:"requirements"`
+	}
+	if err := json.Unmarshal(block, &example); err != nil || len(example.Requirements) == 0 {
+		t.Fatalf("cannot read the example of the export: %v", err)
+	}
+	docs, err := Read(filepath.Join("..", ".."), "docs/ja/requirements", "CTR")
+	if err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]Requirement{}
+	for _, req := range docs.Requirements {
+		byID[req.ID] = req
+	}
+	for _, want := range example.Requirements {
+		got := byID[want.ID]
+		if got.Title != want.Title || got.Text != want.Text {
+			t.Errorf("got %s with the title %q and the text %q\nwant the title %q and the text %q", want.ID, got.Title, got.Text, want.Title, want.Text)
+		}
 	}
 }

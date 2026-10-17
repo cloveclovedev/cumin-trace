@@ -15,6 +15,13 @@ type Requirement struct {
 	// ParentID is the ID of the parent of a child. It is empty for a
 	// requirement that is no child.
 	ParentID string
+	// Title is the source of the heading after the code span of the ID,
+	// trimmed (CTR-EXP-001).
+	Title string
+	// Text is the Markdown source of the blocks at the top level between the
+	// heading and the next heading, without the fields and the thematic
+	// breaks. The blocks are joined with one blank line (CTR-EXP-001).
+	Text string
 	// File is the path from the top of the repository, with "/" as the separator.
 	File string
 	// Line is the line of the heading. The first line of a file is 1.
