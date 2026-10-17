@@ -229,7 +229,8 @@ func TestAnIssueLinksToEachIDThatItsRequirementsSectionLists(t *testing.T) {
 }
 
 // CTR-TRC-008: the JSON holds the time of the read and each requirement with
-// its requirement issues: number, state, reason, and milestone. The same
+// its progress and its requirement issues: number, state, reason, and
+// milestone. The same
 // input gives the same JSON.
 func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	github := &fakeGitHub{t: t, issues: []fakeIssue{
@@ -252,6 +253,8 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
     {
       "id": "PC-TASK-001",
       "deprecated": false,
+      "progress": "in_progress",
+      "children": null,
       "requirement_issues": [
         {
           "number": 9,
@@ -270,6 +273,8 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
     {
       "id": "PC-TASK-002",
       "deprecated": false,
+      "progress": "done",
+      "children": null,
       "requirement_issues": [
         {
           "number": 10,
@@ -282,11 +287,15 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
     {
       "id": "PC-TASK-003",
       "deprecated": false,
+      "progress": "not_filed",
+      "children": null,
       "requirement_issues": []
     },
     {
       "id": "PC-TASK-004",
       "deprecated": true,
+      "progress": null,
+      "children": null,
       "requirement_issues": [
         {
           "number": 12,
@@ -307,6 +316,143 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	}
 	if again != stdout {
 		t.Errorf("got another JSON on the second run\n%s", again)
+	}
+}
+
+// progressOf returns the progress of each requirement, or "null".
+func progressOf(output Output) map[string]string {
+	progress := map[string]string{}
+	for _, req := range output.Requirements {
+		progress[req.ID] = "null"
+		if req.Progress != nil {
+			progress[req.ID] = string(*req.Progress)
+		}
+	}
+	return progress
+}
+
+// requirementIssue returns an issue with the requirement label that lists
+// the IDs in its "## Requirements" section.
+func requirementIssue(number int, state, stateReason string, ids ...string) fakeIssue {
+	body := "## Requirements\n\n"
+	for _, id := range ids {
+		body += "- " + id + "\n"
+	}
+	return fakeIssue{number: number, labels: []string{"cumin/type/requirement"}, state: state, stateReason: stateReason, body: body}
+}
+
+// runProgress runs the trace on documentOfTest and returns the progress of
+// each requirement.
+func runProgress(t *testing.T, issues ...fakeIssue) map[string]string {
+	t.Helper()
+	root := writeRepository(t, settingsOfTest, documentOfTest)
+	_, err, stdout, _ := runTrace(t, root, &fakeGitHub{t: t, issues: issues})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	return progressOf(decode(t, stdout))
+}
+
+// CTR-TRC-004.1: a requirement without requirement issues, and one with only
+// issues closed as not planned or as a duplicate, are not filed.
+func TestARequirementWithoutAnOpenOrCompletedIssueIsNotFiled(t *testing.T) {
+	got := runProgress(t,
+		requirementIssue(1, "CLOSED", "NOT_PLANNED", "PC-TASK-002"),
+		requirementIssue(2, "CLOSED", "DUPLICATE", "PC-TASK-002"),
+	)
+
+	if got["PC-TASK-001"] != "not_filed" || got["PC-TASK-002"] != "not_filed" {
+		t.Errorf("got the progress %q of PC-TASK-001 and %q of PC-TASK-002; want not_filed for both", got["PC-TASK-001"], got["PC-TASK-002"])
+	}
+}
+
+// CTR-TRC-004.2: a requirement with an open requirement issue is in
+// progress, also with another issue closed as completed.
+func TestARequirementWithAnOpenIssueIsInProgress(t *testing.T) {
+	got := runProgress(t,
+		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001", "PC-TASK-002"),
+		requirementIssue(2, "OPEN", "", "PC-TASK-001"),
+		requirementIssue(3, "OPEN", "", "PC-TASK-002"),
+		requirementIssue(4, "CLOSED", "NOT_PLANNED", "PC-TASK-002"),
+	)
+
+	if got["PC-TASK-001"] != "in_progress" || got["PC-TASK-002"] != "in_progress" {
+		t.Errorf("got the progress %q of PC-TASK-001 and %q of PC-TASK-002; want in_progress for both", got["PC-TASK-001"], got["PC-TASK-002"])
+	}
+}
+
+// CTR-TRC-004.3: a requirement whose requirement issues are all closed, at
+// least one as completed, is done. A closed issue with no reason is
+// completed.
+func TestARequirementWithOnlyClosedIssuesAndOneCompletedIsDone(t *testing.T) {
+	got := runProgress(t,
+		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001"),
+		requirementIssue(2, "CLOSED", "COMPLETED", "PC-TASK-001"),
+		requirementIssue(3, "CLOSED", "", "PC-TASK-002"),
+		requirementIssue(4, "CLOSED", "NOT_PLANNED", "PC-TASK-002"),
+	)
+
+	if got["PC-TASK-001"] != "done" || got["PC-TASK-002"] != "done" {
+		t.Errorf("got the progress %q of PC-TASK-001 and %q of PC-TASK-002; want done for both", got["PC-TASK-001"], got["PC-TASK-002"])
+	}
+}
+
+// CTR-TRC-005: a parent has no progress of its own and counts its children
+// by progress, without the deprecated children. A deprecated requirement has
+// no progress and no counts, and a child of a deprecated parent still has its
+// own progress.
+func TestAParentCountsItsChildrenByProgress(t *testing.T) {
+	document := "# Tasks\n\n" +
+		"### `PC-TASK-001` Parent\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-001.1` Not filed\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-001.2` In progress\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-001.3` Done\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-001.4` Done too\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-001.5` Deprecated\n\n- 状態: 廃止\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-002` Deprecated parent\n\n- 状態: 廃止\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-002.1` Child of a deprecated parent\n\n- 検証: `test` It works\n"
+	github := &fakeGitHub{t: t, issues: []fakeIssue{
+		requirementIssue(1, "OPEN", "", "PC-TASK-001", "PC-TASK-001.2", "PC-TASK-002"),
+		requirementIssue(2, "CLOSED", "COMPLETED", "PC-TASK-001.3", "PC-TASK-001.4", "PC-TASK-002.1"),
+		requirementIssue(3, "OPEN", "", "PC-TASK-001.5"),
+	}}
+	root := writeRepository(t, settingsOfTest, document)
+
+	count, err, stdout, stderr := runTrace(t, root, github)
+
+	if count != 0 || err != nil || stderr != "" {
+		t.Fatalf("got count %d, error %v, stderr %q; want 0, no error, and no stderr", count, err, stderr)
+	}
+	output := decode(t, stdout)
+	got := map[string]string{}
+	for _, req := range output.Requirements {
+		progress, children := "null", "null"
+		if req.Progress != nil {
+			progress = string(*req.Progress)
+		}
+		if req.Children != nil {
+			encoded, _ := json.Marshal(req.Children)
+			children = string(encoded)
+		}
+		got[req.ID] = progress + " " + children
+	}
+	want := map[string]string{
+		"PC-TASK-001":   `null {"not_filed":1,"in_progress":1,"done":2,"total":4}`,
+		"PC-TASK-001.1": "not_filed null",
+		"PC-TASK-001.2": "in_progress null",
+		"PC-TASK-001.3": "done null",
+		"PC-TASK-001.4": "done null",
+		"PC-TASK-001.5": "null null",
+		"PC-TASK-002":   "null null",
+		"PC-TASK-002.1": "done null",
+	}
+	if len(got) != len(want) {
+		t.Errorf("got %d requirements; want %d", len(got), len(want))
+	}
+	for id, w := range want {
+		if got[id] != w {
+			t.Errorf("got %s for %s; want %s", got[id], id, w)
+		}
 	}
 }
 

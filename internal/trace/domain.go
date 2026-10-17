@@ -33,9 +33,32 @@ type Output struct {
 
 // RequirementOutput is one requirement and its requirement issues.
 type RequirementOutput struct {
-	ID                string        `json:"id"`
-	Deprecated        bool          `json:"deprecated"`
-	RequirementIssues []IssueOutput `json:"requirement_issues"`
+	ID         string `json:"id"`
+	Deprecated bool   `json:"deprecated"`
+	// Progress is nil for a parent and for a deprecated requirement.
+	Progress *Progress `json:"progress"`
+	// Children is nil for a requirement without children and for a
+	// deprecated requirement.
+	Children          *ChildrenOutput `json:"children"`
+	RequirementIssues []IssueOutput   `json:"requirement_issues"`
+}
+
+// Progress is how far a requirement has come (CTR-TRC-004).
+type Progress string
+
+const (
+	NotFiled   Progress = "not_filed"   // CTR-TRC-004.1
+	InProgress Progress = "in_progress" // CTR-TRC-004.2
+	Done       Progress = "done"        // CTR-TRC-004.3
+)
+
+// ChildrenOutput counts the children of a parent that are not deprecated, by
+// progress (CTR-TRC-005).
+type ChildrenOutput struct {
+	NotFiled   int `json:"not_filed"`
+	InProgress int `json:"in_progress"`
+	Done       int `json:"done"`
+	Total      int `json:"total"`
 }
 
 // IssueOutput is one requirement issue of a requirement.
@@ -50,9 +73,11 @@ type IssueOutput struct {
 // "## Requirements" section (CTR-TRC-002). One issue can list many IDs, and
 // many issues can list one ID. The requirements stay in the order of the
 // documents, and the issues of a requirement are in the order of their
-// numbers. An ID that no requirement has links to nothing.
+// numbers. An ID that no requirement has links to nothing. Each requirement
+// gets its progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005).
 func Link(requirements []requirement.Requirement, issues []Issue, form requirement.IDForm, readAt, repository string) Output {
 	byID := map[string]int{}
+	linked := make([][]Issue, len(requirements))
 	output := Output{ReadAt: readAt, Repository: repository, Requirements: make([]RequirementOutput, len(requirements))}
 	for i, req := range requirements {
 		byID[req.ID] = i
@@ -66,10 +91,71 @@ func Link(requirements []requirement.Requirement, issues []Issue, form requireme
 			if !ok {
 				continue
 			}
+			linked[i] = append(linked[i], issue)
 			output.Requirements[i].RequirementIssues = append(output.Requirements[i].RequirementIssues, issueOutput(issue))
 		}
 	}
+	setProgress(requirements, linked, output.Requirements)
 	return output
+}
+
+// ProgressOf returns the progress of a requirement without children from its
+// requirement issues (CTR-TRC-004). One open issue makes it in progress. Else
+// one issue closed as completed makes it done. Else it is not filed.
+func ProgressOf(issues []Issue) Progress {
+	progress := NotFiled
+	for _, issue := range issues {
+		switch {
+		case issue.Open:
+			return InProgress
+		case !issue.NotPlanned:
+			progress = Done
+		}
+	}
+	return progress
+}
+
+// setProgress sets the progress of each requirement that is not deprecated
+// and has no children. It sets the counts of the children of each parent that
+// is not deprecated, and leaves out the deprecated children (CTR-TRC-005).
+func setProgress(requirements []requirement.Requirement, linked [][]Issue, outputs []RequirementOutput) {
+	children := map[string][]int{}
+	for i, req := range requirements {
+		if req.ParentID != "" {
+			children[req.ParentID] = append(children[req.ParentID], i)
+		}
+	}
+	for i, req := range requirements {
+		if req.Deprecated {
+			continue
+		}
+		if _, ok := children[req.ID]; !ok {
+			progress := ProgressOf(linked[i])
+			outputs[i].Progress = &progress
+		}
+	}
+	for i, req := range requirements {
+		indexes, ok := children[req.ID]
+		if req.Deprecated || !ok {
+			continue
+		}
+		counts := &ChildrenOutput{}
+		for _, child := range indexes {
+			if outputs[child].Progress == nil {
+				continue
+			}
+			switch *outputs[child].Progress {
+			case NotFiled:
+				counts.NotFiled++
+			case InProgress:
+				counts.InProgress++
+			case Done:
+				counts.Done++
+			}
+			counts.Total++
+		}
+		outputs[i].Children = counts
+	}
 }
 
 // issueOutput returns the JSON form of an issue.
