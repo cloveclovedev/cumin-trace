@@ -195,6 +195,7 @@ func TestWrongArgumentsPrintTheUsageAndWriteNoFile(t *testing.T) {
 		{"no command", nil},
 		{"an unknown command", []string{"show"}},
 		{"an extra argument to check", []string{"check", "docs"}},
+		{"an extra argument to export", []string{"export", "x"}},
 		{"an extra argument to trace", []string{"trace", "now"}},
 		{"an extra argument to version", []string{"version", "now"}},
 	}
@@ -247,5 +248,33 @@ func TestTraceWithAFormatErrorExitsWithOne(t *testing.T) {
 	wantStderr := checkStdout.String() + "cumin-trace: 1 error\n"
 	if code != 1 || stdout.String() != "" || stderr.String() != wantStderr || requests.Load() != 0 {
 		t.Errorf("got exit code %d, stdout %q, stderr %q, %d requests; want 1, no JSON, stderr %q, and no request", code, stdout.String(), stderr.String(), requests.Load(), wantStderr)
+	}
+}
+
+// CTR-EXP-003: on a format error, the export prints the same error line as
+// the check, writes no JSON, and exits with 1.
+func TestExportWithAFormatErrorExitsWithOne(t *testing.T) {
+	root := writeRepository(t, "### `CTR-FMT-1` A wrong ID\n")
+	var checkStdout, checkStderr, stdout, stderr bytes.Buffer
+	if code := run([]string{"check"}, root, &checkStdout, &checkStderr); code != 1 || checkStdout.Len() == 0 {
+		t.Fatalf("check: got exit code %d, stdout %q; want 1 and an error line", code, checkStdout.String())
+	}
+
+	code := run([]string{"export"}, root, &stdout, &stderr)
+
+	wantStderr := checkStdout.String() + "cumin-trace: 1 error\n"
+	if code != 1 || stdout.String() != "" || stderr.String() != wantStderr {
+		t.Errorf("got exit code %d, stdout %q, stderr %q; want 1, no JSON, and stderr %q", code, stdout.String(), stderr.String(), wantStderr)
+	}
+}
+
+// CTR-EXP-001: the documents of this repository export with the exit code 0.
+func TestTheDocumentsOfThisRepositoryExport(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	code := run([]string{"export"}, filepath.Join("..", ".."), &stdout, &stderr)
+
+	if code != 0 || !strings.HasPrefix(stdout.String(), "{\n  \"requirements\": [") || stderr.String() != "" {
+		t.Errorf("got exit code %d, stderr %q; want 0, the JSON, and no stderr", code, stderr.String())
 	}
 }
