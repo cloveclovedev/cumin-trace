@@ -21,7 +21,7 @@
 | 部分 | 状況 |
 |---|---|
 | コマンド `cumin-trace export` と終了コード | 実装した |
-| 要件の JSON の構造 (`export.Of`) と並べ方 (`export.Build`) | 実装した |
+| 要件の JSON の構造 (`export.Of`) と並べ方 (`export.Sort`、`export.Build`) | 実装した |
 | 書式のエラーでの停止 (`CTR-EXP-003`) | 実装した |
 
 ## 全体像
@@ -49,7 +49,7 @@
 
 ### 要件の JSON の形は、`internal/export` の1か所で決める
 
-`domain.go` の `Of` が、1つの要件を JSON のオブジェクトにする。キーの順は、[要件の例](../../requirements/export/index.md#全体像) と同じである。空の一覧は `[]`、ない値は `null` にする。
+`domain.go` の `Of` が、1つの要件を JSON のオブジェクトにする。キーの順は、[要件の例](../../requirements/export/index.md#全体像) と同じである。空の一覧は `[]` にする。`null` になりうるキーは `parent` と `replaced_by` で、値がなければ `null` にする。空の `text` は `""` にする。
 
 - 理由: 対応づけ (`trace`) も、同じ関数で要件のオブジェクトを作る。形を1か所に置けば、2つの出力が食い違わない。
 - 採らなかった案: `internal/requirement` の `Requirement` に JSON のタグを付ける。読み取りのモデルには、書式検査だけが使う値 (`Above`、`Statuses` など) もあり、出力の形と分けたい。
