@@ -3,7 +3,7 @@
 // and anchor, also across pages (CTR-SITE-003). The places and the rules of
 // a reference are those of the format check (docs/ja/designs/check/reading.md).
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineHastPlugin } from "satteri";
 
@@ -74,8 +74,9 @@ export function headingIDs(prefix, text) {
       fence = open[1];
       continue;
     }
-    const heading = line.match(/^#{1,6}[ \t]+`([^`]*)`/);
-    if (heading && valid.test(heading[1].replace(/^ (.*) $/, "$1"))) ids.push(heading[1].replace(/^ (.*) $/, "$1"));
+    const heading = line.match(/^ {0,3}#{1,6}[ \t]+`([^`]*)`/);
+    const id = heading?.[1].replace(/^ (.*) $/, "$1");
+    if (id !== undefined && valid.test(id)) ids.push(id);
   }
   return ids;
 }
@@ -108,15 +109,25 @@ function requirementID(node, ctx, prefix) {
   return content.startsWith(`${prefix}-`) ? content : undefined;
 }
 
-// isStatus reports whether the element is the list item of a 状態 field.
+// isStatus reports whether the element is the list item of a 状態 field: an
+// item of an unordered list at the top level of the document (CTR-FMT-005).
 function isStatus(node, ctx) {
-  return node.type === "element" && node.tagName === "li" && /^\s*状態\s*[:：]/.test(ctx.textContent(node));
+  if (node.type !== "element" || node.tagName !== "li") return false;
+  const list = ctx.parent(node);
+  if (list?.tagName !== "ul" || ctx.parent(list)?.type !== "root") return false;
+  return /^\s*状態:/.test(ctx.textContent(node));
+}
+
+// inside reports whether the file is below the directory dir.
+function inside(dir, file) {
+  const rel = relative(dir, file);
+  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
 // requirementsPlugin returns the hast plugin for the settings of the site.
 export function requirementsPlugin(settings, root) {
   const table = idTable(settings, root);
-  const requirements = join(root, settings.requirementsDir) + sep;
+  const requirements = join(root, settings.requirementsDir);
   const valid = idPattern(settings.prefix, false);
   return defineHastPlugin({
     name: "cumin-trace-requirements",
@@ -124,7 +135,7 @@ export function requirementsPlugin(settings, root) {
       filter: headingTags,
       visit(node, ctx) {
         if (!settings.prefix || !ctx.fileURL) return;
-        if (!fileURLToPath(ctx.fileURL).startsWith(requirements)) return;
+        if (!inside(requirements, fileURLToPath(ctx.fileURL))) return;
         const id = requirementID(node, ctx, settings.prefix);
         if (id !== undefined && valid.test(id)) ctx.setProperty(node, "id", id);
       },

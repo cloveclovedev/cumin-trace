@@ -13,6 +13,7 @@ const settings = readSettings();
 const problems = [];
 
 const build = spawnSync(join(site, "node_modules", ".bin", "astro"), ["build"], { cwd: site, stdio: "inherit" });
+if (build.error) console.log(`astro build: ${build.error.message}`);
 if (build.status !== 0) process.exit(build.status ?? 1);
 
 // page returns the HTML of the output page of a URL under base, or undefined.
