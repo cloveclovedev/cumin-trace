@@ -15,7 +15,7 @@ func TestWritesTheSiteTemplateWithTheEmbeddedBytes(t *testing.T) {
 	root := t.TempDir()
 	runInit(t, root, "PC", "TASK")
 
-	for _, name := range []string{".node-version", ".gitignore", "package.json", "package-lock.json", "astro.config.mjs", "src/settings.mjs", "src/content.config.mjs"} {
+	for _, name := range []string{".node-version", ".gitignore", "package.json", "package-lock.json", "astro.config.mjs", "src/settings.mjs", "src/content.config.mjs", "src/requirements.mjs", "scripts/check-site.mjs"} {
 		want, err := templates.Files.ReadFile("site/" + strings.TrimPrefix(name, "."))
 		if err != nil {
 			t.Fatal(err)

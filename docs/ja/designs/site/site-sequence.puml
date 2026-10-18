@@ -6,7 +6,7 @@ hide footbox
 participant "Astro + Starlight" as astro
 participant "src/settings.mjs" as settings
 participant "src/content.config.mjs\nloader" as loader
-participant "src/remark-requirements.mjs" as remark
+participant "src/requirements.mjs" as remark
 database "docs_dir\n(documents, SVG)" as docs
 
 astro -> settings : read .cumin-trace.toml
@@ -20,7 +20,7 @@ end
 remark -> docs : read all requirement headings once
 remark -> remark : table ID -> page URL
 loop each page
-  astro -> remark : the Markdown tree (unified)
+  astro -> remark : the Markdown tree (Sätteri hast)
   remark -> remark : id = ID on each requirement heading
   remark -> remark : <section class="requirement">\nfrom the heading to ---
   remark -> remark : read references in the shown text,\nadd links

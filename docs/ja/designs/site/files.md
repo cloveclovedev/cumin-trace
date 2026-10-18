@@ -12,14 +12,14 @@
 | 2 | `site/package-lock.json` | 1 の依存とその依存の、固定したバージョン。`npm ci` が使う | `CTR-SITE-001`、`CTR-SITE-005` |
 | 3 | `site/.node-version` | `24` の1行 | `CTR-SITE-001` |
 | 4 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/` | `CTR-SITE-001` |
-| 5 | `site/astro.config.mjs` | 設定を読み、`base`、`unified()`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
+| 5 | `site/astro.config.mjs` | 設定を読み、`base`、`satteri()` とその `hastPlugins`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
 | 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う | `CTR-SITE-002` |
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
-| 8 | `site/src/remark-requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
+| 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
 | 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
 
-- いまのテンプレートは 1 から 7 を持つ。5 は `base` と Starlight の `title` (接頭辞、なければ `Requirements`) だけを決める。8 から 10 と、5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
+- いまのテンプレートは 1 から 8 と 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`) だけを作る。10 は `CTR-SITE-003` だけを確かめる。9、8 と 10 と 5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使う (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。

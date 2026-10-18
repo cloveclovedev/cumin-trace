@@ -105,6 +105,8 @@ var siteFiles = []string{
 	"astro.config.mjs",
 	"src/settings.mjs",
 	"src/content.config.mjs",
+	"src/requirements.mjs",
+	"scripts/check-site.mjs",
 }
 
 // siteSource returns the embedded path of a file of the site. The embedded
