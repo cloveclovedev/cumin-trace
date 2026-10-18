@@ -58,6 +58,11 @@ func Files(area string) []File {
 		File{Target: RenderScript, Source: RenderScript, Mode: 0o755},
 		File{Target: "tools/plantuml/Dockerfile", Source: "tools/plantuml/Dockerfile", Mode: 0o644},
 	)
+	// The template of the Starlight site, with pinned versions and a lock file
+	// (CTR-SITE-001, CTR-SITE-005).
+	for _, name := range siteFiles {
+		files = append(files, File{Target: "site/" + name, Source: siteSource(name), Mode: 0o644})
+	}
 	// The workflow that runs the format check on pull requests, with the
 	// release binary of this version (CTR-CHK-005).
 	files = append(files, File{Target: CheckWorkflow, Source: "workflows/cumin-trace-check.yml", Mode: 0o644, NeedsVersion: true})
@@ -88,6 +93,24 @@ var skillTemplates = []string{
 	"architecture.md",
 	"design-index.md",
 	"design-detail.md",
+}
+
+// siteFiles names the files of the site, in the order that init writes
+// them (docs/ja/designs/site/files.md).
+var siteFiles = []string{
+	"package.json",
+	"package-lock.json",
+	".node-version",
+	".gitignore",
+	"astro.config.mjs",
+	"src/settings.mjs",
+	"src/content.config.mjs",
+}
+
+// siteSource returns the embedded path of a file of the site. The embedded
+// name has no leading ".", because go:embed skips such a file in a directory.
+func siteSource(name string) string {
+	return "site/" + strings.TrimPrefix(name, ".")
 }
 
 // CheckPrefix returns an error when the prefix is not a valid prefix of

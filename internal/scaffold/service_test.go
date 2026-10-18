@@ -41,7 +41,7 @@ func readFile(t *testing.T, root, name string) string {
 }
 
 // skillLines is the output of init for the files of the skill, the script
-// of the diagrams, and the workflow, which come last in every run.
+// of the diagrams, the site, and the workflow, which come last in every run.
 const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/entry.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/overview.md\n" +
@@ -54,6 +54,13 @@ const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written .claude/skills/cumin-trace-docs/templates/design-detail.md\n" +
 	"written scripts/render-diagrams.sh\n" +
 	"written tools/plantuml/Dockerfile\n" +
+	"written site/package.json\n" +
+	"written site/package-lock.json\n" +
+	"written site/.node-version\n" +
+	"written site/.gitignore\n" +
+	"written site/astro.config.mjs\n" +
+	"written site/src/settings.mjs\n" +
+	"written site/src/content.config.mjs\n" +
 	"written .github/workflows/cumin-trace-check.yml\n"
 
 // checkPasses runs the format check and fails the test on any error.

@@ -4,22 +4,24 @@
 
 ## テンプレートのファイル
 
-`init` は、[テンプレートの生成のファイルの一覧](../templates/files.md) の 14 (`tools/plantuml/Dockerfile`) のあと、15 (workflow) の前に、次の順に書く。埋め込みは `templates/site/` の下で、書く先は `site/` の下の同じパスである。ただし、2 と 3 は、埋め込みでは先頭の `.` のない名前 (`site/node-version`、`site/gitignore`) にする。Go の `embed` は、ディレクトリの指定から `.` で始まるファイルを除くので、埋め込むファイルの名前を `.` で始めない決まり ([ファイルと埋め込み](../templates/files.md)) に合わせる。書く先のパスは `internal/scaffold/domain.go` の表が持つ。`templates.go` の `//go:embed` の指示に `site` を足す。差し込む値はない。権限は `0644` である。
+`init` は、[テンプレートの生成のファイルの一覧](../templates/files.md) の 14 (`tools/plantuml/Dockerfile`) のあと、15 (workflow) の前に、次の順に書く。埋め込みは `templates/site/` の下で、書く先は `site/` の下の同じパスである。ただし、3 と 4 は、埋め込みでは先頭の `.` のない名前 (`site/node-version`、`site/gitignore`) にする。Go の `embed` は、ディレクトリの指定から `.` で始まるファイルを除くので、埋め込むファイルの名前を `.` で始めない決まり ([ファイルと埋め込み](../templates/files.md)) に合わせる。書く先のパスは `internal/scaffold/domain.go` の表が持つ。`templates.go` の `//go:embed` の指示に `site` を足す。差し込む値はない。権限は `0644` である。
 
 | # | 書く先 | 中身 | 要件 |
 |---|---|---|---|
 | 1 | `site/package.json` | 固定したバージョン、`engines`、スクリプト (下の表) | `CTR-SITE-001`、`CTR-SITE-005` |
-| 2 | `site/.node-version` | `24` の1行 | `CTR-SITE-001` |
-| 3 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/` | `CTR-SITE-001` |
-| 4 | `site/astro.config.mjs` | 設定を読み、`base`、`unified()`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
-| 5 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う | `CTR-SITE-002` |
-| 6 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
-| 7 | `site/src/remark-requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
-| 8 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
-| 9 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
+| 2 | `site/package-lock.json` | 1 の依存とその依存の、固定したバージョン。`npm ci` が使う | `CTR-SITE-001`、`CTR-SITE-005` |
+| 3 | `site/.node-version` | `24` の1行 | `CTR-SITE-001` |
+| 4 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/` | `CTR-SITE-001` |
+| 5 | `site/astro.config.mjs` | 設定を読み、`base`、`unified()`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
+| 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う | `CTR-SITE-002` |
+| 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
+| 8 | `site/src/remark-requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
+| 9 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
+| 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
 
+- いまのテンプレートは 1 から 7 を持つ。5 は `base` と Starlight の `title` (接頭辞、なければ `Requirements`) だけを決める。8 から 10 と、5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
-- `site/package-lock.json` は書かない。プロダクトの最初の `npm install` が作り、プロダクトがコミットする。
+- `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使う (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
 
 ## 設定
@@ -46,7 +48,7 @@ base = "/cumin-trace/"
 
 | コマンド | すること |
 |---|---|
-| `npm --prefix site install` | 最初に1回。依存を入れ、`package-lock.json` を作る。CI では `npm --prefix site ci` |
+| `npm --prefix site ci` | 最初に1回。`package-lock.json` のとおりに依存を入れる。CI も同じ |
 | `npm --prefix site run dev` | 手元のプレビュー (`astro dev`)。`CTR-SITE-005` の1つのコマンド |
 | `npm --prefix site run build` | 静的なファイルを `site/dist/` に書く (`astro build`)。`CTR-SITE-008` |
 | `npm --prefix site run preview` | `site/dist/` を手元で配信する (`astro preview`)。配信先と同じ base path で見る |
@@ -83,5 +85,5 @@ base = "/cumin-trace/"
 ## このリポジトリ
 
 - `site/` は、`go run ./cmd/cumin-trace init CTR` で書く。すでにあるファイルは飛ばされる。
-- Go のテスト (`templates` のパッケージ) が、`site/` の9つのファイルが、`templates/site/` の対応するファイル (2 と 3 は `.` のない名前) と同じバイトであることを確かめる。`go test ./...` はネットワークも Node.js も使わない。
+- Go のテスト (`templates` のパッケージ) が、`site/` の10のファイルが、`templates/site/` の対応するファイル (3 と 4 は `.` のない名前) と同じバイトであることを確かめる。`go test ./...` はネットワークも Node.js も使わない。
 - GitHub Pages への公開と、Pull Request でのサイトのビルドの workflow は、Maintainer が書く (要求Issue #88 の制約)。workflow は `npm --prefix site ci` と `npm --prefix site run check-site` を動かし、`site/dist/` を公開する。
