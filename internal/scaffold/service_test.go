@@ -61,6 +61,8 @@ const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written site/astro.config.mjs\n" +
 	"written site/src/settings.mjs\n" +
 	"written site/src/content.config.mjs\n" +
+	"written site/src/requirements.mjs\n" +
+	"written site/scripts/check-site.mjs\n" +
 	"written .github/workflows/cumin-trace-check.yml\n"
 
 // checkPasses runs the format check and fails the test on any error.

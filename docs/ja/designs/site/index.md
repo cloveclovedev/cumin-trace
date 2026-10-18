@@ -39,7 +39,8 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 | Starlight は、すべてのページに `title` を求める | Starlight [Frontmatter Reference](https://starlight.astro.build/reference/frontmatter/) |
 | `docs` のコレクションは `docsLoader()` と `docsSchema()` で定義する。既定では `src/content/docs/` の文書がページになる | Starlight [Manual Setup](https://starlight.astro.build/manual-setup/) |
 | `glob()` の `base` は、`pattern` を解決するディレクトリである。ローダーの文脈の `parseData()` は、コレクションのスキーマでデータを確かめる | Astro [Content Loader API](https://docs.astro.build/en/reference/content-loader-reference/) |
-| Astro 7 の既定の Markdown の処理系は Sätteri である。`@astrojs/markdown-remark` の `unified()` を `markdown.processor` に渡すと、remark と rehype のプラグインを使える。プラグインが付けた見出しの `id` は残る | Astro [Markdown](https://docs.astro.build/en/guides/markdown-content/) |
+| Astro 7 の既定の Markdown の処理系は Sätteri である。`@astrojs/markdown-satteri` の `satteri()` を `markdown.processor` に渡し、`satteri` の `defineHastPlugin` で書いたプラグインを `hastPlugins` に足せる | Astro [Markdown](https://docs.astro.build/en/guides/markdown-content/) |
+| Sätteri の構文木は remark と rehype と同じ mdast と hast で、プラグインの API だけが違う。`ctx.setProperty()`、`ctx.replaceNode()`、`ctx.parent()`、`ctx.fileURL` を使える | Sätteri [Plugin API](https://satteri.bruits.org/docs/plugin-api/) |
 | Starlight の `customCss` で CSS を、`head` でタグを足せる。`markdown.processedDirs` で、`src/content/docs/` の外のディレクトリにも Starlight の Markdown の処理をかける | Starlight [Configuration Reference](https://starlight.astro.build/reference/configuration/) |
 | `base` は、開発とビルドの両方で、ページと資産の根になる | Astro [Configuration Reference](https://docs.astro.build/en/reference/configuration-reference/) |
 | Astro は Node.js `v22.22.0` 以上を求め、奇数のバージョンを対象にしない | Astro [Install and set up](https://docs.astro.build/en/install-and-setup/) |
@@ -75,13 +76,13 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 - 採らなかった案: remark のプラグインで `data.astro.frontmatter.title` を足す。コレクションのスキーマはレンダリングより前にデータを確かめるので、`title` がないエラーが先に出る (推測)。
 - 細部: [ビルド](build.md)
 
-### ID のアンカー、参照のリンク、要件の枠は、1つの remark のプラグインで作る
+### ID のアンカー、参照のリンク、要件の枠は、Sätteri の1つのプラグインで作る
 
-`site/src/remark-requirements.mjs` が、要件の見出しに ID のアンカーを付け、要件を `<section>` で囲み、ID の参照をリンクにする。文書の間のリンク (`CTR-SITE-010`) も、同じプラグインで書き換える。参照を読む場所と4つの決まりは、書式検査と同じにする。参照は、テキストとコードスパンのノードの値 (表示される文字) で読む。Markdown の処理系は、`unified()` に切り替える。
+`site/src/requirements.mjs` が、Sätteri の hast のプラグインとして、要件の見出しに ID のアンカーを付け、要件を `<section>` で囲み、ID の参照をリンクにする。文書の間のリンク (`CTR-SITE-010`) も、同じプラグインで書き換える。参照を読む場所と4つの決まりは、書式検査と同じにする。参照は、テキストとコードスパンのノードの値 (表示される文字) で読む。Markdown の処理系は、既定の Sätteri のままにする。
 
-- 理由: 値で読むのが最も簡単である。書式検査はエスケープの前の文字で読む ([文書の読み方](../check/reading.md)) ので、エスケープした ID だけは検査と結果が違いうる。このリポジトリの要件文書は ID をエスケープして書かないので、その違いを受け入れる。`unified()` にするのは、公式文書が remark のプラグインの使い方を `unified()` で示しているためである。
+- 理由: 値で読むのが最も簡単である。書式検査はエスケープの前の文字で読む ([文書の読み方](../check/reading.md)) ので、エスケープした ID だけは検査と結果が違いうる。このリポジトリの要件文書は ID をエスケープして書かないので、その違いを受け入れる。Sätteri は Astro 7 と Starlight 0.42.6 の既定の処理系で、両方が最初に支える道である。Sätteri の構文木は remark と同じ mdast と hast である。Astro の見出しの `id` を付けるプラグインは、利用者の hast のプラグインのあとに動き、すでにある `id` を残す (`@astrojs/markdown-satteri` 0.4.4 のコードで確かめた)。
 - 採らなかった案: ノードの元の文字の位置 (unist の `offset`) から元の文字を取り出し、検査と同じ文字で読んで、値の位置に写す。エスケープ、文字参照、行頭の空白を数える写し方が要るが、このリポジトリにはそれを要する文書がない。
-- 採らなかった案: 既定の Sätteri の `mdastPlugins`。remark のプラグインと同じ構文木で動くことを、公式文書で確かめられなかった。
+- 採らなかった案: `@astrojs/markdown-remark` の `unified()` と remark のプラグイン。依存が1つ増え、Astro の既定の処理系から外れる。
 - 細部: [ビルド](build.md)
 
 ### 図は、文書の隣の SVG をそのまま使い、クリックで SVG のファイルを開く
@@ -96,7 +97,7 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 
 ### バージョンは正確な値で固定し、cumin-trace のリリースと一緒に上げる
 
-`site/package.json` は、`astro` を `7.4.0`、`@astrojs/starlight` を `0.42.6`、`smol-toml` を `1.9.1` に、範囲 (`^`) なしで書く。Node.js は、`site/.node-version` に `24` を書き、`engines` に `>=22.22.0` を書く。`site/package-lock.json` もテンプレートに含め、`npm ci` が同じ依存を入れる。上げるときは、Maintainer が、このリポジトリのテンプレートと `site/` を同じ Pull Request で上げ、`npm run check-site` を通す。すでにテンプレートを書いたプロダクトは、`init` が上書きしないので、自分で上げる。
+`site/package.json` は、`astro` を `7.4.0`、`@astrojs/starlight` を `0.42.6`、`@astrojs/markdown-satteri` を `0.4.4`、`satteri` を `0.10.5`、`smol-toml` を `1.9.1` に、範囲 (`^`) なしで書く。Node.js は、`site/.node-version` に `24` を書き、`engines` に `>=22.22.0` を書く。`site/package-lock.json` もテンプレートに含め、`npm ci` が同じ依存を入れる。上げるときは、Maintainer が、このリポジトリのテンプレートと `site/` を同じ Pull Request で上げ、`npm run check-site` を通す。すでにテンプレートを書いたプロダクトは、`init` が上書きしないので、自分で上げる。
 
 - 理由: `technology.md` は、固定したバージョンの公式文書を読むことを求める。範囲で書くと、`npm install` のたびに読むべき文書が変わる。Node.js の `24` は偶数のバージョンで、Astro の求める `v22.22.0` 以上に入る。`smol-toml` は `.cumin-trace.toml` を読むためで、依存のない小さな TOML のパーサである。
 - 採らなかった案: `^` の範囲。プロダクトごとに違うバージョンが入る。

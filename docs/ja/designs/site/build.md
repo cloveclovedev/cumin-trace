@@ -9,15 +9,15 @@
 - `docs` のコレクションの `loader` は、`glob({ base: <リポジトリの最上位>/<docs_dir>, pattern: "**/*.md" })` を包むローダーで、`schema` は `docsSchema()` である。
 - 包むローダーは、`glob()` の `load()` に、`parseData` だけを差し替えた文脈を渡す。差し替えた `parseData` は、`data.title` がなければ、`filePath` の文書の最初の見出しの文字を `title` にしてから、元の `parseData` を呼ぶ (`CTR-SITE-002`)。
 - 最初の見出しは、frontmatter とコードブロックの外にある、最初の ATX 見出し (`#` で始まる行) である。文字は、見出しの記号と前後の空白を除き、コードスパンのバッククォートを除いたものである。見出しがない文書は、ファイル名 (拡張子なし) を `title` にする。
-- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、remark のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。
+- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、Sätteri のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。
 - `astro.config.mjs` は、`markdown.processedDirs` に `docs_dir` を渡し、Starlight の Markdown の処理 (見出しのリンクなど) を、`src/content/docs/` の外の文書にもかける。
 - ページの URL は、`glob()` の既定の ID (`docs_dir` からの相対パスで、拡張子なし) で決まる。`index.md` は、そのディレクトリの URL になる (推測)。
 
 ## 要件の見出しとアンカー
 
-`site/src/remark-requirements.mjs` は、`docs_dir` の下のすべての文書に動く。要件の見出しの決まりは、書式検査と同じである ([文書の読み方](../check/reading.md))。
+`site/src/requirements.mjs` は、`docs_dir` の下のすべての文書に動く。要件の見出しの決まりは、書式検査と同じである ([文書の読み方](../check/reading.md))。
 
-- `requirements_dir` の下の文書で、文書の最上位にある見出しのうち、最初の子がコードスパンで、その中身が `<接頭辞>-` で始まるものを、要件の見出しとする。中身は、CommonMark のとおり両端の空白を1つずつ除いたものである (remark のコードスパンの値)。
+- `requirements_dir` の下の文書で、文書の最上位にある見出しのうち、最初の子がコードスパンで、その中身が `<接頭辞>-` で始まるものを、要件の見出しとする。中身は、CommonMark のとおり両端の空白を1つずつ除いたものである (hast の `code` の要素の文字)。
 - 要件の見出しの中身が正しい形式の ID のときだけ、見出しの `id` を ID そのもの (`CTR-SITE-003`) にする。形式の正しくない要件の見出し (``### `CTR-FMT-01` foo``) は、アンカーを持たないが、要件の見出しとして枠を作り、中の参照をリンクにしない。プラグインが付けた `id` は、Astro が自動で付ける `id` より優先される。
 - 見出しの中の ID のコードスパンに、クラス `requirement-id` を付ける。タイトルと見分けが付く形 (枠付きの小さな文字) で表示する (`CTR-SITE-006`)。
 
@@ -67,7 +67,7 @@
 - Starlight は `.md` のリンクを書き換えない (推測)。書き換えないと、文書の間のリンクが切れる。
 - `.puml` の中身は、ローダーではなくプラグインが読む。
 - `#見出し` の部分は確かめない。宛先のページにその見出しがなければ、リンクは切れる。`check-site` がその切れたリンクを報告する。
-- remark のプラグインが作った `<details>` と `<summary>` の HTML のノードが、そのままページに出ること (推測)。Starlight のコードブロック (Expressive Code) が言語 `plantuml` を受け付けること (推測)。受け付けないときは、言語なしのコードブロックにする。
+- Sätteri のプラグインが作った `<details>` と `<summary>` の HTML のノードが、そのままページに出ること (推測)。Starlight のコードブロック (Expressive Code) が言語 `plantuml` を受け付けること (推測)。受け付けないときは、言語なしのコードブロックにする。
 
 ## 図
 
