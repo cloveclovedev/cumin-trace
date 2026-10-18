@@ -9,7 +9,7 @@
 - `docs` のコレクションの `loader` は、`glob({ base: <リポジトリの最上位>/<docs_dir>, pattern: "**/*.md" })` を包むローダーで、`schema` は `docsSchema()` である。
 - 包むローダーは、`glob()` の `load()` に、`parseData` だけを差し替えた文脈を渡す。差し替えた `parseData` は、`data.title` がなければ、`filePath` の文書の最初の見出しの文字を `title` にしてから、元の `parseData` を呼ぶ (`CTR-SITE-002`)。
 - 最初の見出しは、frontmatter とコードブロックの外にある、最初の ATX 見出し (`#` で始まる行) である。文字は、見出しの記号と前後の空白を除き、コードスパンのバッククォートを除いたものである。見出しがない文書は、ファイル名 (拡張子なし) を `title` にする。
-- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、Sätteri のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。消すのは、プラグインの `after` (すべての訪問のあと) で、文書の最上位にある最初の見出しである。frontmatter の `title` の有無は、元のファイルを読んで決める。
+- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、Sätteri のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。消すのは、プラグインの `after` (すべての訪問のあと) で、文書の最上位にある最初の見出しである。frontmatter の `title` の有無は、元のファイルを読んで決める。最初の見出しが要件の見出し (下の「要件の見出しとアンカー」) のときは、消さない。その要件のアンカーと枠を残すためで、ページではタイトルと要件の見出しの両方が出る。
 - `astro.config.mjs` は、`markdown.processedDirs` に `docs_dir` を渡し、Starlight の Markdown の処理 (見出しのリンクなど) を、`src/content/docs/` の外の文書にもかける。
 - ページの URL は、`glob()` の既定の ID (`docs_dir` からの相対パスで、拡張子なし) で決まる。`index.md` は、そのディレクトリの URL になる (推測)。
 

@@ -9,7 +9,7 @@ import { isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineHastPlugin } from "satteri";
 
-const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // idPattern returns the form of the IDs of the product with the prefix
 // (CTR-FMT-001), with the "g" flag when global is true.
@@ -202,12 +202,15 @@ export function requirementsPlugin(settings, root) {
       const file = fileURLToPath(ctx.fileURL);
       if (!inside(docs, file)) return;
       let children = [...tree.children];
+      const isRequirement = (node) =>
+        settings.prefix && inside(requirements, file) && requirementID(node, ctx, settings.prefix) !== undefined;
       if (!hasTitle(readFileSync(file, "utf8"))) {
+        // A requirement heading stays, with its anchor and its block.
         const first = children.findIndex((child) => headingLevel(child) > 0);
-        if (first >= 0) children.splice(first, 1);
+        if (first >= 0 && !isRequirement(children[first])) children.splice(first, 1);
       }
       if (settings.prefix && inside(requirements, file)) {
-        children = blocks(children, (node) => requirementID(node, ctx, settings.prefix) !== undefined);
+        children = blocks(children, isRequirement);
       }
       ctx.replaceNode(tree, { type: "root", children });
     },
