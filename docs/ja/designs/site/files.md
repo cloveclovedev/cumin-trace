@@ -16,16 +16,16 @@
 | 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う。サイトの名前を決める (`siteName()`) | `CTR-SITE-002`、`CTR-SITE-013` |
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
 | 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図を開くスクリプトの文、文書の最初の見出しとタイトル、サイドバーの項目 (`sidebar()`) | `CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010`、`CTR-SITE-011` |
-| 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。要件のページの幅と、本文の画像の角 | `CTR-SITE-006`、`CTR-SITE-014` |
+| 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。すべてのページの本文の幅と、本文の画像の角 | `CTR-SITE-006`、`CTR-SITE-014` |
 | 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013` |
 
 - いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 10 が使う、文書の最初の見出し (`firstHeading()`) も持つ。8 は、サイドバーの項目 (`sidebar()`、`CTR-SITE-011`) も作る。そのために、8 は `documentTitle()`、`sourceLinks()`、`bodyLines()` を持つ。10 は、これらを 8 から読み込む。10 は、下の表のすべての行を確かめる。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使い、要件が求めるものだけを変える (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
-- `requirements.css` の要件のページ (`CTR-SITE-014`): 要件のページは、本文に `section.requirement` を持つページである。
-  - 幅: `:root:has(section.requirement)` で、`--sl-content-width` を `60rem` にする。Starlight 0.42.6 の既定は `45rem` である。`.sl-container` の `max-width` だけでなく、`.main-pane` の幅も、この変数から決まる (`TwoColumnContent.astro`)。`max-width` だけを広げると、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。決まった値なので、変数の循環にならない。
-  - 角: `.sl-container:has(section.requirement) img` の `border-radius` を `0.5rem` にする。要件のページの画像だけを丸める (`CTR-SITE-001`)。要件の枠と同じ値である。Starlight に角の丸みの変数はない。
+- `requirements.css` の本文のデザイン (`CTR-SITE-014`): すべてのページに当てる。
+  - 幅: `:root` で、`--sl-content-width` を `60rem` にする。Starlight 0.42.6 の既定は `45rem` である。`.sl-container` の `max-width` だけでなく、`.main-pane` の幅も、この変数から決まる (`TwoColumnContent.astro`)。`max-width` だけを広げると、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。決まった値なので、変数の循環にならない。
+  - 角: `.sl-markdown-content img` (本文のすべての画像) の `border-radius` を `0.5rem` にする。要件の枠と同じ値である。Starlight に角の丸みの変数はない。
   - Starlight 0.42.6 の `.sl-container` と `.main-pane` の規則は、`@layer starlight.core` の中にある (タグの `ContentPanel.astro` と `TwoColumnContent.astro`)。layer の外の規則は、layer の中の規則より優先される。`customCss` の規則が layer の外に置かれることは推測である。HTML には現れないので、Maintainer が `inspection` で見る。
 
 ## 設定
@@ -109,7 +109,7 @@ base = "/cumin-trace/"
 
 ファイルの種類は限らない。Starlight は既定で、検索の索引 (Pagefind) の `.pf_meta`、`.pf_fragment`、`.pf_index`、`.wasm` などを `site/dist/pagefind/` に書く (推測)。これらは静的なファイルである。
 
-`CTR-SITE-007` の拡大の見た目と、配信先での動き (`CTR-SITE-008`) は、Maintainer が `demo` で見る。`CTR-SITE-014` の幅と角は HTML に現れないので、`check-site` の行を持たない。Maintainer が `inspection` で見る。
+`CTR-SITE-007` の拡大の見た目と、配信先での動き (`CTR-SITE-008`) は、Maintainer が `demo` で見る。`CTR-SITE-014` の幅と角は HTML に現れないので、`check-site` の行を持たない。Maintainer が、要件のページと設計文書のページで `inspection` で見る。
 
 `CTR-SITE-013` の3つの順は、次の文書群で分かれる。
 

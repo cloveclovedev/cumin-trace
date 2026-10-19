@@ -18,14 +18,13 @@
   vertical-align: middle;
 }
 
-/* A requirement page is a page with a requirement block. Its body is wider
-   than the default of Starlight, and its images have round corners
-   (CTR-SITE-014). Starlight sizes both the container and the main pane from
-   --sl-content-width. */
-:root:has(section.requirement) {
+/* The body of every page is wider than the default of Starlight, and its
+   images have round corners (CTR-SITE-014). Starlight sizes both the
+   container and the main pane from --sl-content-width. */
+:root {
   --sl-content-width: 60rem;
 }
 
-.sl-container:has(section.requirement) img {
+.sl-markdown-content img {
   border-radius: 0.5rem;
 }

@@ -169,13 +169,12 @@ Starlight の `locales` に `root` の1つだけを置き、`lang` を `ja`、`l
 - 採らなかった案: キーを `title` にする。文書のタイトルと同じ言葉になる。
 - 細部: [ファイルと設定](files.md) の「設定」
 
-### 要件のページは、要件の枠を持つページとし、CSS だけで幅と角を変える
+### すべてのページで、CSS だけで本文の幅と画像の角を変える
 
-要件のページは、本文に `section.requirement` (要件の枠、`CTR-SITE-006`) を持つページである。`requirements.css` が、そのページだけで、`:root` の `--sl-content-width` を `60rem` (既定は `45rem`) にする。そのページの本文の画像の角を、`border-radius: 0.5rem` で丸める。要件の枠と同じ値である (`CTR-SITE-014`)。
+`requirements.css` が、すべてのページで、`:root` の `--sl-content-width` を `60rem` (既定は `45rem`) にする。本文の画像 (`.sl-markdown-content img`) の角を、`border-radius: 0.5rem` で丸める。要件の枠と同じ値である (`CTR-SITE-014`)。
 
-- 理由: 要件のページを決めるのに、新しい決まりも、Starlight の部品の差し替えも要らない。CSS の `:has()` で、そのページだけを選べる。Starlight は、本文の枠 (`.sl-container`) と本文の欄 (`.main-pane`) の両方の幅を `--sl-content-width` から決める。変数を変えれば、両方が同じに広がる。Starlight には角の丸みの変数がないので、値を書く。
-- 採らなかった案: すべてのページの `--sl-content-width` を広げる。`CTR-SITE-001` は、要件が求めるものだけを変えることを求める。
-- 採らなかった案: `requirements_dir` の下のページを、Starlight の部品 (`PageFrame` など) の差し替えでクラスを付けて選ぶ。保守するコードが増える。
+- 理由: `CTR-SITE-014` は、サイトのすべてのページの本文を広げ、画像の角を丸めることを求める。ページを選ぶ決まりは要らない。Starlight は、本文の枠 (`.sl-container`) と本文の欄 (`.main-pane`) の両方の幅を `--sl-content-width` から決める。変数を変えれば、両方が同じに広がる。Starlight には角の丸みの変数がないので、値を書く。
+- 採らなかった案: 要件の枠 (`section.requirement`) を持つページだけを、CSS の `:has()` で選んで広げる。設計文書のページが狭いまま残り、`CTR-SITE-014` に合わない。
 - 採らなかった案: `.sl-container` の `max-width` だけを広げる。`.main-pane` の幅は変わらないので、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。
 - 採らなかった案: `--sl-content-width` を、自分自身の値から計算し直す (`calc(var(--sl-content-width) * 4 / 3)`)。CSS の変数の循環になり、無効になる。
 - 細部: [ファイルと設定](files.md) の「テンプレートのファイル」
