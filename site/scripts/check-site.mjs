@@ -150,13 +150,17 @@ function bodyLines(text) {
       }
     }
     // A comment starts outside the code spans, and ends at the first "-->".
+    // Only a comment at the start of a line (an HTML block) goes on to the
+    // next lines; an unclosed "<!--" in the middle of a line is text.
     for (;;) {
       const start = line.replace(/`[^`]*`/g, (span) => " ".repeat(span.length)).indexOf("<!--");
       if (start === -1) break;
       const end = line.indexOf("-->", start + 4);
       if (end === -1) {
-        line = line.slice(0, start);
-        comment = true;
+        if (/^ {0,3}$/.test(line.slice(0, start))) {
+          line = "";
+          comment = true;
+        }
         break;
       }
       line = line.slice(0, start) + " ".repeat(end + 3 - start) + line.slice(end + 3);
@@ -244,13 +248,15 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   }
   const sources = [...content.matchAll(/<img [^>]*src="([^"]+)"/g)].map((m) => m[1]);
   for (const path of imagePaths(readFileSync(file, "utf8"))) {
-    // Astro writes the file as <name>.<hash><extension>.
-    const extension = extname(path);
-    const output = new RegExp(`^${escape(basename(path, extension))}\\.[A-Za-z0-9_-]+${escape(extension)}$`);
+    // Astro writes the file as <name>.<hash><extension>, and a raster image
+    // as <name>.<hash>.webp.
+    const extension = extname(decoded(path));
+    const extensions = extension.toLowerCase() === ".svg" ? escape(extension) : `(?:${escape(extension)}|\\.webp)`;
+    const output = new RegExp(`^${escape(basename(decoded(path), extension))}\\.[A-Za-z0-9_-]+${extensions}$`);
     const source = sources.find((src) => output.test(decoded(basename(src))));
     if (source === undefined) {
       problems.push(`${name}: the page ${url} shows no image ${path}`);
-    } else if (!source.startsWith(settings.base) || !existsSync(join(dist, source.slice(settings.base.length)))) {
+    } else if (!source.startsWith(settings.base) || !existsSync(join(dist, decoded(source).slice(settings.base.length)))) {
       problems.push(`${name}: the image ${path} goes to ${source}, which is no file under ${settings.base}`);
     } else {
       images++;
