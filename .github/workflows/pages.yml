@@ -1,0 +1,98 @@
+name: pages
+
+# Builds the site of the documents on pull requests, and publishes it on
+# GitHub Pages on every push to main that changes the site.
+#
+# No path filter and no branch filter on pull_request. A workflow that is
+# skipped leaves a required check pending, and the pending check blocks the merge.
+# The job finds the changed files itself. When none of them changes the site,
+# it skips the build and reports success.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # A ruleset may require this job by its name. Do not rename it.
+  site:
+    name: site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+    steps:
+      # The site is built only from these paths. Any other change leaves it
+      # as it is. When the changed files cannot be listed, the job builds.
+      - name: Find whether the site changes
+        id: changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          case "$EVENT" in
+            pull_request) base="$PR_BASE"; head="$PR_HEAD" ;;
+            push) base="$PUSH_BEFORE"; head="$PUSH_AFTER" ;;
+            *) base=""; head="" ;;
+          esac
+          changed=true
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] &&
+            files="$(gh api "repos/$REPOSITORY/compare/$base...$head" --jq '.files[].filename')"; then
+            # The compare API lists 300 files at most.
+            if [ "$(printf '%s\n' "$files" | grep -c .)" -lt 300 ] &&
+              ! printf '%s\n' "$files" | grep -Eq '^(docs/ja/|site/|\.cumin-trace\.toml$|\.github/workflows/pages\.yml$)'; then
+              changed=false
+            fi
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "The site changes: $changed"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.changes.outputs.changed == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.changes.outputs.changed == 'true'
+        with:
+          node-version-file: site/.node-version
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: npm ci
+        if: steps.changes.outputs.changed == 'true'
+        run: npm --prefix site ci
+      # check-site builds the site, then checks the pages.
+      - name: Build and check the site
+        if: steps.changes.outputs.changed == 'true'
+        run: npm --prefix site run check-site
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: steps.changes.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          path: site/dist
+
+  deploy:
+    name: deploy
+    needs: site
+    if: needs.site.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # One deployment at a time. A newer push waits; a running one is not cancelled.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
