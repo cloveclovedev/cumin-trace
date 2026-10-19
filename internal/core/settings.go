@@ -49,6 +49,9 @@ type Settings struct {
 	DocsDir string
 	// Base is the base path of the site. It starts and ends with "/".
 	Base string
+	// Name is the name of the site, or empty when the settings do not name
+	// one (CTR-SITE-013).
+	Name string
 }
 
 var namePattern = regexp.MustCompile(`\A[A-Z0-9]+\z`)
@@ -71,6 +74,7 @@ func LoadSettings(root string) (Settings, error) {
 		Site             struct {
 			DocsDir string `toml:"docs_dir"`
 			Base    string `toml:"base"`
+			Name    string `toml:"name"`
 		} `toml:"site"`
 	}
 	meta, err := toml.DecodeFile(filepath.Join(root, SettingsFile), &file)
@@ -147,12 +151,22 @@ func LoadSettings(root string) (Settings, error) {
 		}
 	}
 
+	name := file.Site.Name
+	if meta.IsDefined("site", "name") {
+		if strings.TrimSpace(name) == "" {
+			return Settings{}, fmt.Errorf("%s: site.name %q must not be empty or only white space", SettingsFile, name)
+		}
+		if strings.ContainsAny(name, "\r\n") {
+			return Settings{}, fmt.Errorf("%s: site.name %q must not contain a line break", SettingsFile, name)
+		}
+	}
+
 	label := DefaultRequirementLabel
 	if meta.IsDefined("requirement_label") {
 		label = file.RequirementLabel
 	}
 
-	return Settings{Prefix: file.Prefix, Areas: file.Areas, RequirementsDir: dir, RequirementLabel: label, DocsDir: docsDir, Base: base}, nil
+	return Settings{Prefix: file.Prefix, Areas: file.Areas, RequirementsDir: dir, RequirementLabel: label, DocsDir: docsDir, Base: base, Name: name}, nil
 }
 
 // relativeDir checks a directory of the settings: a relative path with "/" as

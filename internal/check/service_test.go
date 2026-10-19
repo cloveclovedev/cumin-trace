@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/cloveclovedev/cumin-trace/internal/core"
 )
 
 const settings = `prefix = "CTR"
@@ -288,6 +290,70 @@ func TestAcceptsASiteTableThatFollowsTheRules(t *testing.T) {
 				t.Errorf("got %d errors and output:\n%s\nwant no error", count, output)
 			}
 		})
+	}
+}
+
+// CTR-SITE-013: the check accepts a name of the site, and the settings hold it.
+func TestAcceptsANameOfTheSite(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml":             settings + "[site]\nname = \"cumin-trace\"\n",
+		"docs/ja/requirements/index.md": "# Requirements\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	if count != 0 || output != "" {
+		t.Errorf("got %d errors and output:\n%s\nwant no error", count, output)
+	}
+	got, err := core.LoadSettings(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "cumin-trace" {
+		t.Errorf("got the name %q, want %q", got.Name, "cumin-trace")
+	}
+}
+
+// CTR-SITE-013: an empty name, a name of only white space, and a name with a
+// line break are errors of the settings, with the file name.
+func TestRefusesANameOfTheSiteThatTheRulesForbid(t *testing.T) {
+	tests := []struct {
+		name string
+		site string
+		want string
+	}{
+		{"an empty name", "[site]\nname = \"\"\n", `.cumin-trace.toml: site.name "" must not be empty or only white space`},
+		{"a name of only white space", "[site]\nname = \" \"\n", `.cumin-trace.toml: site.name " " must not be empty or only white space`},
+		{"a name with a line break", "[site]\nname = \"a\\nb\"\n", `.cumin-trace.toml: site.name "a\nb" must not contain a line break`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := writeRepository(t, map[string]string{
+				".cumin-trace.toml":             settings + test.site,
+				"docs/ja/requirements/index.md": "# Requirements\n",
+			})
+
+			_, err := Run(root, &bytes.Buffer{})
+
+			if err == nil || err.Error() != test.want {
+				t.Errorf("got error %v, want %q", err, test.want)
+			}
+		})
+	}
+}
+
+// CTR-SITE-013: a name that is not a string is an error of the TOML decoder,
+// with the file name.
+func TestRefusesANameOfTheSiteThatIsNotAString(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml":             settings + "[site]\nname = 1\n",
+		"docs/ja/requirements/index.md": "# Requirements\n",
+	})
+
+	_, err := Run(root, &bytes.Buffer{})
+
+	if err == nil || !strings.HasPrefix(err.Error(), ".cumin-trace.toml:") || !strings.Contains(err.Error(), "name") {
+		t.Errorf("got error %v, want an error of the decoder on the name with the file name", err)
 	}
 }
 

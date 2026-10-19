@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
 import { atxHeadings, body as markdownBody, diagramScript, escape, firstHeading, frontmatter, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
 
@@ -13,6 +14,11 @@ const dist = join(site, "dist");
 const settings = readSettings();
 const problems = [];
 const docs = join(root, settings.docsDir);
+// CTR-SITE-013: the name that each page shows at the top left. The argument
+// --site-name wins over the name of the settings. With neither, the check of
+// the name does not run.
+const { values: args } = parseArgs({ options: { "site-name": { type: "string" } } });
+const wantedName = args["site-name"] ?? settings.name;
 
 // digest returns the SHA-256 of a file, or undefined when no file is there.
 function digest(file) {
@@ -336,6 +342,12 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
     continue;
   }
   documents++;
+  if (wantedName) {
+    const shown = html.match(/<a [^>]*class="site-title[ "][^>]*>([\s\S]*?)<\/a>/)?.[1];
+    if (shown === undefined || plainText(shown) !== wantedName.replace(/\s+/g, "")) {
+      problems.push(`${name}: the page ${url} shows the site name ${JSON.stringify(shown === undefined ? "" : plainText(shown))}, want ${JSON.stringify(wantedName)}`);
+    }
+  }
   const content = body(html);
   const hrefs = new Set([...content.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1])));
   if ([...hrefs].some((href) => !URL.canParse(href) && !href.startsWith("/") && /\.puml(#.*)?$/.test(href))) {

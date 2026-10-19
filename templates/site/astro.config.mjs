@@ -5,11 +5,12 @@
 // (CTR-SITE-006). The one style sheet draws the blocks. A first plugin
 // rewrites the relative links between documents (CTR-SITE-010). Astro shows
 // each SVG next to a document from its relative path (CTR-SITE-004), and a
-// script in the head opens a diagram on a click (CTR-SITE-007).
+// script in the head opens a diagram on a click (CTR-SITE-007). The name at
+// the top left comes from siteName() (CTR-SITE-013).
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import { satteri } from "@astrojs/markdown-satteri";
-import { readSettings, root } from "./src/settings.mjs";
+import { readSettings, root, siteName } from "./src/settings.mjs";
 import { diagramScript, linksPlugin, requirementsPlugin } from "./src/requirements.mjs";
 
 const settings = readSettings();
@@ -21,7 +22,7 @@ export default defineConfig({
   },
   integrations: [
     starlight({
-      title: settings.prefix || "Requirements",
+      title: siteName(settings, root),
       customCss: ["./src/requirements.css"],
       head: [{ tag: "script", content: diagramScript }],
     }),
