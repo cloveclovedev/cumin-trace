@@ -78,8 +78,11 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   const text = readFileSync(file, "utf8");
   const html = page(pageURL(settings.base, relative(docs, file)));
   const title = html?.match(/<title>([\s\S]*?)<\/title>/)?.[1];
-  if (html !== undefined && !plainText(title ?? "").includes(plainText(documentTitle(text, file)))) {
-    problems.push(`${relative(root, file)}: the <title> of the page does not hold the title ${JSON.stringify(documentTitle(text, file))}`);
+  // The <title> starts with the title of the document, then the site name.
+  // A <title> holds text and entities, and no tags.
+  const want = documentTitle(text, file);
+  if (html !== undefined && (want === "" || !rawText(title ?? "").startsWith(want.replace(/\s+/g, "")))) {
+    problems.push(`${relative(root, file)}: the <title> of the page does not start with the title ${JSON.stringify(want)}`);
   }
   if (hasTitle(text)) continue;
   // A requirement heading of level 1 is no title.
@@ -223,9 +226,14 @@ function decoded(url) {
 // plainText returns the text of an HTML fragment with no tags, no entities,
 // and no white space.
 function plainText(html) {
+  return rawText(html.replace(/<[^>]*>/g, ""));
+}
+
+// rawText returns the text of an element that holds no tags, such as
+// <title>, with no entities and no white space.
+function rawText(html) {
   const entities = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
   return html
-    .replace(/<[^>]*>/g, "")
     .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (all, name) => {
       if (name[0] === "#") return String.fromCodePoint(name[1] === "x" || name[1] === "X" ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10));
       return entities[name] ?? all;
