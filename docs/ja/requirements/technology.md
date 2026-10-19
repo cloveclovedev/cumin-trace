@@ -18,7 +18,7 @@ cumin-trace で使う技術と、それを選んだ理由を記述する。具�
 | 要件文書 | Markdown | GitHub でそのまま読め、差分でレビューできる。frontmatter などの独自の記法に頼らない |
 | 設定 | TOML | cumin-works と同じ形式である。コメントを書ける |
 | 構造化データ | JSON | サイトのビルド (Astro) からも、Agent からも、追加の道具なしに読める |
-| GitHub の読み取り | GitHub の REST API と GraphQL API を直接呼ぶ | 読むだけなので、GitHub App は要らない。`gh` コマンドに依存すると、GitHub Actions と手元で動かし方が変わる |
+| GitHub の読み取り | GitHub の GraphQL API を直接呼ぶ | 読むだけなので、GitHub App は要らない。`gh` コマンドに依存すると、GitHub Actions と手元で動かし方が変わる |
 | サイト | Astro + Starlight | 文書のサイトに必要なもの (ナビゲーション、検索、目次) が最初からそろっている。既定の見た目を基に使う |
 | ダッシュボード | Astro のページ (静的) | サイトと同じ仕組みで作れ、要件のページへ同じサイトの中でリンクできる。サーバを持たずに済む |
 | 図 | PlantUML。Docker のイメージで描画する | テキストで書けて差分でレビューできる。cumin-works と同じやり方である。描画の環境を Docker で固定すると、誰が描画しても同じ SVG になる |
@@ -32,8 +32,8 @@ cumin-trace で使う技術と、それを選んだ理由を記述する。具�
 - Go は標準ライブラリを優先する。大きな部品や、安全性に関わる部品を自分で作り直すことはしない。よく保守されているライブラリがあれば、理由を添えて提案し、Maintainer の確認を得てから足す。
 - 個別のライブラリ (Markdown のパーサ、TOML のパーサなど) は、このページでは決めない。設計文書で選び、Pull Request で確認する。
 - 外部の API やライブラリは、使う前に公式文書で確かめる。Astro と Starlight は、固定したバージョンの公式文書を読む。
+- サイトのテンプレートの Astro、Starlight、Node.js のバージョンの固定と更新は、[サイトの設計](../designs/site/index.md) で決めた。
 
 ## 決めていないこと
 
-- サイトのテンプレートで、Astro、Starlight、Node.js のバージョンをどう固定し、どう更新するか。
 - GitHub Actions の `GITHUB_TOKEN` で、sub-issue とマイルストーンを読めるか ([GitHub との対応づけ](trace/index.md) の未決事項)。
