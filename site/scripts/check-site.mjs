@@ -7,7 +7,7 @@ import { basename, dirname, extname, join, relative, resolve, sep } from "node:p
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
-import { atxHeadings, body as markdownBody, diagramScript, escape, firstHeading, frontmatter, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
+import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, escape, firstHeading, hasTitle, headingIDs, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -112,12 +112,73 @@ for (const path of documentPages) {
   }
 }
 
-// documentTitle returns the title of a document: the title of its
-// frontmatter, or its first heading.
-function documentTitle(text, file) {
-  if (!hasTitle(text)) return firstHeading(markdownBody(text), file).title;
-  const line = frontmatter(text).match(/^["']?title["']?[ \t]*:[ \t]*(.*)$/m)[1];
-  return line.replace(/^(["'])(.*)\1[ \t]*$/, "$2").trim();
+// CTR-SITE-011: the sidebar of the page of the entry document lists the
+// pages of sidebar() in its order, and each page of a document once. The top
+// level starts with the page of the entry document, then follows the order of
+// the links of the entry document. CTR-SITE-012: no item or group of the top
+// level is named after a part of docs_dir, unless a directory of the
+// documents has that name.
+{
+  const entry = join(docs, "index.md");
+  const html = page(settings.base) ?? "";
+  const shown = sidebarItems(html);
+  const links = shown.filter((item) => !item.group);
+  const flat = (items) => items.flatMap((item) => (item.items ? flat(item.items) : [decoded(`${settings.base}${item.slug === "index" ? "" : `${item.slug}/`}`)]));
+  const want = flat(sidebar(settings, root));
+  if (links.map((item) => item.url).join("\n") !== want.join("\n")) {
+    problems.push(`${settings.base}: the sidebar lists ${JSON.stringify(links.map((item) => item.url))}, want the items of sidebar() ${JSON.stringify(want)}`);
+  }
+  for (const path of documentPages) {
+    const url = decoded(`${settings.base}${relative(dist, dirname(path)).split(sep).join("/")}${dirname(path) === dist ? "" : "/"}`);
+    const count = links.filter((item) => item.url === url).length;
+    if (count !== 1) problems.push(`${url}: the page shows ${count} times in the sidebar, want 1`);
+  }
+  // The first item of each item of the top level: the link, or the first
+  // link of the group.
+  const firsts = [];
+  for (let i = 0; i < shown.length; i++) {
+    if (shown[i].depth !== 1) continue;
+    const first = shown[i].group ? shown.slice(i + 1).find((item) => !item.group) : shown[i];
+    if (first !== undefined) firsts.push(first.url);
+  }
+  if (existsSync(entry)) {
+    if (firsts[0] !== decoded(settings.base)) problems.push(`${settings.base}: the sidebar starts with ${firsts[0]}, want the page of the entry document`);
+    const linked = [];
+    for (const link of sourceLinks(readFileSync(entry, "utf8"))) {
+      const target = linkTarget(settings, root, entry, link.href);
+      const url = target.kind === "page" ? decoded(target.url.split("#")[0]) : undefined;
+      if (url !== undefined && url !== decoded(settings.base) && !linked.includes(url)) linked.push(url);
+    }
+    const order = firsts.slice(1).filter((url) => linked.includes(url));
+    const wantOrder = linked.filter((url) => order.includes(url));
+    if (order.length === 0 && linked.length > 0) problems.push(`${settings.base}: the top level of the sidebar has none of the links of the entry document`);
+    if (order.join("\n") !== wantOrder.join("\n")) {
+      problems.push(`${settings.base}: the top level of the sidebar lists ${JSON.stringify(order)}, want the order of the entry document ${JSON.stringify(wantOrder)}`);
+    }
+  }
+  const names = new Set(readdirSync(docs, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name));
+  for (const item of shown.filter((item) => item.depth === 1)) {
+    const part = settings.docsDir.split("/").find((part) => part !== "" && part === item.label && !names.has(part));
+    if (part !== undefined) problems.push(`${settings.base}: the top level of the sidebar has ${JSON.stringify(item.label)}, a directory above the documents`);
+  }
+}
+
+// sidebarItems returns the items of the sidebar of a page, in the order of
+// the page: the URL and the label of each link, and the label of each
+// group, with the depth of its list (1 for the top level).
+function sidebarItems(html) {
+  const start = html.indexOf('<ul class="top-level');
+  if (start === -1) return [];
+  const items = [];
+  let depth = 0;
+  for (const match of html.slice(start).matchAll(/<ul[\s>]|<\/ul>|<a href="([^"]*)"[^>]*>([\s\S]*?)<\/a>|<span class="group-label[^"]*">([\s\S]*?)<\/span><\/span>/g)) {
+    if (match[0].startsWith("<ul")) depth++;
+    else if (match[0] === "</ul>") depth--;
+    else if (match[1] !== undefined) items.push({ depth, url: decoded(match[1]), label: rawText(match[2].replace(/<[^>]*>/g, "")) });
+    else items.push({ depth, group: true, label: rawText(match[3].replace(/<[^>]*>/g, "")) });
+    if (depth === 0) break;
+  }
+  return items;
 }
 
 // marks returns the text with no white space and no marks that Markdown can
@@ -247,66 +308,6 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   for (const block of html.matchAll(/<pre[\s>][\s\S]*?<\/pre>/g)) {
     if (block[0].includes("<a ")) problems.push(`${url}: a code block holds a link`);
   }
-}
-
-// bodyLines returns the lines of a document outside the frontmatter, the code
-// blocks, and the HTML comments. The page shows none of them.
-function bodyLines(text) {
-  const lines = markdownBody(text).split(/\r?\n/);
-  const found = [];
-  let fence = "";
-  let comment = false;
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    if (comment) {
-      const end = line.indexOf("-->");
-      if (end === -1) continue;
-      line = " ".repeat(end + 3) + line.slice(end + 3);
-      comment = false;
-    } else {
-      const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
-      if (fence) {
-        if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
-        continue;
-      }
-      if (open) {
-        fence = open[1];
-        continue;
-      }
-    }
-    // A comment starts outside the code spans, and ends at the first "-->".
-    // Only a comment at the start of a line (an HTML block) goes on to the
-    // next lines; an unclosed "<!--" in the middle of a line is text.
-    for (;;) {
-      const start = line.replace(/`[^`]*`/g, (span) => " ".repeat(span.length)).indexOf("<!--");
-      if (start === -1) break;
-      const end = line.indexOf("-->", start + 4);
-      if (end === -1) {
-        if (/^ {0,3}$/.test(line.slice(0, start))) {
-          line = "";
-          comment = true;
-        }
-        break;
-      }
-      line = line.slice(0, start) + " ".repeat(end + 3 - start) + line.slice(end + 3);
-    }
-    found.push(line);
-  }
-  return found;
-}
-
-// sourceLinks returns the destination and the text of each inline link of a
-// document that is no image, outside the frontmatter, the code blocks, and
-// the code spans.
-function sourceLinks(text) {
-  const found = [];
-  for (const line of bodyLines(text)) {
-    const plain = line.replace(/`[^`]*`/g, (span) => span.replace(/[[\]()]/g, " "));
-    for (const match of plain.matchAll(/(?<!!)\[([^\]]*)\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)) {
-      found.push({ text: line.slice(match.index + 1, match.index + 1 + match[1].length), href: match[2] });
-    }
-  }
-  return found;
 }
 
 // decoded returns the URL with no percent-encoding, or the URL itself when it

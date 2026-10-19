@@ -86,8 +86,8 @@
 
 `requirements.mjs` の `sidebar(settings, root)` が、Starlight の `sidebar` の項目の配列を返す。`astro.config.mjs` が、ビルドとプレビューの始めに1回呼ぶ (`CTR-SITE-011`)。
 
-- 読むリンク: 文書の本文の、画像でないインラインのリンク (`[文字](宛先)`) を、書いた順に読む。frontmatter、コードブロック、コードスパン、HTML のコメントの中は読まない。読み方は、今の `check-site` の `sourceLinks()` と同じで、その関数と、それが使う `bodyLines()` を `requirements.mjs` に移し、両方が使う。使うのは、`linkTarget()` が「サイトのページ」とする宛先だけである。`#見出し` の部分は捨てる。
-- 項目: ページは `{ slug: <pageID()> }` で、表示は Starlight がそのページの `title` にする。ディレクトリ `D` の `index.md` は、グループ `{ label, items }` になる。`label` はその文書のタイトル (frontmatter の `title`、なければ最初の見出し) で、`check-site` の `documentTitle()` を `requirements.mjs` に移して使う。`items` の最初は、その `index.md` のページである。
+- 読むリンク: 文書の本文の、画像でないインラインのリンク (`[文字](宛先)`) を、書いた順に読む。frontmatter、コードブロック、コードスパン、HTML のコメントの中は読まない。読み方は、`requirements.mjs` の `sourceLinks()` と、それが使う `bodyLines()` が決め、`sidebar()` と `check-site` が同じ関数を使う。使うのは、`linkTarget()` が「サイトのページ」とする宛先だけである。`#見出し` の部分は捨てる。
+- 項目: ページは `{ slug: <pageID()> }` で、表示は Starlight がそのページの `title` にする。ディレクトリ `D` の `index.md` は、グループ `{ label, items }` になる。`label` はその文書のタイトル (frontmatter の `title`、なければ最初の見出し) で、`requirements.mjs` の `documentTitle()` が決める。`check-site` も同じ関数を使う。`items` の最初は、その `index.md` のページである。
 - 順: 入口の文書 (`docs_dir` の `index.md`) のページを最上位の最初に置き、入口のリンクを順に置く。グループの中は、その `index.md` のリンクの順に、`D` の下のページを置く。`D` の外へのリンクは、グループの中では飛ばす。
 - 1回だけ: 各ページは、サイドバーに1回だけ出る。入口から順に深さ優先でリンクをたどり、最初に置いた場所に出す。あとのリンクは飛ばす。たどるのは `index.md` のリンクだけである。ほかの文書のリンクは、順に影響しない。
 - 残り: 「残り」は、たどり終えたあとに、どこにも置かれていないページのすべてである。どこからもリンクしていないページだけでなく、`index.md` でない文書だけがリンクするページと、ほかのグループの `index.md` だけがリンクするページも含む。残りは、たどり終えてから1回で決め、次のとおりに置く。
@@ -116,7 +116,7 @@
 | `frontmatter/` | frontmatter に `title` がある文書は、書き方が違っても、最初の見出しを本文に残す (`CTR-SITE-002`) |
 | `server/`、`functions/` | `server` や `functions` という名前の文書のディレクトリのページは、サーバの関数ではない (`CTR-SITE-008`)。`check.sh` は、そのあと `functions/` の文書を消し、`site/public/functions/` にファイルを置いて、`check-site` が失敗することも確かめる |
 | `links/` | `#`、`?`、空白を名前に持つファイルへのリンクが、そのページに行く (`CTR-SITE-010`) |
-| `sidebar/` | 入口の文書のリンクの順にサイドバーが並ぶ。`index.md` でない文書だけがリンクするページ、ほかのグループの `index.md` だけがリンクするページ、どこからもリンクしていないページが、それぞれ「残り」の決まりの場所に1回だけ出る (`CTR-SITE-011`) |
+| `sidebar/` | 入口の文書のリンクの順にサイドバーが並ぶ。`index.md` でない文書だけがリンクするページ、ほかのグループの `index.md` だけがリンクするページ、どこからもリンクしていないページが、それぞれ「残り」の決まりの場所に1回だけ出る。`check.sh` は、`sidebar()` の最初の項目を、決まりから書いた項目と比べる (`CTR-SITE-011`) |
 
 `?` を名前に持つファイルは、Go のモジュールに入れられないので、`check.sh` が書く。
 
