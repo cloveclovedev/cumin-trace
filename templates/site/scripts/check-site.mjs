@@ -2,10 +2,10 @@
 // each problem and ends with the exit code 1 when one exists.
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { escape, hasTitle, headingIDs, pageURL } from "../src/requirements.mjs";
+import { diagramScript, escape, hasTitle, headingIDs, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -82,6 +82,63 @@ for (const [url, html] of pages) {
   }
 }
 
+// imagePaths returns the relative paths of the images of a document, outside
+// the frontmatter, the code blocks, and the code spans.
+function imagePaths(text) {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const paths = [];
+  let i = 0;
+  if (lines[0] === "---") {
+    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
+    i++;
+  }
+  let fence = "";
+  for (; i < lines.length; i++) {
+    const open = lines[i].match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && lines[i].trim() === open[1]) fence = "";
+      continue;
+    }
+    if (open) {
+      fence = open[1];
+      continue;
+    }
+    for (const match of lines[i].replace(/`[^`]*`/g, "").matchAll(/!\[[^\]]*\]\(<?([^)\s>]+)/g)) {
+      if (!URL.canParse(match[1]) && !match[1].startsWith("/")) paths.push(match[1]);
+    }
+  }
+  return paths;
+}
+
+// CTR-SITE-004: each image that a document links to stands in its page, and
+// the file of the image is in the output. CTR-SITE-007: each page has the
+// script that opens a diagram on a click.
+let images = 0;
+for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
+  if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+  const file = join(entry.parentPath, entry.name);
+  const html = page(pageURL(settings.base, relative(docs, file)));
+  if (html === undefined) {
+    problems.push(`${relative(root, file)}: no page`);
+    continue;
+  }
+  if (!html.includes(`<script>${diagramScript}</script>`)) {
+    problems.push(`${relative(root, file)}: the page has no script that opens a diagram`);
+  }
+  const sources = [...html.matchAll(/<img [^>]*src="([^"]+)"/g)].map((match) => match[1]);
+  for (const path of imagePaths(readFileSync(file, "utf8"))) {
+    const name = basename(path).replace(/\.[^.]*$/, "");
+    const source = sources.find((src) => basename(src).startsWith(`${name}.`));
+    if (source === undefined) {
+      problems.push(`${relative(root, file)}: the page shows no image ${path}`);
+    } else if (!source.startsWith(settings.base) || !existsSync(join(dist, source.slice(settings.base.length)))) {
+      problems.push(`${relative(root, file)}: the image ${path} goes to ${source}, which is no file under ${settings.base}`);
+    } else {
+      images++;
+    }
+  }
+}
+
 for (const problem of problems) console.log(problem);
 if (problems.length > 0) process.exit(1);
-console.log(`check-site: ${pages.size} pages of requirements checked`);
+console.log(`check-site: ${pages.size} pages of requirements and ${images} images checked`);

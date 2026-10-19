@@ -71,7 +71,8 @@
 
 ## 図
 
-- 画像のパスが、URL でも `/` で始まるパスでもなく、`./` でも `../` でも始まらないとき、`./` を足す。Astro は、文書からの相対パスで画像を解決する (`CTR-SITE-004`)。`./` のないパスを Astro が解決するかは、公式文書に書かれていないので、`./` を足す。
-- 拡大は、`astro.config.mjs` が Starlight の `head` に足す、1行のインラインの `<script>` で作る。本文 (`.sl-markdown-content`) の `<img>` がクリックされたら、`location.href` をその画像の `currentSrc` にする。SVG のファイルだけが、元の大きさで開く (`CTR-SITE-007`)。戻るボタンで文書に戻る。
+- 画像のパスは、元の文書のまま変えない。Astro は、URL でも `/` で始まるパスでもない画像のパスを、文書からの相対パスとして解決し、ファイルを出力の `_astro/` に置く (`CTR-SITE-004`)。`./` のないパス (`site-build.svg`) も同じである。`@astrojs/markdown-satteri` 0.4.4 のコードで確かめ、`check-site` が毎回確かめる。
+- プラグインは画像の `src` を変えない。Astro は画像のパスを mdast の段階で集め、hast の `src` がその文字と同じ `<img>` だけを画像として扱うためである。
+- 拡大は、`astro.config.mjs` が Starlight の `head` に足す、1行のインラインの `<script>` で作る。スクリプトの文は、`requirements.mjs` の `diagramScript` で、`check-site` も同じ文を読む。本文 (`.sl-markdown-content`) の `<img>` がクリックされたら、`location.href` をその画像の `currentSrc` にする。SVG のファイルだけが、元の大きさで開く (`CTR-SITE-007`)。戻るボタンで文書に戻る。
 - リンクで包まずにスクリプトにするのは、Astro が出力に置いた画像の URL を、Markdown のプラグインの段階では知らないためである (推測)。`currentSrc` は、ブラウザが実際に読んだ URL なので、`base` にも画像の置き場所にも左右されない。
 - 図として表示するのは、コミットした SVG だけである。`.puml` は描画せず、元の文として折りたたみに表示する (上の「文書のリンク」)。
