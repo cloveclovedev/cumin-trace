@@ -1,14 +1,16 @@
 // The hast plugin of Sätteri that gives each requirement heading an anchor
 // from its ID, and turns each reference to a known ID into a link to its page
-// and anchor, also across pages (CTR-SITE-003). The places and the rules of
-// a reference are those of the format check (docs/ja/designs/check/reading.md).
-// It also rewrites the relative links between documents (CTR-SITE-010).
+// and anchor, also across pages (CTR-SITE-003). It puts each requirement in
+// one block, with the ID apart from the title (CTR-SITE-006). The places and
+// the rules of a requirement and of a reference are those of the format check
+// (docs/ja/designs/check/reading.md). It also rewrites the relative links
+// between documents (CTR-SITE-010).
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineHastPlugin } from "satteri";
 
-const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // idPattern returns the form of the IDs of the product with the prefix
 // (CTR-FMT-001), with the "g" flag when global is true.
@@ -119,6 +121,66 @@ function isStatus(node, ctx) {
   return /^\s*状態:/.test(ctx.textContent(node));
 }
 
+// hasTitle reports whether the frontmatter of the document has a title.
+export function hasTitle(text) {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  if (lines[0] !== "---") return false;
+  for (let i = 1; i < lines.length && lines[i] !== "---"; i++) {
+    if (/^title[ \t]*:/.test(lines[i])) return true;
+  }
+  return false;
+}
+
+// headingLevel returns the level of a heading element, or 0 for any other
+// node.
+function headingLevel(node) {
+  return node.type === "element" && headingTags.includes(node.tagName) ? Number(node.tagName[1]) : 0;
+}
+
+// blocks returns the children of the root with each requirement in a
+// <section class="requirement">, from its heading to the next heading of the
+// same or a higher level. A child requirement nests in its parent. A
+// horizontal rule that ends a block is removed (CTR-SITE-006).
+export function blocks(children, isRequirement) {
+  const top = [];
+  const stack = [];
+  for (const child of children) {
+    const level = headingLevel(child);
+    if (level > 0) {
+      while (stack.length > 0 && stack[stack.length - 1].level >= level) stack.pop();
+    }
+    const into = stack.length > 0 ? stack[stack.length - 1].section.children : top;
+    if (level > 0 && isRequirement(child)) {
+      const section = {
+        type: "element",
+        tagName: "section",
+        properties: { className: ["requirement"] },
+        children: [child],
+      };
+      into.push(section);
+      stack.push({ level, section });
+    } else {
+      into.push(child);
+    }
+  }
+  trimRules(top);
+  return top;
+}
+
+// trimRules removes the horizontal rule at the end of each section, at any
+// depth.
+function trimRules(children) {
+  for (const child of children) {
+    if (child.type !== "element" || child.tagName !== "section") continue;
+    trimRules(child.children);
+    let last = child.children.length - 1;
+    while (last >= 0 && child.children[last].type === "text" && child.children[last].value.trim() === "") last--;
+    if (last >= 0 && child.children[last].type === "element" && child.children[last].tagName === "hr") {
+      child.children.splice(last);
+    }
+  }
+}
+
 // inside reports whether the file is below the directory dir.
 function inside(dir, file) {
   const rel = relative(dir, file);
@@ -179,52 +241,43 @@ function pumlBlock(summary, content) {
 // requirementsPlugin returns the hast plugin for the settings of the site.
 export function requirementsPlugin(settings, root) {
   const table = idTable(settings, root);
+  const docs = join(root, settings.docsDir);
   const requirements = join(root, settings.requirementsDir);
   const valid = idPattern(settings.prefix, false);
-  const docs = join(root, settings.docsDir);
-  const placed = new WeakSet();
   return defineHastPlugin({
     name: "cumin-trace-requirements",
-    element: [
-      {
-        filter: headingTags,
-        visit(node, ctx) {
-          if (!settings.prefix || !ctx.fileURL) return;
-          if (!inside(requirements, fileURLToPath(ctx.fileURL))) return;
-          const id = requirementID(node, ctx, settings.prefix);
-          if (id !== undefined && valid.test(id)) ctx.setProperty(node, "id", id);
-        },
+    // The first heading that became the title of the page leaves the body,
+    // so that the title shows once (CTR-SITE-002). Each requirement becomes
+    // one block (CTR-SITE-006).
+    after(tree, ctx) {
+      if (!ctx.fileURL) return;
+      const file = fileURLToPath(ctx.fileURL);
+      if (!inside(docs, file)) return;
+      let children = [...tree.children];
+      const isRequirement = (node) =>
+        settings.prefix && inside(requirements, file) && requirementID(node, ctx, settings.prefix) !== undefined;
+      if (!hasTitle(readFileSync(file, "utf8"))) {
+        // A requirement heading stays, with its anchor and its block.
+        const first = children.findIndex((child) => headingLevel(child) > 0);
+        if (first >= 0 && !isRequirement(children[first])) children.splice(first, 1);
+      }
+      if (settings.prefix && inside(requirements, file)) {
+        children = blocks(children, isRequirement);
+      }
+      ctx.replaceNode(tree, { type: "root", children });
+    },
+    element: {
+      filter: headingTags,
+      visit(node, ctx) {
+        if (!settings.prefix || !ctx.fileURL) return;
+        if (!inside(requirements, fileURLToPath(ctx.fileURL))) return;
+        const id = requirementID(node, ctx, settings.prefix);
+        if (id === undefined) return;
+        if (valid.test(id)) ctx.setProperty(node, "id", id);
+        const code = node.children.find((child) => child.type === "element" && child.tagName === "code");
+        ctx.setProperty(code, "className", ["requirement-id"]);
       },
-      {
-        filter: ["a"],
-        visit(node, ctx) {
-          if (!ctx.fileURL) return;
-          const file = fileURLToPath(ctx.fileURL);
-          if (!inside(docs, file)) return;
-          const target = linkTarget(settings, root, file, String(node.properties?.href ?? ""));
-          if (target.kind === "keep") return;
-          if (target.kind === "page") {
-            ctx.setProperty(node, "href", target.url);
-            return;
-          }
-          if (target.kind === "puml") {
-            // The first link of a top-level block places the blocks of all the
-            // diagram sources of that block after it, in the order of the links.
-            let block = node;
-            while (ctx.parent(block)?.type !== "root") block = ctx.parent(block);
-            const all = links(block).filter((a) => linkTarget(settings, root, file, String(a.properties?.href ?? "")).kind === "puml");
-            if (!placed.has(block)) {
-              placed.add(block);
-              ctx.insertAfter(
-                block,
-                all.map((a) => pumlBlock(ctx.textContent(a), readFileSync(linkTarget(settings, root, file, String(a.properties.href)).file, "utf8"))),
-              );
-            }
-          }
-          ctx.replaceNode(node, [{ type: "text", value: ctx.textContent(node) }]);
-        },
-      },
-    ],
+    },
     text(node, ctx) {
       if (!settings.prefix) return;
       const refs = references(settings.prefix, node.value).filter(([from, to]) => table.has(node.value.slice(from, to)));
@@ -249,6 +302,46 @@ export function requirementsPlugin(settings, root) {
       }
       if (at < node.value.length) parts.push({ type: "text", value: node.value.slice(at) });
       ctx.replaceNode(node, parts);
+    },
+  });
+}
+
+// linksPlugin returns the hast plugin that rewrites the relative links between
+// documents (CTR-SITE-010). It runs in its own pass before requirementsPlugin,
+// whose "after" hook replaces the whole tree.
+export function linksPlugin(settings, root) {
+  const docs = join(root, settings.docsDir);
+  const placed = new WeakSet();
+  return defineHastPlugin({
+    name: "cumin-trace-links",
+    element: {
+      filter: ["a"],
+      visit(node, ctx) {
+        if (!ctx.fileURL) return;
+        const file = fileURLToPath(ctx.fileURL);
+        if (!inside(docs, file)) return;
+        const target = linkTarget(settings, root, file, String(node.properties?.href ?? ""));
+        if (target.kind === "keep") return;
+        if (target.kind === "page") {
+          ctx.setProperty(node, "href", target.url);
+          return;
+        }
+        if (target.kind === "puml") {
+          // The first link of a top-level block places the blocks of all the
+          // diagram sources of that block after it, in the order of the links.
+          let block = node;
+          while (ctx.parent(block)?.type !== "root") block = ctx.parent(block);
+          const all = links(block).filter((a) => linkTarget(settings, root, file, String(a.properties?.href ?? "")).kind === "puml");
+          if (!placed.has(block)) {
+            placed.add(block);
+            ctx.insertAfter(
+              block,
+              all.map((a) => pumlBlock(ctx.textContent(a), readFileSync(linkTarget(settings, root, file, String(a.properties.href)).file, "utf8"))),
+            );
+          }
+        }
+        ctx.replaceNode(node, [{ type: "text", value: ctx.textContent(node) }]);
+      },
     },
   });
 }

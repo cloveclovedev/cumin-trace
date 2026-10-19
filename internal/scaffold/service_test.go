@@ -62,6 +62,7 @@ const skillLines = "written .claude/skills/cumin-trace-docs/SKILL.md\n" +
 	"written site/src/settings.mjs\n" +
 	"written site/src/content.config.mjs\n" +
 	"written site/src/requirements.mjs\n" +
+	"written site/src/requirements.css\n" +
 	"written site/scripts/check-site.mjs\n" +
 	"written .github/workflows/cumin-trace-check.yml\n"
 

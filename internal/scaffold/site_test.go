@@ -2,6 +2,7 @@ package scaffold
 
 import (
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -15,7 +16,7 @@ func TestWritesTheSiteTemplateWithTheEmbeddedBytes(t *testing.T) {
 	root := t.TempDir()
 	runInit(t, root, "PC", "TASK")
 
-	for _, name := range []string{".node-version", ".gitignore", "package.json", "package-lock.json", "astro.config.mjs", "src/settings.mjs", "src/content.config.mjs", "src/requirements.mjs", "scripts/check-site.mjs"} {
+	for _, name := range []string{".node-version", ".gitignore", "package.json", "package-lock.json", "astro.config.mjs", "src/settings.mjs", "src/content.config.mjs", "src/requirements.mjs", "src/requirements.css", "scripts/check-site.mjs"} {
 		want, err := templates.Files.ReadFile("site/" + strings.TrimPrefix(name, "."))
 		if err != nil {
 			t.Fatal(err)
@@ -64,16 +65,25 @@ func TestTheSitePinsEveryVersion(t *testing.T) {
 	}
 }
 
-// CTR-SITE-001: the site keeps the default look of Starlight. It has no
-// custom CSS and no component that replaces one of Starlight.
+// CTR-SITE-001: the site keeps the default look of Starlight. It replaces no
+// component, and its one style sheet, for the blocks of CTR-SITE-006, takes
+// its colors from the variables of Starlight only.
 func TestTheSiteHasNoCustomTheme(t *testing.T) {
 	config, err := templates.Files.ReadFile("site/astro.config.mjs")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"customCss", "components"} {
-		if strings.Contains(string(config), key) {
-			t.Errorf("astro.config.mjs sets %s, want the default look", key)
-		}
+	if strings.Contains(string(config), "components") {
+		t.Error("astro.config.mjs sets components, want the default look")
+	}
+	if !strings.Contains(string(config), `customCss: ["./src/requirements.css"]`) {
+		t.Error("astro.config.mjs does not set requirements.css as the one style sheet")
+	}
+	css, err := templates.Files.ReadFile("site/src/requirements.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if colors := regexp.MustCompile(`#[0-9a-fA-F]{3,8}\b|rgb|hsl`).FindAllString(string(css), -1); len(colors) > 0 {
+		t.Errorf("requirements.css has the colors %v, want the variables of Starlight", colors)
 	}
 }

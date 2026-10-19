@@ -19,7 +19,7 @@
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
 | 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
 
-- いまのテンプレートは 1 から 8 と 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`) と、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`) を作る。10 は `CTR-SITE-003` と `CTR-SITE-010` を確かめる。9、8 と 10 と 5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
+- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`)、`customCss` (9 だけ) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`) を作る。10 は、下の表の `CTR-SITE-002` の `<h1>`、`CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-010` を確かめる。8 と 10 と 5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使う (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
@@ -69,8 +69,8 @@ base = "/cumin-trace/"
 |---|---|
 | `docs_dir` の下の各文書に、ページがある。ページの `<title>` に、文書の最初の見出しが入る | `CTR-SITE-002` |
 | ビルドの前とあとで、`docs_dir` の下のファイルの中身が同じである (SHA-256 で比べる) | `CTR-SITE-002` |
-| `<h1>` が1つだけで、タイトルが2回出ない | `CTR-SITE-002` |
-| 各要件の見出しに、ID と同じ `id` がある。各要件が `section.requirement` の中にある | `CTR-SITE-003`、`CTR-SITE-006` |
+| frontmatter に `title` のない文書のページで、`<h1>` が1つだけで、タイトルが2回出ない | `CTR-SITE-002` |
+| 各要件の見出しに、ID と同じ `id` がある。各要件の見出しが `section.requirement` の最初の子で、その最初の子が `code.requirement-id` の ID である。見出しで始まらない `section.requirement` がない | `CTR-SITE-003`、`CTR-SITE-006` |
 | ID の参照のリンクが、`base` で始まり、行き先のページと `id` が出力にある | `CTR-SITE-003`、`CTR-SITE-008` |
 | 元の文書の相対 `.md` のリンクで、宛先がサイトのページ ([ビルド](build.md) の「文書のリンク」) のものが、`base` で始まるページへのリンクになり、行き先のページがある。`#見出し` 付きのリンクは、行き先のページにその `id` がある。ない `id` は、文書の切れたリンクとして報告する | `CTR-SITE-010`、`CTR-SITE-008` |
 | 元の文書の相対 `.puml` のリンクで、宛先が読める `.puml` のものごとに、閉じた `<details>` があり、中のコードブロックがその `.puml` の中身と同じである。ページに `.puml` へのリンクがない | `CTR-SITE-010` |
