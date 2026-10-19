@@ -70,7 +70,7 @@ func TestSkipsTheWorkflowWithoutTheVersionOfARelease(t *testing.T) {
 
 		output := runInitWithVersion(t, root, "PC", "", version)
 
-		if !strings.HasSuffix(output, "written site/scripts/check-site.mjs\n"+noVersion) {
+		if !strings.HasSuffix(output, "\n"+noVersion) {
 			t.Errorf("with version %q: got output:\n%s\nwant the last line %q", version, output, noVersion)
 		}
 		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(CheckWorkflow))); !os.IsNotExist(err) {

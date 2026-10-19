@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
+	"strings"
 	"testing"
 )
 
@@ -40,25 +42,16 @@ func TestTheSiteOfThisRepositoryIsTheTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The directories that site/.gitignore names hold what npm and Astro
-	// write, not files of the template.
-	ignored := map[string]bool{"site/node_modules": true, "site/dist": true, "site/.astro": true}
-	err = fs.WalkDir(os.DirFS(".."), "site", func(name string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() {
-			if ignored[name] {
-				return fs.SkipDir
-			}
-			return nil
-		}
+	// The files of site/ that git tracks, or would track: git skips what npm
+	// and Astro write, and any file that a .gitignore or the global excludes
+	// of git name, such as .DS_Store.
+	out, err := exec.Command("git", "-C", "..", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "site").Output()
+	if err != nil {
+		t.Fatalf("git ls-files: %v", err)
+	}
+	for _, name := range strings.Split(strings.TrimSuffix(string(out), "\x00"), "\x00") {
 		if !templated[name] {
 			t.Errorf("%s has no template in templates/site/", name)
 		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
 }
