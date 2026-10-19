@@ -82,6 +82,26 @@
 - リンクで包まずにスクリプトにするのは、Astro が出力に置いた画像の URL を、Markdown のプラグインの段階では知らないためである (推測)。`currentSrc` は、ブラウザが実際に読んだ URL なので、`base` にも画像の置き場所にも左右されない。
 - 図として表示するのは、コミットした SVG だけである。`.puml` は描画せず、元の文として折りたたみに表示する (上の「文書のリンク」)。
 
+## サイドバー
+
+`requirements.mjs` の `sidebar(settings, root)` が、Starlight の `sidebar` の項目の配列を返す。`astro.config.mjs` が、ビルドとプレビューの始めに1回呼ぶ (`CTR-SITE-011`)。
+
+- 読むリンク: 文書の本文の、画像でないインラインのリンク (`[文字](宛先)`) を、書いた順に読む。frontmatter、コードブロック、コードスパン、HTML のコメントの中は読まない。読み方は、今の `check-site` の `sourceLinks()` と同じで、その関数と、それが使う `bodyLines()` を `requirements.mjs` に移し、両方が使う。使うのは、`linkTarget()` が「サイトのページ」とする宛先だけである。`#見出し` の部分は捨てる。
+- 項目: ページは `{ slug: <pageID()> }` で、表示は Starlight がそのページの `title` にする。ディレクトリ `D` の `index.md` は、グループ `{ label, items }` になる。`label` はその文書のタイトル (frontmatter の `title`、なければ最初の見出し) で、`check-site` の `documentTitle()` を `requirements.mjs` に移して使う。`items` の最初は、その `index.md` のページである。
+- 順: 入口の文書 (`docs_dir` の `index.md`) のページを最上位の最初に置き、入口のリンクを順に置く。グループの中は、その `index.md` のリンクの順に、`D` の下のページを置く。`D` の外へのリンクは、グループの中では飛ばす。
+- 1回だけ: 各ページは、サイドバーに1回だけ出る。入口から順に深さ優先でリンクをたどり、最初に置いた場所に出す。あとのリンクは飛ばす。
+- 残り: どこからもリンクしていないページは、リンクしたページのあとに置く。グループ `D` の残りは、そのグループの最後に、最上位の残りは最上位の最後に置く。残りの中は、`docs_dir` からの相対パスの順 (文字コードの順) である。残りの中の、`index.md` のあるディレクトリはグループになり、`index.md` のないディレクトリは、ディレクトリの名前を `label` にしたグループになる。
+- 入口の文書がないときは、すべてのページが「残り」になる。
+- 入口の文書のページの ID は `index` である (`pageID()`)。Starlight がこの `slug` でトップのページを指すことは推測で、`check-site` で確かめる。
+
+## 言語
+
+`astro.config.mjs` は、Starlight に `locales: { root: { label: "日本語", lang: "ja" } }` を渡し、`defaultLocale` を書かない (`CTR-SITE-012`)。
+
+- UI (検索、目次、ページ送りなど) の文字は、Starlight の日本語の訳になる。`<html>` の `lang` は `ja` になる (推測)。検索の索引 (Pagefind) の UI も同じ言語になる (推測)。
+- ページの ID は `pageID()` のままで、`docs_dir` の中のパスから始まる。`root` の言語は、ID にも URL にも言語のディレクトリを足さない。
+- サイドバーは `sidebar()` の項目だけを出す。Starlight の既定のサイドバー (ファイルの構成から作るもの) は使わない。
+
 ## 確かめ方
 
 `check-site` は、このリポジトリの文書のほかに、`testdata/site-cases/` の文書でも確かめる。`testdata/site-cases/check.sh` は、`site/` を一時ディレクトリに写し、その文書で `check-site` を動かす。`npm --prefix site ci` のあとに動かす。
