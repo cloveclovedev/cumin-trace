@@ -5,7 +5,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { escape, hasTitle, headingIDs, pageURL } from "../src/requirements.mjs";
+import { escape, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -82,6 +82,95 @@ for (const [url, html] of pages) {
   }
 }
 
+// sourceLinks returns the destination and the text of each inline link of a
+// document that is no image, outside the code blocks and the code spans.
+function sourceLinks(text) {
+  const found = [];
+  let fence = "";
+  for (const line of text.split(/\r?\n/)) {
+    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
+      continue;
+    }
+    if (open) {
+      fence = open[1];
+      continue;
+    }
+    const plain = line.replace(/`[^`]*`/g, (span) => span.replace(/[[\]()]/g, " "));
+    for (const match of plain.matchAll(/(?<!!)\[([^\]]*)\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)) {
+      found.push({ text: line.slice(match.index + 1, match.index + 1 + match[1].length), href: match[2] });
+    }
+  }
+  return found;
+}
+
+// decoded returns the URL with no percent-encoding, or the URL itself when it
+// holds a malformed one.
+function decoded(url) {
+  try {
+    return decodeURI(url);
+  } catch {
+    return url;
+  }
+}
+
+// plainText returns the text of an HTML fragment with no tags, no entities,
+// and no white space.
+function plainText(html) {
+  const entities = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (all, name) => {
+      if (name[0] === "#") return String.fromCodePoint(name[1] === "x" || name[1] === "X" ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10));
+      return entities[name] ?? all;
+    })
+    .replace(/\s+/g, "");
+}
+
+// CTR-SITE-010: each relative link of a document goes to the page of the
+// document and its heading, shows a diagram source in a closed collapsible
+// block, or keeps only its text. A link to a missing page or heading is a
+// broken link.
+let documents = 0;
+for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
+  if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+  const file = join(entry.parentPath, entry.name);
+  const url = pageURL(settings.base, relative(docs, file));
+  const html = page(url);
+  const name = relative(root, file);
+  if (html === undefined) {
+    problems.push(`${name}: no page at ${url}`);
+    continue;
+  }
+  documents++;
+  const content = html.slice(html.indexOf("sl-markdown-content"));
+  if (/<a [^>]*href="[^"]*\.puml(#[^"]*)?"/.test(content)) problems.push(`${name}: the page ${url} has a link to a .puml file`);
+  const hrefs = new Set([...content.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1])));
+  const blocks = [...content.matchAll(/<details>([\s\S]*?)<\/details>/g)].map((m) => m[1]);
+  for (const link of sourceLinks(readFileSync(file, "utf8"))) {
+    const target = linkTarget(settings, root, file, link.href);
+    if (target.kind === "page") {
+      const [path, hash] = target.url.split("#");
+      const html = page(path);
+      if (!hrefs.has(decoded(target.url))) {
+        problems.push(`${name}: the link to ${link.href} does not go to ${target.url}`);
+      } else if (html === undefined) {
+        problems.push(`${name}: the link to ${link.href} is broken: no page at ${path}`);
+      } else if (hash !== undefined && !html.includes(` id="${decoded(hash)}"`)) {
+        problems.push(`${name}: the link to ${link.href} is broken: ${path} has no heading #${hash}`);
+      }
+    } else if (target.kind === "puml") {
+      const source = plainText(readFileSync(target.file, "utf8").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]));
+      if (!blocks.some((block) => plainText(block).includes(source))) {
+        problems.push(`${name}: the link to ${link.href} has no closed collapsible block with the content of the file`);
+      }
+    } else if (target.kind === "text" && hrefs.has(decoded(link.href))) {
+      problems.push(`${name}: the link to ${link.href} is still a link, want only its text`);
+    }
+  }
+}
+
 for (const problem of problems) console.log(problem);
 if (problems.length > 0) process.exit(1);
-console.log(`check-site: ${pages.size} pages of requirements checked`);
+console.log(`check-site: ${pages.size} pages of requirements and ${documents} pages of documents checked`);

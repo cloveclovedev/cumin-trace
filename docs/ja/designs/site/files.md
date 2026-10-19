@@ -19,7 +19,7 @@
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
 | 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
 
-- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`)、`customCss` (9 だけ) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`) を作る。10 は、下の表の `CTR-SITE-002` の `<h1>`、`CTR-SITE-003`、`CTR-SITE-006` を確かめる。8 と 10 と 5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
+- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`)、`customCss` (9 だけ) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`) を作る。10 は、下の表の `CTR-SITE-002` の `<h1>`、`CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-010` を確かめる。8 と 10 と 5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使う (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
@@ -77,6 +77,12 @@ base = "/cumin-trace/"
 | 元の文書の、ほかの相対パスへのリンク (サイトのページでない `.md`、読める `.puml` でない `.puml`、画像でもないもの) が、出力では `<a>` のない文字である | `CTR-SITE-010` |
 | 各図の `<img>` の `src` のファイルが出力にある。各ページに、図を開くスクリプトがある | `CTR-SITE-004`、`CTR-SITE-007` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js`、`_functions/`、`functions/`、`server/` がない | `CTR-SITE-008` |
+
+文書のリンクの確かめ方 (`CTR-SITE-010`):
+
+- 元の文書の、画像でないインラインのリンク (`[文字](宛先)`) を、コードブロックとコードスパンの外から読む。宛先の種類は、プラグインと同じ `linkTarget()` で決める。
+- 出力の `href` と宛先は、パーセントエンコードを戻してから比べる。Markdown の処理系が、`#見出し` の日本語をエンコードするためである。
+- `.puml` の中身とコードブロックは、タグ、文字参照、空白を除いた文字で比べる。Expressive Code が、行ごとにタグで包むためである。
 
 ファイルの種類は限らない。Starlight は既定で、検索の索引 (Pagefind) の `.pf_meta`、`.pf_fragment`、`.pf_index`、`.wasm` などを `site/dist/pagefind/` に書く (推測)。これらは静的なファイルである。
 

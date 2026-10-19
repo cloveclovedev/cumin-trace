@@ -65,9 +65,12 @@
 | 外部の URL、`#見出し` だけのリンク | そのまま |
 
 - Starlight は `.md` のリンクを書き換えない (推測)。書き換えないと、文書の間のリンクが切れる。
-- `.puml` の中身は、ローダーではなくプラグインが読む。
+- 書き換えるのは、`requirements.mjs` の `linksPlugin` である。`astro.config.mjs` は、`hastPlugins` に `linksPlugin`、`requirementsPlugin` の順に渡す。`requirementsPlugin` の `after` は木全体を置き換えるので、同じプラグインの中でリンクも書き換えると、その置き換えが効かなかった (`check-site` で確かめた)。別のプラグインにすると、リンクの書き換えが終わった木を `requirementsPlugin` が読む。
+- 宛先の種類は、`linkTarget()` が決める。URL の形 (`https:` などの scheme で始まる)、`/` で始まるパス、`#` で始まるリンクは、そのままにする。パスの部分は、パーセントエンコードを戻してから解決する。`?` 以降は捨てる。
+- `.puml` の中身は、ローダーではなくプラグインが読む。1つの最上位のブロックの最初の `.puml` のリンクを読むときに、そのブロックのすべての `.puml` のリンクの `<details>` を、リンクの順に、ブロックのすぐあとに置く。
+- リンクを外すときは、リンクの文字 (`textContent`) だけを残す。リンクの中のコードスパンの見た目は残らない。
 - `#見出し` の部分は確かめない。宛先のページにその見出しがなければ、リンクは切れる。`check-site` がその切れたリンクを報告する。
-- Sätteri のプラグインが作った `<details>` と `<summary>` の HTML のノードが、そのままページに出ること (推測)。Starlight のコードブロック (Expressive Code) が言語 `plantuml` を受け付けること (推測)。受け付けないときは、言語なしのコードブロックにする。
+- Sätteri のプラグインが作った `<details>` と `<summary>` は、そのままページに出る。Starlight のコードブロック (Expressive Code) は、言語 `plantuml` のコードブロックを、エラーなしで `plaintext` として表示する。このリポジトリの文書で、`check-site` で確かめた。
 
 ## 図
 
