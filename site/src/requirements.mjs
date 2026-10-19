@@ -7,7 +7,7 @@
 // between documents (CTR-SITE-010). The script diagramScript opens a
 // diagram that is clicked (CTR-SITE-007).
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineHastPlugin } from "satteri";
 
@@ -126,6 +126,35 @@ function isStatus(node, ctx) {
   const list = ctx.parent(node);
   if (list?.tagName !== "ul" || ctx.parent(list)?.type !== "root") return false;
   return /^\s*状態:/.test(ctx.textContent(node));
+}
+
+// firstHeading returns the text of the first ATX heading outside the
+// frontmatter and the code blocks, or the file name with no extension.
+export function firstHeading(text, filePath) {
+  const lines = text.split(/\r?\n/);
+  let i = 0;
+  if (lines[0] === "---") {
+    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
+    i++;
+  }
+  let fence = "";
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
+      continue;
+    }
+    if (open) {
+      fence = open[1];
+      continue;
+    }
+    const heading = line.match(/^ {0,3}#{1,6}(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/);
+    if (heading) {
+      return (heading[1] ?? "").replace(/`/g, "").trim();
+    }
+  }
+  return basename(filePath, extname(filePath));
 }
 
 // hasTitle reports whether the frontmatter of the document has a title.
