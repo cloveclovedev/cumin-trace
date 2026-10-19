@@ -119,15 +119,16 @@ func LoadSettings(root string) (Settings, error) {
 		}
 	}
 
-	docsDir := DefaultDocsDir
+	docsDir, docsDirName := DefaultDocsDir, fmt.Sprintf("%q (the default)", DefaultDocsDir)
 	if meta.IsDefined("site", "docs_dir") {
 		docsDir, err = relativeDir("site.docs_dir", file.Site.DocsDir)
 		if err != nil {
 			return Settings{}, err
 		}
+		docsDirName = fmt.Sprintf("%q", docsDir)
 	}
 	if docsDir != "." && dir != docsDir && !strings.HasPrefix(dir, docsDir+"/") {
-		return Settings{}, fmt.Errorf("%s: site.docs_dir %q must hold requirements_dir %q", SettingsFile, docsDir, dir)
+		return Settings{}, fmt.Errorf("%s: site.docs_dir %s must hold requirements_dir %q", SettingsFile, docsDirName, dir)
 	}
 
 	base := DefaultBase
