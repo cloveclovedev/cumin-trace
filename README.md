@@ -43,6 +43,18 @@ Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every 
 
 `init` prints one line for each file: `written <path>`, or `skipped <path>: already exists`. A binary without a release version (`v<number>.<number>.<number>`) writes no workflow. Such a binary has a pseudo-version, a `+dirty` build, or `(devel)`. It prints `skipped .github/workflows/cumin-trace-check.yml: this cumin-trace has no version; use a release binary`. It never changes a file that exists. The exit code is 0 when every file is written or skipped. The exit code is 2 when an argument is wrong or a file cannot be written.
 
+`scripts/render-diagrams.sh` has three uses. It needs Docker.
+
+| Command | Result |
+|---|---|
+| `scripts/render-diagrams.sh` | Renders every `.puml` under `docs/` to an SVG next to it |
+| `scripts/render-diagrams.sh <in.puml> <out.svg>` | Renders one diagram to the given SVG |
+| `scripts/render-diagrams.sh --check <base>` | Renders the diagrams that differ from `<base>`, and compares them with the SVGs. It changes no file |
+
+The workflow downloads `cumin-trace-linux-amd64` and `checksums.txt` of that release with `gh`, checks the checksum, and runs `cumin-trace check`. It needs no Go. To use a newer version, edit the `VERSION` line, or remove the workflow and run `init` of the newer version.
+
+The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/templates/index.md](docs/ja/designs/templates/index.md).
+
 ### Preview the site
 
 The site shows every Markdown document under `docs/ja/` as one page. A document without frontmatter takes its first heading as its title. The site reads the documents where they are and changes no file under `docs/ja/`. It needs Node.js 22.22.0 or later, and no token.
@@ -55,18 +67,6 @@ npm --prefix site run preview # serves site/dist/ with the base path
 ```
 
 The optional table `[site]` of `.cumin-trace.toml` sets the site. `docs_dir` is the directory of the documents (default `docs/ja`); it holds `requirements_dir`. `base` is the base path of the site (default `/`); it starts and ends with `/`, with no empty, `.`, or `..` segment. `cumin-trace check` checks both values.
-
-`scripts/render-diagrams.sh` has three uses. It needs Docker.
-
-| Command | Result |
-|---|---|
-| `scripts/render-diagrams.sh` | Renders every `.puml` under `docs/` to an SVG next to it |
-| `scripts/render-diagrams.sh <in.puml> <out.svg>` | Renders one diagram to the given SVG |
-| `scripts/render-diagrams.sh --check <base>` | Renders the diagrams that differ from `<base>`, and compares them with the SVGs. It changes no file |
-
-The workflow downloads `cumin-trace-linux-amd64` and `checksums.txt` of that release with `gh`, checks the checksum, and runs `cumin-trace check`. It needs no Go. To use a newer version, edit the `VERSION` line, or remove the workflow and run `init` of the newer version.
-
-The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/templates/index.md](docs/ja/designs/templates/index.md).
 
 ## Check the format
 

@@ -16,8 +16,8 @@ func TestWritesTheSiteTemplateWithTheEmbeddedBytes(t *testing.T) {
 	root := t.TempDir()
 	runInit(t, root, "PC", "TASK")
 
-	for _, name := range []string{".node-version", ".gitignore", "package.json", "package-lock.json", "astro.config.mjs", "src/settings.mjs", "src/content.config.mjs", "src/requirements.mjs", "src/requirements.css", "scripts/check-site.mjs"} {
-		want, err := templates.Files.ReadFile("site/" + strings.TrimPrefix(name, "."))
+	for _, name := range siteFiles {
+		want, err := templates.Files.ReadFile(siteSource(name))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -67,8 +67,9 @@ func TestTheSitePinsEveryVersion(t *testing.T) {
 
 // CTR-SITE-001: the site keeps the default look of Starlight. It replaces no
 // component, and its one style sheet, for the blocks of CTR-SITE-006, takes
-// its colors from the variables of Starlight only.
-func TestTheSiteHasNoCustomTheme(t *testing.T) {
+// every color from a variable of Starlight (--sl-color-*): no hex, rgb, hsl,
+// or named color such as white or red.
+func TestTheSiteKeepsTheLookOfStarlightAndTakesItsColorsFromItsVariables(t *testing.T) {
 	config, err := templates.Files.ReadFile("site/astro.config.mjs")
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +84,58 @@ func TestTheSiteHasNoCustomTheme(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if colors := regexp.MustCompile(`#[0-9a-fA-F]{3,8}\b|rgb|hsl`).FindAllString(string(css), -1); len(colors) > 0 {
+	if colors := badColors(string(css)); len(colors) > 0 {
 		t.Errorf("requirements.css has the colors %v, want the variables of Starlight", colors)
 	}
+}
+
+// CTR-SITE-001: the style sheet test fails on each kind of color that is not
+// a variable of Starlight, and passes on the variables of Starlight.
+func TestTheColorCheckFindsEveryColorThatIsNotAVariableOfStarlight(t *testing.T) {
+	for _, css := range []string{
+		"a { color: #fff; }",
+		"a { background: rgb(0 0 0); }",
+		"a { color: hsl(0 0% 0%); }",
+		"a { color: white; }",
+		"a { border: 1px solid red; }",
+		"a { outline: 2px dashed var(--my-color); }",
+	} {
+		if len(badColors(css)) == 0 {
+			t.Errorf("found no color in %q", css)
+		}
+	}
+	css := "a { border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem; color: var(--sl-color-text); margin: 0 auto; }"
+	if colors := badColors(css); len(colors) > 0 {
+		t.Errorf("found the colors %v in %q, want none", colors, css)
+	}
+}
+
+var (
+	cssComment     = regexp.MustCompile(`(?s)/\*.*?\*/`)
+	cssDeclaration = regexp.MustCompile(`([a-z-]+)\s*:\s*([^;{}]+)`)
+	colorCode      = regexp.MustCompile(`#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(`)
+	colorProperty  = regexp.MustCompile(`color|background|border|outline|shadow|fill|stroke|decoration|caret|accent`)
+	starlightColor = regexp.MustCompile(`var\(--sl-color-[a-z0-9-]+\)`)
+	// The words of a value that a property of color can hold beside a
+	// color: lengths, numbers, and the styles of a line.
+	notAColor = regexp.MustCompile(`^(-?[0-9.]+[a-z%]*|none|hidden|solid|dashed|dotted|double|groove|ridge|inset|outset)$`)
+)
+
+// badColors returns each word of a property of color in css that is not a
+// variable of Starlight, a length, or the style of a line, and each hex, rgb,
+// or hsl color anywhere in css.
+func badColors(css string) []string {
+	css = cssComment.ReplaceAllString(css, "")
+	bad := colorCode.FindAllString(css, -1)
+	for _, d := range cssDeclaration.FindAllStringSubmatch(css, -1) {
+		if !colorProperty.MatchString(d[1]) {
+			continue
+		}
+		for _, word := range strings.Fields(starlightColor.ReplaceAllString(d[2], " ")) {
+			if !notAColor.MatchString(word) {
+				bad = append(bad, d[1]+": "+word)
+			}
+		}
+	}
+	return bad
 }
