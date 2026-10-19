@@ -36,7 +36,7 @@ cumin-trace init <prefix> [<area>]
 | `.claude/skills/cumin-trace-docs/templates/` | The nine templates of the skill: the entry page, the overview, the technology page, the glossary, the backlog, the area page, the source code structure, and the entry and the detail of a design document |
 | `scripts/render-diagrams.sh` | The script that renders each PlantUML diagram (`.puml`) to SVG with Docker, as in cumin-works. Mode `0755` |
 | `tools/plantuml/Dockerfile` | The PlantUML image of the script, with a Japanese font |
-| `site/` | The Astro + Starlight site of the documents: `package.json` and `package-lock.json` with pinned versions, `.node-version`, `.gitignore`, `astro.config.mjs`, `src/settings.mjs`, and `src/content.config.mjs` |
+| `site/` | The Astro + Starlight site of the documents: `package.json` and `package-lock.json` with pinned versions, `.node-version`, `.gitignore`, `astro.config.mjs`, `src/settings.mjs`, `src/content.config.mjs`, `src/requirements.mjs`, `src/requirements.css`, and `scripts/check-site.mjs` |
 | `.github/workflows/cumin-trace-check.yml` | The workflow `cumin-trace check`. It runs the format check on every pull request with the release binary of the same version as `init` |
 
 Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every page except the area page and its diagram. The skill still holds all nine templates. Its area template holds `<AREA>` in place of the area.
@@ -188,4 +188,4 @@ npm --prefix site run preview        # serves site/dist/ under /cumin-trace/
 npm --prefix site run check-site     # builds, then checks the pages
 ```
 
-`go test ./...` checks that each file of `site/` is the same as the template in `templates/site/`.
+`go test ./...` checks that each file of `site/` is the same as the template in `templates/site/`, and that `site/` holds no other file outside `node_modules/`, `dist/`, and `.astro/`.
