@@ -49,6 +49,9 @@ func TestTheSiteOfThisRepositoryIsTheTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("git ls-files: %v", err)
 	}
+	if len(out) == 0 {
+		t.Fatal("git lists no file in site/")
+	}
 	for _, name := range strings.Split(strings.TrimSuffix(string(out), "\x00"), "\x00") {
 		if !templated[name] {
 			t.Errorf("%s has no template in templates/site/", name)

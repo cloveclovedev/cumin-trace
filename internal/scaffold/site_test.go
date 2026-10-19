@@ -89,8 +89,8 @@ func TestTheSiteKeepsTheLookOfStarlightAndTakesItsColorsFromItsVariables(t *test
 	}
 }
 
-// The style sheet test fails on each kind of color that is not a variable of
-// Starlight, and passes on the variables of Starlight.
+// CTR-SITE-001: the style sheet test fails on each kind of color that is not
+// a variable of Starlight, and passes on the variables of Starlight.
 func TestTheColorCheckFindsEveryColorThatIsNotAVariableOfStarlight(t *testing.T) {
 	for _, css := range []string{
 		"a { color: #fff; }",
