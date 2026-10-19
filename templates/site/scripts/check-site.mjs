@@ -5,7 +5,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { atxHeadings, diagramScript, escape, firstHeading, frontmatter, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
+import { atxHeadings, body, diagramScript, escape, firstHeading, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -25,6 +25,18 @@ function page(url) {
 const docs = join(root, settings.docsDir);
 const id = `${settings.prefix}-[A-Z0-9]+-[0-9]{3}(?:\\.[1-9][0-9]*)?`;
 
+// marks returns the text with no white space and no marks that Markdown can
+// remove: "*", "_", "`", "~", and "\\".
+function marks(text) {
+  return text.replace(/[\s*_`~\\]/g, "");
+}
+
+// headingText returns the text of the Markdown of a heading as it reads in
+// the HTML, for marks(): a link or an image keeps only its text.
+function headingText(markdown) {
+  return marks(markdown.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1"));
+}
+
 // CTR-SITE-002: a page whose title comes from its first heading shows the
 // title once, in one <h1>, and its body does not repeat the heading. A page
 // with a title in its frontmatter keeps its first heading in the body.
@@ -34,12 +46,11 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   const text = readFileSync(file, "utf8");
   const html = page(pageURL(settings.base, relative(docs, file)));
   if (html === undefined) continue;
-  const body = html.slice(html.indexOf('<div class="sl-markdown-content"'));
-  const headings = [...body.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) => plainText(m[1]));
-  const { title, line } = firstHeading(text, file);
-  const same = (source) => source.text.replace(/`/g, "").replace(/\s+/g, "") === title.replace(/\s+/g, "");
-  const sources = atxHeadings(text).filter(same).length;
-  const shown = headings.filter((heading) => heading === title.replace(/\s+/g, "")).length;
+  const content = html.slice(html.indexOf('<div class="sl-markdown-content"'));
+  const headings = [...content.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) => marks(plainText(m[1])));
+  const { title, line } = firstHeading(body(text), file);
+  const sources = atxHeadings(body(text)).filter((source) => headingText(source.text) === headingText(title)).length;
+  const shown = headings.filter((heading) => heading === headingText(title)).length;
   if (hasTitle(text)) {
     if (line > 0 && shown < sources) problems.push(`${relative(root, file)}: the body has ${shown} headings "${title}", want ${sources}`);
     continue;
@@ -47,7 +58,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   // A requirement heading of level 1 is no title, and it stays in the body.
   const count = html.match(new RegExp(`<h1(?! id="${id}")[\\s>]`, "g"))?.length ?? 0;
   if (count !== 1) problems.push(`${relative(root, file)}: the page has ${count} <h1>, want 1`);
-  if (line > 0 && headingIDs(settings.prefix, atxHeadings(text)[0].source).length === 0 && shown > sources - 1) {
+  if (line > 0 && headingIDs(settings.prefix, atxHeadings(body(text))[0].source).length === 0 && shown > sources - 1) {
     problems.push(`${relative(root, file)}: the body repeats the title "${title}"`);
   }
 }
@@ -98,11 +109,12 @@ for (const [url, html] of pages) {
 }
 
 // sourceLinks returns the destination and the text of each inline link of a
-// document that is no image, outside the code blocks and the code spans.
+// document that is no image, outside the frontmatter, the code blocks, and
+// the code spans.
 function sourceLinks(text) {
   const found = [];
   let fence = "";
-  for (const line of text.split(/\r?\n/)) {
+  for (const line of body(text).split(/\r?\n/)) {
     const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
     if (fence) {
       if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
@@ -146,7 +158,7 @@ function plainText(html) {
 // imagePaths returns the relative paths of the images of a document, outside
 // the frontmatter, the code blocks, and the code spans.
 function imagePaths(text) {
-  const lines = frontmatter(text).content.split(/\r?\n/);
+  const lines = body(text).split(/\r?\n/);
   const paths = [];
   let fence = "";
   for (let i = 0; i < lines.length; i++) {

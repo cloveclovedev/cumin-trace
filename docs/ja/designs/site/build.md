@@ -8,12 +8,12 @@
 
 - `docs` のコレクションの `loader` は、`glob({ base: <リポジトリの最上位>/<docs_dir>/ の file URL, pattern: "**/*.md" })` を包むローダーで、`schema` は `docsSchema()` である。`base` は、Astro の文書 ([Content Loader API reference](https://docs.astro.build/en/reference/content-loader-reference/) の `glob()` の `base`) のとおり、相対パスか URL で渡す。`pathToFileURL()` の URL は、パスの `#` と `?` もパスとして保つ。最後の `/` は、ディレクトリとして解決させるためである。
 - 包むローダーは、`glob()` の `load()` に、`parseData` だけを差し替えた文脈を渡す。差し替えた `parseData` は、`data.title` がなければ、`filePath` の文書の最初の見出しの文字を `title` にしてから、元の `parseData` を呼ぶ (`CTR-SITE-002`)。
-- frontmatter は、Astro のローダーと同じ読み方で見つける。`requirements.mjs` の `frontmatter()` は、Astro が使う `@astrojs/internal-helpers/frontmatter` の `parseFrontmatter()` を呼ぶ。BOM、`---` のあとの空白、`\r\n` の行末、前の空行を、Astro と同じに扱う。本文は、Astro と同じく、frontmatter を空白にして前後を `trim()` した文字である。
+- frontmatter は、Astro のローダーと同じ決まりで見つける。`requirements.mjs` の `frontmatter()` と `body()` は、Astro 7.4.0 の `parseFrontmatter()` (`@astrojs/internal-helpers`) の正規表現の写しを持つ。BOM、`---` のあとの空白、`\r\n` の行末、前の空行を、Astro と同じに扱う。本文 (`body()`) は、Astro と同じく、frontmatter を空白にして前後を `trim()` した文字である。Astro の内部のパッケージには依存しない。写しが Astro とずれると、見出しの行がずれ、`check-site` の `testdata/site-cases/` (下の「確かめ方」) が失敗する。
 - 最初の見出しは、本文のコードブロックの外にある、最初の ATX 見出し (`#` で始まる行) である。文字は、見出しの記号と前後の空白を除き、コードスパンのバッククォートを除いたものである。見出しがない文書は、ファイル名 (拡張子なし) を `title` にする。この決まりは `requirements.mjs` の `firstHeading()` だけが持ち、ローダーとプラグインが同じものを使う。
-- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、Sätteri のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。消すのは、プラグインの `after` (すべての訪問のあと) で、文書の最上位にある見出しのうち、`firstHeading()` の見出しと同じ行で始まるものである。行は、本文の中の行番号で、プラグインは `options: { position: true }` でノードの位置を読む。setext 見出しや HTML の見出しが前にあっても、それは消さない。frontmatter の `title` の有無は、元のファイルを `frontmatter()` で読み、ローダーと同じく `title` があるかで決める (`hasTitle()`)。最初の見出しが要件の見出し (下の「要件の見出しとアンカー」) のときは、消さない。その要件のアンカーと枠を残すためで、ページではタイトルと要件の見出しの両方が出る。
+- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、Sätteri のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。消すのは、プラグインの `after` (すべての訪問のあと) で、文書の最上位にある見出しのうち、`firstHeading()` の見出しと同じ行で始まるものである。行は、本文の中の行番号で、プラグインは `options: { position: true }` でノードの位置を読む。setext 見出しや HTML の見出しが前にあっても、それは消さない。プラグインは、Sätteri のプラグインの factory で、パーサーが読む本文 (`source`) と、Astro が解析した frontmatter のデータ (`data.astro.frontmatter`) を受け取る。このデータは、ローダーの `parseData` が受け取るデータと同じで、`title` の有無を同じに決める。`check-site` だけは、YAML を解析せずに、frontmatter の行の始めに `title:` (引用符付きを含む) があるかで決める (`hasTitle()`)。最初の見出しが要件の見出し (下の「要件の見出しとアンカー」) のときは、消さない。その要件のアンカーと枠を残すためで、ページではタイトルと要件の見出しの両方が出る。
 - `astro.config.mjs` は、`markdown.processedDirs` に `docs_dir` を渡し、Starlight の Markdown の処理 (見出しのリンクなど) を、`src/content/docs/` の外の文書にもかける。
-- ページの URL は、`glob()` の既定の ID で決まる。ID は、`docs_dir` からの相対パスから拡張子を除き、各部分を `github-slugger` の `slug()` にしたものである (Astro 7.4.0 の `getContentEntryIdAndSlug()` のコードで確かめた)。`pageURL()` も、同じ `slug()` を各部分にかける。大文字は小文字に、空白は `-` になり、`_` は残り、`#` と `?` は消える。`index.md` は、そのディレクトリの URL になる。
-- `github-slugger` と `@astrojs/internal-helpers` は、`astro` が使うパッケージで、`package-lock.json` に固定されている。`package.json` には足さず、`astro` と同じものを使う。
+- ページの URL は、`glob()` の ID で決まる。ローダーは、`glob()` の `generateId` に `requirements.mjs` の `pageID()` を渡す ([Content Loader API reference](https://docs.astro.build/en/reference/content-loader-reference/) の `generateId`)。`pageURL()` も `pageID()` から URL を作るので、両方が同じ決まりに従う。
+- `pageID()` は、`docs_dir` からの相対パスから `.md` を除き、各部分を小文字にし、文字、数字、`_`、`-` でない文字の並びを1つの `-` にする。空白、`#`、`?` は `-` になり、`_` は残る。`index.md` は、そのディレクトリの ID になる。frontmatter の `slug` は使わない。
 
 ## 要件の見出しとアンカー
 
@@ -68,7 +68,7 @@
 
 - Starlight は `.md` のリンクを書き換えない (推測)。書き換えないと、文書の間のリンクが切れる。
 - 書き換えるのは、`requirements.mjs` の `linksPlugin` である。`astro.config.mjs` は、`hastPlugins` に `linksPlugin`、`requirementsPlugin` の順に渡す。`requirementsPlugin` の `after` は木全体を置き換えるので、同じプラグインの中でリンクも書き換えると、その置き換えが効かなかった (`check-site` で確かめた)。別のプラグインにすると、リンクの書き換えが終わった木を `requirementsPlugin` が読む。
-- 宛先の種類は、`linkTarget()` が決める。URL の形 (`https:` などの scheme で始まる)、`/` で始まるパス、`#` で始まるリンクは、そのままにする。パスの部分は、`/` で区切った各部分のパーセントエンコードを `decodeURIComponent()` で戻してから解決する。`%23` (`#`) と `%3F` (`?`) も戻る。`?` 以降は捨てる。
+- 宛先の種類は、`linkTarget()` が決める。URL の形 (`https:` などの scheme で始まる)、`/` で始まるパス、`#` で始まるリンクは、そのままにする。パスの部分は、パーセントエンコードを `decodeURIComponent()` で戻してから解決する。`%23` (`#`) と `%3F` (`?`) も戻る。`?` 以降は捨てる。
 - `.puml` の中身は、ローダーではなくプラグインが読む。1つの最上位のブロックの最初の `.puml` のリンクを読むときに、そのブロックのすべての `.puml` のリンクの `<details>` を、リンクの順に、ブロックのすぐあとに置く。
 - リンクを外すときは、リンクの文字 (`textContent`) だけを残す。リンクの中のコードスパンの見た目は残らない。
 - `#見出し` の部分は確かめない。宛先のページにその見出しがなければ、リンクは切れる。`check-site` がその切れたリンクを報告する。
@@ -94,3 +94,5 @@
 | `links/` | `#`、`?`、空白を名前に持つファイルへのリンクが、そのページに行く (`CTR-SITE-010`) |
 
 `?` を名前に持つファイルは、Go のモジュールに入れられないので、`check.sh` が書く。
+
+`check-site` は、見出しの文字を、空白と `*`、`_`、`` ` ``、`~`、`\` を除き、リンクを文字だけにして比べる。HTML のコメント、HTML のブロック、リストの中の `#` の行も、ATX 見出しとして読む。そのような行が最初の見出しより前にあると、タイトルはその行の文字になり、本文の見出しが残る (知られた制限)。タイトルになった見出しの中の相対リンクは、見出しとともに消えるので、`check-site` はそれを切れたリンクとして報告する (知られた制限)。

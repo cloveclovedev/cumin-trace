@@ -9,8 +9,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseFrontmatter } from "@astrojs/internal-helpers/frontmatter";
-import { slug } from "github-slugger";
 import { defineHastPlugin } from "satteri";
 
 // diagramScript opens the file of an image of the body when a click lands
@@ -44,28 +42,49 @@ export function references(prefix, text) {
   return refs;
 }
 
-// pageURL returns the URL of the page of a document, from its path relative
-// to docs_dir: the path with no ".md", each part in the slug of the default
-// ID of glob(), and the directory for an index.md.
-export function pageURL(base, path) {
+// pageID returns the ID of the page of a document, from its path relative to
+// docs_dir. The loader gives it to glob() as generateId, so that pageURL and
+// the pages of Starlight follow one rule: each part of the path with no ".md",
+// in lower case, with "-" for each run of characters that are no letter, no
+// digit, no "_", and no "-". An index.md gives the ID of its directory.
+export function pageID(path) {
   const parts = path.split(sep).join("/").replace(/\.md$/, "").split("/");
-  const page = parts.map((part) => slug(part)).join("/").replace(/(^|\/)index$/, "");
-  return base + (page === "" ? "" : page + "/");
+  return parts.map((part) => part.toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu, "-")).join("/").replace(/\/index$/, "");
 }
 
-// frontmatter returns the data of the frontmatter of a document and its body,
-// as the loader of Astro reads them: the body is the text with the
-// frontmatter blanked and trimmed. Line numbers are those of the body, as in
-// the positions of the nodes of the plugins.
+// pageURL returns the URL of the page of a document, from its path relative
+// to docs_dir.
+export function pageURL(base, path) {
+  const id = pageID(path);
+  return base + (id === "index" ? "" : id + "/");
+}
+
+// The frontmatter as Astro 7.4.0 finds it: a copy of the expressions of
+// parseFrontmatter() in @astrojs/internal-helpers. check-site compares the
+// result with the pages of Astro, through the positions of the headings.
+const frontmatterRE = /(?:^\uFEFF?|^\s*\n)(?:---|\+\+\+)([\s\S]*?\n)(?:---|\+\+\+)/;
+const frontmatterTypeRE = /(?:^\uFEFF?|^\s*\n)(---|\+\+\+)/;
+
+// frontmatter returns the text of the frontmatter of a document, or
+// undefined when it has none.
 export function frontmatter(text) {
-  const { frontmatter: data, content } = parseFrontmatter(text, { frontmatter: "empty-with-spaces" });
-  return { data, content: content.trim() };
+  return frontmatterRE.exec(text)?.[1];
 }
 
-// atxHeadings returns the line number in the body and the text of each ATX
-// heading of a document, outside the frontmatter and the code blocks.
+// body returns the body of a document as the loader of Astro gives it to the
+// Markdown processor: the frontmatter blanked with spaces, then the whole text
+// trimmed. Line numbers of the body are those of the positions of the nodes.
+export function body(text) {
+  const raw = frontmatter(text);
+  if (raw === undefined) return text.trim();
+  const fence = frontmatterTypeRE.exec(text)[1];
+  return text.replace(`${fence}${raw}${fence}`, `   ${raw.replace(/[^\r\n]/g, " ")}   `).trim();
+}
+
+// atxHeadings returns the line number and the text of each ATX heading of a
+// body, outside the code blocks.
 export function atxHeadings(text) {
-  const lines = frontmatter(text).content.split(/\r?\n/);
+  const lines = text.split(/\r?\n/);
   const headings = [];
   let fence = "";
   for (let i = 0; i < lines.length; i++) {
@@ -85,9 +104,9 @@ export function atxHeadings(text) {
   return headings;
 }
 
-// firstHeading returns the title from the first ATX heading, with no code
-// span quotes, and the line of the heading in the body. A document with no
-// heading gets the file name with no extension, and the line 0.
+// firstHeading returns the title from the first ATX heading of a body, with
+// no code span quotes, and the line of the heading. A body with no heading
+// gets the file name with no extension, and the line 0.
 export function firstHeading(text, filePath) {
   const [first] = atxHeadings(text);
   if (first === undefined) return { title: basename(filePath, extname(filePath)), line: 0 };
@@ -111,7 +130,7 @@ function markdownFiles(dir) {
 export function headingIDs(prefix, text) {
   const valid = idPattern(prefix, false);
   const ids = [];
-  for (const { source } of atxHeadings(text)) {
+  for (const { source } of atxHeadings(body(text))) {
     const heading = source.match(/^ {0,3}#{1,6}[ \t]+`([^`]*)`/);
     const id = heading?.[1].replace(/^ (.*) $/, "$1");
     if (id !== undefined && valid.test(id)) ids.push(id);
@@ -156,10 +175,11 @@ function isStatus(node, ctx) {
   return /^\s*状態:/.test(ctx.textContent(node));
 }
 
-// hasTitle reports whether the frontmatter of the document has a title, by
-// the same test as the loader.
+// hasTitle reports whether the frontmatter of the document has a key title,
+// plain or quoted, at the start of a line. check-site uses it; the plugin
+// reads the data of the frontmatter that Astro parsed.
 export function hasTitle(text) {
-  return frontmatter(text).data.title !== undefined;
+  return /^["']?title["']?[ \t]*:/m.test(frontmatter(text) ?? "");
 }
 
 // headingLevel returns the level of a heading element, or 0 for any other
@@ -232,7 +252,7 @@ export function linkTarget(settings, root, file, href) {
   const hash = at < 0 || href[at] !== "#" ? "" : href.slice(at);
   let decoded;
   try {
-    decoded = path.split("/").map(decodeURIComponent).join("/");
+    decoded = decodeURIComponent(path);
   } catch {
     return { kind: "text" };
   }
@@ -269,13 +289,15 @@ function pumlBlock(summary, content) {
   };
 }
 
-// requirementsPlugin returns the hast plugin for the settings of the site.
+// requirementsPlugin returns the factory of the hast plugin for the settings
+// of the site. The factory reads the body that the parser reads and the data
+// of the frontmatter that the loader reads.
 export function requirementsPlugin(settings, root) {
   const table = idTable(settings, root);
   const docs = join(root, settings.docsDir);
   const requirements = join(root, settings.requirementsDir);
   const valid = idPattern(settings.prefix, false);
-  return defineHastPlugin({
+  return (doc) => defineHastPlugin({
     name: "cumin-trace-requirements",
     // The positions of the nodes find the heading that gave the title.
     options: { position: true },
@@ -289,11 +311,10 @@ export function requirementsPlugin(settings, root) {
       let children = [...tree.children];
       const isRequirement = (node) =>
         settings.prefix && inside(requirements, file) && requirementID(node, ctx, settings.prefix) !== undefined;
-      const text = readFileSync(file, "utf8");
-      if (!hasTitle(text)) {
+      if (doc.data?.astro?.frontmatter?.title === undefined) {
         // The heading on the line of the title leaves; a requirement heading
         // stays, with its anchor and its block.
-        const { line } = firstHeading(text, file);
+        const { line } = firstHeading(doc.source, file);
         const first = children.findIndex((child) => headingLevel(child) > 0 && child.position?.start.line === line);
         if (first >= 0 && !isRequirement(children[first])) children.splice(first, 1);
       }
