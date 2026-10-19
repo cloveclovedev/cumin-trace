@@ -7,3 +7,5 @@ The links below give the order of the sidebar, against the order of the paths:
 - [Zeta](sidebar/zeta.md)
 - [Beta](sidebar/beta/index.md)
 - [Alpha](sidebar/alpha/index.md)
+
+The link below goes to a document of a dot path, which has no page: [Draft](sidebar/.drafts/draft.md).

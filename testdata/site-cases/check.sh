@@ -36,7 +36,8 @@ fi
 echo "the sidebar follows the order of the cases, as wanted"
 # CTR-SITE-011: the sidebar lists no document under a directory or with a name
 # that starts with ".", as the docs collection loads none. check-site above
-# builds the site with sidebar/.drafts/draft.md and sidebar/.hidden.md.
+# builds the site with sidebar/.drafts/draft.md, which the entry document
+# links to, and sidebar/.hidden.md.
 all=$(cd "$work/site" && node --input-type=module -e '
 import { readSettings, root } from "./src/settings.mjs";
 import { sidebar } from "./src/requirements.mjs";
