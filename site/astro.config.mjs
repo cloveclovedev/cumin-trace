@@ -8,12 +8,13 @@
 // script in the head opens a diagram on a click (CTR-SITE-007). The name at
 // the top left comes from siteName() (CTR-SITE-013). The one root locale
 // shows the UI in Japanese, and adds no language directory to the URLs
-// (CTR-SITE-012).
+// (CTR-SITE-012). The sidebar of sidebar() follows the links of the entry
+// document (CTR-SITE-011), in place of the default sidebar.
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import { satteri } from "@astrojs/markdown-satteri";
 import { readSettings, root, siteName } from "./src/settings.mjs";
-import { diagramScript, linksPlugin, requirementsPlugin } from "./src/requirements.mjs";
+import { diagramScript, linksPlugin, requirementsPlugin, sidebar } from "./src/requirements.mjs";
 
 const settings = readSettings();
 
@@ -26,6 +27,7 @@ export default defineConfig({
     starlight({
       title: siteName(settings, root),
       locales: { root: { label: "日本語", lang: "ja" } },
+      sidebar: sidebar(settings, root),
       customCss: ["./src/requirements.css"],
       head: [{ tag: "script", content: diagramScript }],
     }),

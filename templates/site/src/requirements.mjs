@@ -5,7 +5,8 @@
 // the rules of a requirement and of a reference are those of the format check
 // (docs/ja/designs/check/reading.md). It also rewrites the relative links
 // between documents (CTR-SITE-010). The script diagramScript opens a
-// diagram that is clicked (CTR-SITE-007).
+// diagram that is clicked (CTR-SITE-007). sidebar() gives the items of the
+// sidebar in the reading order (CTR-SITE-011).
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -182,6 +183,74 @@ export function hasTitle(text) {
   return /^["']?title["']?[ \t]*:/m.test(frontmatter(text) ?? "");
 }
 
+// documentTitle returns the title of a document: the title of its
+// frontmatter, or its first heading.
+export function documentTitle(text, file) {
+  if (!hasTitle(text)) return firstHeading(body(text), file).title;
+  const line = frontmatter(text).match(/^["']?title["']?[ \t]*:[ \t]*(.*)$/m)[1];
+  return line.replace(/^(["'])(.*)\1[ \t]*$/, "$2").trim();
+}
+
+// bodyLines returns the lines of a document outside the frontmatter, the code
+// blocks, and the HTML comments. The page shows none of them.
+export function bodyLines(text) {
+  const lines = body(text).split(/\r?\n/);
+  const found = [];
+  let fence = "";
+  let comment = false;
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    if (comment) {
+      const end = line.indexOf("-->");
+      if (end === -1) continue;
+      line = " ".repeat(end + 3) + line.slice(end + 3);
+      comment = false;
+    } else {
+      const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
+      if (fence) {
+        if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
+        continue;
+      }
+      if (open) {
+        fence = open[1];
+        continue;
+      }
+    }
+    // A comment starts outside the code spans, and ends at the first "-->".
+    // Only a comment at the start of a line (an HTML block) goes on to the
+    // next lines; an unclosed "<!--" in the middle of a line is text.
+    for (;;) {
+      const start = line.replace(/`[^`]*`/g, (span) => " ".repeat(span.length)).indexOf("<!--");
+      if (start === -1) break;
+      const end = line.indexOf("-->", start + 4);
+      if (end === -1) {
+        if (/^ {0,3}$/.test(line.slice(0, start))) {
+          line = "";
+          comment = true;
+        }
+        break;
+      }
+      line = line.slice(0, start) + " ".repeat(end + 3 - start) + line.slice(end + 3);
+    }
+    found.push(line);
+  }
+  return found;
+}
+
+// sourceLinks returns the destination and the text of each inline link of a
+// document that is no image, outside the frontmatter, the code blocks, and
+// the code spans.
+export function sourceLinks(text) {
+  const found = [];
+  for (const line of bodyLines(text)) {
+    const plain = line.replace(/`[^`]*`/g, (span) => span.replace(/[[\]()]/g, " "));
+    for (const match of plain.matchAll(/(?<!!)\[([^\]]*)\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)) {
+      found.push({ text: line.slice(match.index + 1, match.index + 1 + match[1].length), href: match[2] });
+    }
+  }
+  return found;
+}
+
 // headingLevel returns the level of a heading element, or 0 for any other
 // node.
 function headingLevel(node) {
@@ -242,7 +311,8 @@ function inside(dir, file) {
 // file, from the rules of docs/ja/designs/site/build.md: "keep" for an
 // external URL, a path from the top, or a heading of the same page; "page"
 // with its URL for a document of the site; "puml" with its file for a
-// readable diagram source; and "text" for any other relative path.
+// readable diagram source; and "text" for any other relative path. A "page"
+// also has the file of the document.
 export function linkTarget(settings, root, file, href) {
   if (href === "" || href.startsWith("#") || href.startsWith("/") || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(href)) {
     return { kind: "keep" };
@@ -259,9 +329,83 @@ export function linkTarget(settings, root, file, href) {
   const docs = join(root, settings.docsDir);
   const target = resolve(dirname(file), decoded);
   const readable = inside(docs, target) && existsSync(target) && statSync(target).isFile();
-  if (readable && target.endsWith(".md")) return { kind: "page", url: pageURL(settings.base, relative(docs, target)) + hash };
+  if (readable && target.endsWith(".md")) return { kind: "page", url: pageURL(settings.base, relative(docs, target)) + hash, file: target };
   if (readable && target.endsWith(".puml")) return { kind: "puml", file: target };
   return { kind: "text" };
+}
+
+// sidebar returns the items of the sidebar of Starlight in the reading order
+// (CTR-SITE-011): the page of the entry document, then a depth-first walk of
+// the links of each index.md. The index.md of a directory makes a group of
+// the pages below that directory. Each page shows once, where the walk first
+// places it. A page that the walk does not place goes, in path order, to the
+// end of the deepest group that holds it, or to the end of the top level.
+// The items name no directory above docs_dir (CTR-SITE-012).
+export function sidebar(settings, root) {
+  const docs = join(root, settings.docsDir);
+  const path = (file) => relative(docs, file).split(sep).join("/");
+  const pages = markdownFiles(docs).map(path).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const placed = new Set();
+  const groups = new Map();
+  const top = [];
+  // group returns a new group of the directory dir, with the page of its
+  // index.md first when one exists.
+  const group = (dir, label) => {
+    const index = `${dir}/index.md`;
+    const items = [];
+    if (pages.includes(index)) {
+      label = documentTitle(readFileSync(join(docs, index), "utf8"), join(docs, index));
+      items.push({ slug: pageID(index) });
+      placed.add(index);
+    }
+    const item = { label, items };
+    groups.set(dir, item);
+    return item;
+  };
+  // walk places the pages that the index.md of dir links to into items. A
+  // link outside dir is skipped.
+  const walk = (dir, items) => {
+    const index = dir === "" ? "index.md" : `${dir}/index.md`;
+    const file = join(docs, index);
+    for (const link of sourceLinks(readFileSync(file, "utf8"))) {
+      const target = linkTarget(settings, root, file, link.href);
+      if (target.kind !== "page") continue;
+      const page = path(target.file);
+      if (placed.has(page) || (dir !== "" && !page.startsWith(`${dir}/`))) continue;
+      if (basename(page) === "index.md") {
+        const sub = page.slice(0, -"/index.md".length);
+        const item = group(sub, sub);
+        items.push(item);
+        walk(sub, item.items);
+      } else {
+        placed.add(page);
+        items.push({ slug: pageID(page) });
+      }
+    }
+  };
+  if (pages.includes("index.md")) {
+    placed.add("index.md");
+    top.push({ slug: pageID("index.md") });
+    walk("", top);
+  }
+  // The remaining pages, in path order, go to the deepest group that holds
+  // them. A directory between that group and the page becomes a group.
+  for (const page of pages.filter((page) => !placed.has(page))) {
+    if (placed.has(page)) continue;
+    const parts = page.split("/").slice(0, -1);
+    let depth = parts.length;
+    while (depth > 0 && !groups.has(parts.slice(0, depth).join("/"))) depth--;
+    let items = depth > 0 ? groups.get(parts.slice(0, depth).join("/")).items : top;
+    for (let i = depth + 1; i <= parts.length; i++) {
+      const item = group(parts.slice(0, i).join("/"), parts[i - 1]);
+      items.push(item);
+      items = item.items;
+    }
+    if (placed.has(page)) continue;
+    placed.add(page);
+    items.push({ slug: pageID(page) });
+  }
+  return top;
 }
 
 // links returns the elements "a" below the node, in the order of the document.

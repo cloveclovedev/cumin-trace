@@ -19,6 +19,21 @@ for name in astro.config.mjs package.json node_modules scripts src; do
 done
 prefix=$(sed -n 's/^prefix = "\(.*\)"$/\1/p' "$work/.cumin-trace.toml")
 npm --prefix "$work/site" run check-site -- --site-name "$prefix"
+# CTR-SITE-011: the sidebar follows the links of the entry document, and the
+# pages that the walk does not place go to the end of their deepest group, in
+# path order.
+want='[{"slug":"index"},{"slug":"sidebar/zeta"},{"label":"Beta","items":[{"slug":"sidebar/beta"},{"slug":"sidebar/beta/one"},{"slug":"sidebar/beta/unlinked"}]},{"label":"Alpha","items":[{"slug":"sidebar/alpha"},{"slug":"sidebar/alpha/one"},{"slug":"sidebar/alpha/three"},{"slug":"sidebar/alpha/two"}]}]'
+got=$(cd "$work/site" && node --input-type=module -e '
+import { readSettings, root } from "./src/settings.mjs";
+import { sidebar } from "./src/requirements.mjs";
+console.log(JSON.stringify(sidebar(readSettings(), root).slice(0, 4)));
+')
+if [ "$got" != "$want" ]; then
+  echo "the sidebar starts with $got"
+  echo "want $want"
+  exit 1
+fi
+echo "the sidebar follows the order of the cases, as wanted"
 # CTR-SITE-008: a functions/ directory in the output that holds no page of a
 # document fails the check.
 rm -r "$work/docs/ja/functions"
