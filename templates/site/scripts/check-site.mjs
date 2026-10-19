@@ -7,7 +7,7 @@ import { basename, dirname, extname, join, relative, resolve, sep } from "node:p
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
-import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, escape, firstHeading, hasTitle, headingIDs, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
+import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, dotPath, escape, firstHeading, hasTitle, headingIDs, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -74,7 +74,8 @@ if (/\boutput\s*:\s*["'`]server["'`]/.test(config)) problems.push('site/astro.co
 if (existsSync(join(dist, "_worker.js"))) problems.push("site/dist/_worker.js: the output has a server function, want static files only");
 const documentPages = new Set();
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
-  if (entry.isFile() && entry.name.endsWith(".md")) documentPages.add(pageFile(pageURL(settings.base, relative(docs, join(entry.parentPath, entry.name)))));
+  const path = relative(docs, join(entry.parentPath, entry.name));
+  if (entry.isFile() && entry.name.endsWith(".md") && !dotPath(path)) documentPages.add(pageFile(pageURL(settings.base, path)));
 }
 for (const name of ["_functions", "functions", "server"]) {
   const dir = join(dist, name);
@@ -259,6 +260,7 @@ const requirements = join(root, settings.requirementsDir);
 for (const entry of existsSync(requirements) ? readdirSync(requirements, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
   const file = join(entry.parentPath, entry.name);
+  if (dotPath(relative(docs, file))) continue;
   const url = pageURL(settings.base, relative(docs, file));
   const html = page(url);
   if (html === undefined) {
@@ -361,6 +363,7 @@ let images = 0;
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
   const file = join(entry.parentPath, entry.name);
+  if (dotPath(relative(docs, file))) continue;
   const url = pageURL(settings.base, relative(docs, file));
   const html = page(url);
   const name = relative(root, file);

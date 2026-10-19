@@ -114,7 +114,14 @@ export function firstHeading(text, filePath) {
   return { title: first.text.replace(/`/g, "").trim(), line: first.line };
 }
 
-// markdownFiles returns the Markdown files below dir, at any depth.
+// dotPath reports whether a part of the path starts with ".". The docs
+// collection loads no such document (glob("**/*.md")), so it has no page.
+export function dotPath(path) {
+  return path.split(sep).some((part) => part.startsWith("."));
+}
+
+// markdownFiles returns the Markdown files below dir, at any depth, with no
+// file under a directory or with a name that starts with ".".
 function markdownFiles(dir) {
   let entries;
   try {
@@ -122,7 +129,10 @@ function markdownFiles(dir) {
   } catch {
     return [];
   }
-  return entries.filter((e) => e.isFile() && e.name.endsWith(".md")).map((e) => join(e.parentPath, e.name));
+  return entries
+    .filter((e) => e.isFile() && e.name.endsWith(".md"))
+    .map((e) => join(e.parentPath, e.name))
+    .filter((file) => !dotPath(relative(dir, file)));
 }
 
 // headingIDs returns the IDs of the requirement headings of a document: an
