@@ -6,4 +6,5 @@ areas = ["FMT", "TPL", "CHK", "EXP", "TRC", "SITE", "DASH", "CMD"]
 
 # The site of the documents of this repository, on GitHub Pages under /cumin-trace/
 [site]
+name = "cumin-trace"
 base = "/cumin-trace/"

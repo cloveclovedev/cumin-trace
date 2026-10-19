@@ -66,7 +66,7 @@ npm --prefix site run build   # static files in site/dist/
 npm --prefix site run preview # serves site/dist/ with the base path
 ```
 
-The optional table `[site]` of `.cumin-trace.toml` sets the site. `docs_dir` is the directory of the documents (default `docs/ja`); it holds `requirements_dir`. `base` is the base path of the site (default `/`); it starts and ends with `/`, with no empty, `.`, or `..` segment. `cumin-trace check` checks both values.
+The optional table `[site]` of `.cumin-trace.toml` sets the site. `docs_dir` is the directory of the documents (default `docs/ja`); it holds `requirements_dir`. `base` is the base path of the site (default `/`); it starts and ends with `/`, with no empty, `.`, or `..` segment. `name` is the name of the site at the top left; it is not empty, not only white space, and holds no line break. With no `name`, the site takes the repository name from the URL of `origin`, then the prefix. `cumin-trace check` checks the three values.
 
 ## Check the format
 
@@ -179,7 +179,7 @@ The check prints nothing and exits with 0. `go test ./...` runs the same check i
 
 ## Build the site of this repository
 
-The site of this repository is in `site/`, written by `go run ./cmd/cumin-trace init CTR`. Its base path `/cumin-trace/` is in `[site]` of `.cumin-trace.toml`, and nowhere else. It needs Node.js 22.22.0 or later.
+The site of this repository is in `site/`, written by `go run ./cmd/cumin-trace init CTR`. Its name `cumin-trace` and its base path `/cumin-trace/` are in `[site]` of `.cumin-trace.toml`, and nowhere else. It needs Node.js 22.22.0 or later.
 
 ```sh
 npm --prefix site ci                 # once; installs the pinned versions
