@@ -20,6 +20,7 @@ requirements_dir = "docs/ja/requirements"
 [site]
 docs_dir = "docs/ja"
 base = "/"
+name = "cumin-trace"
 ```
 
 | キー | 型 | 必須 | 決まり |
@@ -27,14 +28,24 @@ base = "/"
 | `prefix` | 文字列 | 必須 | 英大文字と数字が1文字以上 |
 | `areas` | 文字列の配列 | 必須 | 0個以上。空 (`areas = []`) は、カテゴリがまだないことを表す。キーがないことは、空とは区別して設定のエラーにする (`MetaData.IsDefined("areas")`)。それぞれ英大文字と数字が1文字以上。同じ名前を2回書かない |
 | `requirements_dir` | 文字列 | 省略できる | リポジトリの最上位からの相対パス。区切りは `/`。絶対パスと `..` は書けない。既定は `docs/ja/requirements` |
-| `[site]` | 表 | 省略できる | サイトの `docs_dir` と `base`。決まりは [サイトのファイルと設定](../site/files.md) の「設定」。`requirements_dir` は、`docs_dir` (既定 `docs/ja`) の中になければならない。`[site]` がなくても確かめる。`base` は `/` で始まり `/` で終わり、空、`.`、`..` の区切りを持たない |
+| `[site]` | 表 | 省略できる | サイトの `docs_dir`、`base`、`name`。決まりは [サイトのファイルと設定](../site/files.md) の「設定」。`requirements_dir` は、`docs_dir` (既定 `docs/ja`) の中になければならない。`[site]` がなくても確かめる。`base` は `/` で始まり `/` で終わり、空、`.`、`..` の区切りを持たない。`name` は文字列で、空、空白だけ、改行を持つ文字をエラーにする |
 
 - 知らないキーがあれば、`[site]` の中のキーも含めて、設定のエラーにする。ほかの機能 (対応づけ、サイト) がキーを足すときは、同じ構造体に足す。
 - カテゴリの名前とディレクトリの名前が合っているかは、確かめない。`CTR-CHK-001` の表にないためである。
 
+## `name` のテスト
+
+`internal/check` の `service_test.go` の、`[site]` の表のテスト (`TestAcceptsASiteTableThatFollowsTheRules` など) に並べて、次の3つを足す (`CTR-SITE-013`)。設定を読むのは `internal/core` で、テストは `check` を通して確かめる。
+
+| テストが確かめること | 例 |
+|---|---|
+| `[site]` の `name` を受け付け、その値を設定に持つ | `name = "cumin-trace"` |
+| 空、空白だけ、改行を持つ `name` は、`site.base` と同じ形の設定のエラーになる | `name = ""`、`name = " "`、`name = "a\nb"` |
+| 文字列でない `name` は、TOML のデコーダーのエラーになる | `name = 1` |
+
 ## このリポジトリの設定
 
-このリポジトリも、最上位に自分の設定ファイル [.cumin-trace.toml](../../../../.cumin-trace.toml) を持つ。接頭辞は `CTR`、カテゴリは [要件の一覧](../../requirements/index.md) の表の7つで、同じ順に並べる。`requirements_dir` は既定のままなので書かない。`[site]` には `base = "/cumin-trace/"` だけを書く。`cmd/cumin-trace/main_test.go` の `TestTheDocumentsOfThisRepositoryPassTheCheck` が、このリポジトリの要件文書に書式検査を実行し、エラーがないことを確かめる。
+このリポジトリも、最上位に自分の設定ファイル [.cumin-trace.toml](../../../../.cumin-trace.toml) を持つ。接頭辞は `CTR`、カテゴリは [要件の一覧](../../requirements/index.md) の表の7つで、同じ順に並べる。`requirements_dir` は既定のままなので書かない。`[site]` には `name = "cumin-trace"` と `base = "/cumin-trace/"` を書く。`cmd/cumin-trace/main_test.go` の `TestTheDocumentsOfThisRepositoryPassTheCheck` が、このリポジトリの要件文書に書式検査を実行し、エラーがないことを確かめる。
 
 ## 確かめたこと
 

@@ -15,6 +15,10 @@
   - `CTR-SITE-008` 配信先で動く ([ファイルと設定](files.md))
   - `CTR-SITE-009` 文書だけから作る ([ビルド](build.md))
   - `CTR-SITE-010` 文書の間のリンク ([ビルド](build.md))
+  - `CTR-SITE-011` サイドバーの順 ([ビルド](build.md))
+  - `CTR-SITE-012` 表示の言語と階層 ([ビルド](build.md))
+  - `CTR-SITE-013` サイトの名前 ([ファイルと設定](files.md))
+  - `CTR-SITE-014` 本文のデザイン ([ファイルと設定](files.md))
 - [コマンド](../../requirements/command/index.md)
   - `CTR-CMD-001` コマンドの一覧 (`init` がサイトのテンプレートも書く)
 
@@ -44,8 +48,15 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 | Starlight の `customCss` で CSS を、`head` でタグを足せる。`markdown.processedDirs` で、`src/content/docs/` の外のディレクトリにも Starlight の Markdown の処理をかける | Starlight [Configuration Reference](https://starlight.astro.build/reference/configuration/) |
 | `base` は、開発とビルドの両方で、ページと資産の根になる | Astro [Configuration Reference](https://docs.astro.build/en/reference/configuration-reference/) |
 | Astro は Node.js `v22.22.0` 以上を求め、奇数のバージョンを対象にしない | Astro [Install and set up](https://docs.astro.build/en/install-and-setup/) |
+| 1つの言語だけのサイトは、`locales` の `root` に `label` と `lang` を書く。`root` の言語のページの URL には、言語の接頭辞が付かない。`root` が既定の言語なら `defaultLocale` は要らない。Starlight は、日本語を含む多くの言語の UI の訳を持つ | Starlight [Internationalization (i18n)](https://starlight.astro.build/guides/i18n/) |
+| `locales` のキーは、その言語のファイルを置くディレクトリである | Starlight [Configuration Reference](https://starlight.astro.build/reference/configuration/) の `locales` |
+| Starlight 0.42.6 は、日本語の UI の訳 `packages/starlight/src/translations/ja.json` を持つ | Starlight のリポジトリの、タグ `@astrojs/starlight@0.42.6` のファイル |
+| 既定のサイドバーは、ファイルの構成から作り、ファイルの名前の順に並ぶ。`sidebar` には、ページの `slug` (文字だけの短い書き方も可)、`label` と `items` の組 (入れ子にできる) を並べる。`slug` の項目の表示は、既定でそのページの `title` である | Starlight [Sidebar Navigation](https://starlight.astro.build/guides/sidebar/) |
+| `title` は、サイトの名前で、文字か、言語ごとの文字の表である。メタデータとブラウザのタブのタイトルにも使う | Starlight [Configuration Reference](https://starlight.astro.build/reference/configuration/) の `title` |
+| 本文の幅は、CSS の変数 `--sl-content-width` で決まる。`customCss` に、CSS のファイルのパスを足す | Starlight [CSS & Styling](https://starlight.astro.build/guides/css-and-tailwind/) |
+| 0.42.6 では、`--sl-content-width` の既定は `45rem` である。`.sl-container` の `max-width` と、`.main-pane` の幅の計算が、この変数を使う。どちらの規則も `@layer starlight.core` の中にある。角の丸みの変数はない | Starlight のリポジトリの、タグ `@astrojs/starlight@0.42.6` の `src/style/props.css`、`src/components/ContentPanel.astro`、`src/components/TwoColumnContent.astro` |
 
-上の表にない Astro と Starlight の振る舞いは、この文書では推測として書き、「推測」と記す。実装の Issue で、確認のコマンド (`npm run check-site`) で確かめる。
+上の表にない Astro と Starlight の振る舞いは、この文書では推測として書き、「推測」と記す。実装の Issue で、確認のコマンド (`npm run check-site`) で確かめる。表の、1つの言語のサイトの行から下の7行は、2026-10-19 に読んだ。
 
 ## 決めたこと
 
@@ -117,6 +128,60 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 
 `npm --prefix site run check-site` が、前の出力と Astro のキャッシュを消し、文書のハッシュを取り、サイトをビルドし、もう一度ハッシュを取り、出力の HTML を調べる。調べるのは、タイトル、アンカー、リンクの行き先、図のファイル、要件の枠、元の文書が変わらないことである。Node.js の標準の機能だけで書く。
 
-- 理由: `CTR-SITE-001` から `CTR-SITE-010` の検証はすべて `demo` で、毎回ブラウザで見るのは繰り返せない。HTML の形で確かめられる部分を、どの手元でも同じ結果になるコマンドにする。
+- 理由: `CTR-SITE-001` から `CTR-SITE-013` の検証は `demo` で、毎回ブラウザで見るのは繰り返せない。HTML の形で確かめられる部分を、どの手元でも同じ結果になるコマンドにする。
 - 採らなかった案: Playwright でブラウザを動かす。大きな依存が増える。クリックの見た目は `demo` で Maintainer が見る。
 - 細部: [ファイルと設定](files.md)
+
+### サイドバーは、入口の文書のリンクの順に、設定で並べる
+
+`astro.config.mjs` が、Starlight の `sidebar` を、`requirements.mjs` の `sidebar()` で作る。`sidebar()` は、`docs_dir` の `index.md` (入口の文書) の本文のリンクを順に読む。宛先がサイトのページのリンクだけを使う。ディレクトリの `index.md` へのリンクは、そのディレクトリのグループになり、中も同じ決まりで並ぶ。どこからもリンクしていない文書は、そのあとにパスの順で並ぶ (`CTR-SITE-011`)。
+
+- 理由: Starlight の既定のサイドバーは、ファイルの名前の順である。読む順は、入口の文書だけが知っている。`sidebar` の設定は、文書を書き換えずに順を決められる (`CTR-SITE-002`)。グループを作らないと、40 ほどのページが1列に並ぶ。
+- 採らなかった案: 各文書の frontmatter の `sidebar.order` で順を決める。文書を書き換えることになる。
+- 採らなかった案: 入口の文書の箇条書きの入れ子を、グループの入れ子にする。リンクのない項目 (このリポジトリの「設計文書」) の扱いの決まりが増える。
+- 採らなかった案: リンクした文書だけを1列に並べる。リンクしていない文書がグループに入らず、長い1列になる。
+- 細部: [ビルド](build.md) の「サイドバー」
+
+### UI は `root` の言語の日本語にし、URL は文書のディレクトリの中から始める
+
+Starlight の `locales` に `root` の1つだけを置き、`lang` を `ja`、`label` を `日本語` にする。ページの ID は、今のとおり `docs_dir` からの相対パスで決める (`pageID()`)。サイドバーは上の `sidebar()` だけで作る。どちらにも、`docs_dir` より上のディレクトリと `ja` は出ない (`CTR-SITE-012`)。言語は、今はテンプレートに固定する。設定のキーは足さない。
+
+- 理由: `root` の言語は、URL に言語の接頭辞を付けずに、UI の言語だけを変える。Starlight は日本語の UI の訳を持つ。英語のサイトは v0.3 の候補 ([バックログ](../../requirements/backlog.md)) で、今は決めない。
+- 英語のサイトの余地: Starlight の言語は、ページの ID の最初のディレクトリで決まる (推測)。英語の文書を足すときは、ローダーが英語の文書に `en/` で始まる ID を付け、`locales` に `en` を足せば、日本語の URL は変わらない (推測)。言語を選ぶ設定のキーは、そのときに足す。
+- 採らなかった案: `docs/` を読み、`ja` を `locales` のキーにする。URL とサイドバーに `ja` が出る。
+- 採らなかった案: `docs_dir` の最後のディレクトリの名前 (`ja`) から言語を決める。名前が言語のコードでないリポジトリで、決まりが働かない。
+- 細部: [ビルド](build.md) の「言語」
+
+### サイトの名前は、`[site]` の `name`、`origin` のリポジトリの名前、接頭辞の順に決める
+
+`settings.mjs` の `siteName()` が、Starlight の `title` を決める (`CTR-SITE-013`)。
+
+1. `.cumin-trace.toml` の `[site]` の `name`
+2. `git config --get remote.origin.url` の URL から、末尾の `/` と `.git` を除き、最後の部分を取った名前
+3. `prefix`
+
+`git` がない、リポジトリでない、`origin` がない、名前が空のときは、3 に進む。エラーにしない。このリポジトリは `name = "cumin-trace"` を書くので、GitHub Pages のビルドも、手元と同じ名前になる。
+
+- 理由: キーの名前は、要件の言葉「名前」に合わせ、ページのタイトル (frontmatter の `title`) と分ける。`origin` の URL は、手元の clone にも CI の checkout にもある (CI は推測)。ネットワークも token も使わない。
+- 採らなかった案: `GITHUB_REPOSITORY` の環境変数。GitHub Actions の中にしかなく、手元のプレビューと名前が変わる。
+- 採らなかった案: リポジトリの最上位のディレクトリの名前。worktree や clone の名前が、リポジトリの名前と違うことがある。
+- 採らなかった案: GitHub の API で名前を読む。ネットワークと token が要り、`CTR-SITE-009` と `CTR-SITE-005` に合わない。
+- 採らなかった案: キーを `title` にする。文書のタイトルと同じ言葉になる。
+- 細部: [ファイルと設定](files.md) の「設定」
+
+### 要件のページは、要件の枠を持つページとし、CSS だけで幅と角を変える
+
+要件のページは、本文に `section.requirement` (要件の枠、`CTR-SITE-006`) を持つページである。`requirements.css` が、そのページだけで、`:root` の `--sl-content-width` を `60rem` (既定は `45rem`) にする。そのページの本文の画像の角を、`border-radius: 0.5rem` で丸める。要件の枠と同じ値である (`CTR-SITE-014`)。
+
+- 理由: 要件のページを決めるのに、新しい決まりも、Starlight の部品の差し替えも要らない。CSS の `:has()` で、そのページだけを選べる。Starlight は、本文の枠 (`.sl-container`) と本文の欄 (`.main-pane`) の両方の幅を `--sl-content-width` から決める。変数を変えれば、両方が同じに広がる。Starlight には角の丸みの変数がないので、値を書く。
+- 採らなかった案: すべてのページの `--sl-content-width` を広げる。`CTR-SITE-001` は、要件が求めるものだけを変えることを求める。
+- 採らなかった案: `requirements_dir` の下のページを、Starlight の部品 (`PageFrame` など) の差し替えでクラスを付けて選ぶ。保守するコードが増える。
+- 採らなかった案: `.sl-container` の `max-width` だけを広げる。`.main-pane` の幅は変わらないので、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。
+- 採らなかった案: `--sl-content-width` を、自分自身の値から計算し直す (`calc(var(--sl-content-width) * 4 / 3)`)。CSS の変数の循環になり、無効になる。
+- 細部: [ファイルと設定](files.md) の「テンプレートのファイル」
+
+### workflow は変えない
+
+`.github/workflows/` のファイルは、どれも変えない。
+
+- 理由: `site.yml` は、`docs/ja/`、`site/`、`.cumin-trace.toml` の変更でサイトをビルドし、`check-site` を動かす。新しいキー `name` は `.cumin-trace.toml` にあり、サイドバーと言語と CSS は `site/` にある。このリポジトリの名前は設定から来るので、checkout の `origin` に頼らない。

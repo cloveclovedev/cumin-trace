@@ -12,35 +12,52 @@
 | 2 | `site/package-lock.json` | 1 の依存とその依存の、固定したバージョン。`npm ci` が使う | `CTR-SITE-001`、`CTR-SITE-005` |
 | 3 | `site/.node-version` | `24` の1行 | `CTR-SITE-001` |
 | 4 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/` | `CTR-SITE-001` |
-| 5 | `site/astro.config.mjs` | 設定を読み、`base`、`satteri()` とその `hastPlugins`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
-| 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う | `CTR-SITE-002` |
+| 5 | `site/astro.config.mjs` | 設定を読み、`base`、`satteri()` とその `hastPlugins`、Starlight の `title`、`locales`、`sidebar`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008`、`CTR-SITE-011`、`CTR-SITE-012`、`CTR-SITE-013` |
+| 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う。サイトの名前を決める (`siteName()`) | `CTR-SITE-002`、`CTR-SITE-013` |
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
-| 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図を開くスクリプトの文、文書の最初の見出し | `CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
-| 9 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
-| 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
+| 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図を開くスクリプトの文、文書の最初の見出しとタイトル、サイドバーの項目 (`sidebar()`) | `CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010`、`CTR-SITE-011` |
+| 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。要件のページの幅と、本文の画像の角 | `CTR-SITE-006`、`CTR-SITE-014` |
+| 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013` |
 
-- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 10 が使う、文書の最初の見出し (`firstHeading()`) も持つ。10 は、下の表のすべての行を確かめる。
+- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 10 が使う、文書の最初の見出し (`firstHeading()`) も持つ。8 は、サイドバーの項目 (`sidebar()`、`CTR-SITE-011`) も作る。そのために、`check-site.mjs` から `documentTitle()`、`sourceLinks()`、`bodyLines()` を 8 に移す。10 は、これらを 8 から読み込む。10 は、下の表のすべての行を確かめる。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
-- Starlight の既定の見た目のまま使う (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
+- Starlight の既定の見た目のまま使い、要件が求めるものだけを変える (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
+- `requirements.css` の要件のページ (`CTR-SITE-014`): 要件のページは、本文に `section.requirement` を持つページである。
+  - 幅: `:root:has(section.requirement)` で、`--sl-content-width` を `60rem` にする。Starlight 0.42.6 の既定は `45rem` である。`.sl-container` の `max-width` だけでなく、`.main-pane` の幅も、この変数から決まる (`TwoColumnContent.astro`)。`max-width` だけを広げると、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。決まった値なので、変数の循環にならない。
+  - 角: `.sl-container:has(section.requirement) img` の `border-radius` を `0.5rem` にする。要件のページの画像だけを丸める (`CTR-SITE-001`)。要件の枠と同じ値である。Starlight に角の丸みの変数はない。
+  - Starlight 0.42.6 の `.sl-container` と `.main-pane` の規則は、`@layer starlight.core` の中にある (タグの `ContentPanel.astro` と `TwoColumnContent.astro`)。layer の外の規則は、layer の中の規則より優先される。`customCss` の規則が layer の外に置かれることは推測である。HTML には現れないので、Maintainer が `inspection` で見る。
 
 ## 設定
 
-`.cumin-trace.toml` に、省略できる表 `[site]` を足す。`internal/core` は、この2つのキーを知っているキーとして読み、ほかのキーと同じく、知らないキーをエラーにする ([設定ファイル](../check/settings.md))。
+`.cumin-trace.toml` に、省略できる表 `[site]` を足す。`internal/core` は、この3つのキーを知っているキーとして読み、ほかのキーと同じく、知らないキーをエラーにする ([設定ファイル](../check/settings.md))。
 
 | キー | 型 | 既定 | 決まり |
 |---|---|---|---|
 | `docs_dir` | 文字列 | `docs/ja` | `requirements_dir` と同じ決まりの相対パス。`requirements_dir` は、その中になければならない (`CTR-SITE-002`) |
 | `base` | 文字列 | `/` | `/` で始まり `/` で終わる |
+| `name` | 文字列 | なし | サイトの名前 (`CTR-SITE-013`)。空と、空白だけの文字はエラーにする。改行を持てない |
 
 このリポジトリの値:
 
 ```toml
 [site]
+name = "cumin-trace"
 base = "/cumin-trace/"
 ```
 
-`site/src/settings.mjs` は、`site/` の親をリポジトリの最上位として、`.cumin-trace.toml` を `smol-toml` で読む。`prefix`、`requirements_dir` (既定 `docs/ja/requirements`)、`docs_dir`、`base` を返す。値を確かめるのは Go の `check` で、サイトは確かめない。
+`site/src/settings.mjs` は、`site/` の親をリポジトリの最上位として、`.cumin-trace.toml` を `smol-toml` で読む。`prefix`、`requirements_dir` (既定 `docs/ja/requirements`)、`docs_dir`、`base`、`name` (既定 空) を返す。値を確かめるのは Go の `check` で、サイトは確かめない。
+
+`siteName(settings, root)` は、サイトの名前を次の順に決める (`CTR-SITE-013`)。
+
+1. `name` が空でなければ、`name`
+2. `root` で `git config --get remote.origin.url` を `execFileSync` で動かした出力から、次の順に作った名前。空でなければ、その名前
+   1. 前後の空白と改行を除く
+   2. 末尾の `/` を除き、次に末尾の `.git` を除く
+   3. 最後の `/` か `:` のあとの部分を取る
+3. `prefix`。空なら `Requirements`
+
+`git` がない、`root` がリポジトリでない、`origin` がない、終了コードが 0 でない、のどれでも、例外を出さずに 3 に進む。`https://github.com/owner/repo.git`、`git@github.com:owner/repo.git`、`/path/to/repo` は、どれも `repo` になる。`git` はネットワークを使わない。
 
 ## コマンド
 
@@ -78,6 +95,9 @@ base = "/cumin-trace/"
 | 元の文書の相対 `.puml` のリンクで、宛先が読める `.puml` のものごとに、閉じた `<details>` があり、中のコードブロックがその `.puml` の中身と同じである。ページに、`.puml` への相対のリンクがない。URL と `/` で始まるリンクは残る | `CTR-SITE-010` |
 | 元の文書の、ほかの相対パスへのリンク (サイトのページでない `.md`、読める `.puml` でない `.puml`、画像でもないもの) が、出力では `<a>` のない文字である | `CTR-SITE-010` |
 | 元の文書の相対パスの画像 (frontmatter、コードブロック、コードスパン、HTML のコメントの外の `![...](...)`) ごとに、ページに、出力のファイルの名前が `<名前>.<ハッシュ><拡張子>` (SVG でない画像は、拡張子が `.webp` でもよい) の `<img>` があり、その `src` が `base` で始まり、出力にファイルがある。同じバイトの SVG の画像は、Astro が1つの名前の1つのファイルにまとめるので、名前の合う `<img>` がなければ、出力のファイルが元の画像と同じ SHA-256 の `<img>` でもよい。1つの `<img>` は1つの画像にだけ数える。各ページに、`diagramScript` と同じ文の `<script>` がある | `CTR-SITE-004`、`CTR-SITE-007`、`CTR-SITE-008` |
+| 入口の文書のページのサイドバーの `<a>` の `href` が、`sidebar()` の項目のページの URL と同じ順に並ぶ。`docs_dir` の下の各文書のページが、サイドバーに1回だけ出る。入口の文書がサイトのページへリンクする順に、サイドバーの最初の項目が並ぶ (最初の項目は入口の文書のページ) | `CTR-SITE-011` |
+| 各ページの `<html>` の `lang` が `ja` である。サイドバーの最上位の項目とグループに、`docs_dir` の部分 (`docs`、`ja` など) の名前のものがない (文書のディレクトリにその名前があるときを除く)。各ページの URL が `pageURL()` である | `CTR-SITE-012` |
+| 各ページのサイトの名前 (`.site-title` の文字) が、文書群ごとに決めた名前と同じである。このリポジトリでは `cumin-trace`、`testdata/site-cases/` では接頭辞である。期待する名前は、引数 `--site-name` があればその値、なければ設定の `[site]` の `name` である。どちらもなければ、この行は確かめない。`check.sh` は `--site-name` に接頭辞を渡す。`siteName()` の値とは比べない | `CTR-SITE-013` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js` がない。`site/dist/` の `_functions/`、`functions/`、`server/` は、文書のページ (`docs_dir` の下の文書の `index.html`) だけを持つ。`server` や `functions` という名前の文書のディレクトリ (要件の領域など) のページはそこにできるので、受け付ける。空のディレクトリや、文書のページでないファイルを持つものは失敗する | `CTR-SITE-008` |
 
 文書のリンクの確かめ方 (`CTR-SITE-010`):
@@ -89,10 +109,19 @@ base = "/cumin-trace/"
 
 ファイルの種類は限らない。Starlight は既定で、検索の索引 (Pagefind) の `.pf_meta`、`.pf_fragment`、`.pf_index`、`.wasm` などを `site/dist/pagefind/` に書く (推測)。これらは静的なファイルである。
 
-`CTR-SITE-007` の拡大の見た目と、配信先での動き (`CTR-SITE-008`) は、Maintainer が `demo` で見る。
+`CTR-SITE-007` の拡大の見た目と、配信先での動き (`CTR-SITE-008`) は、Maintainer が `demo` で見る。`CTR-SITE-014` の幅と角は HTML に現れないので、`check-site` の行を持たない。Maintainer が `inspection` で見る。
+
+`CTR-SITE-013` の3つの順は、次の文書群で分かれる。
+
+| 文書群 | 名前の決まり |
+|---|---|
+| このリポジトリ | 1 (`name = "cumin-trace"`) |
+| `testdata/site-cases/` (`check.sh` が一時ディレクトリに写す。git のリポジトリでない) | 3 (`prefix`) |
+| 設定に `name` がなく、`origin` のあるリポジトリ | 2。Maintainer が `demo` で見る |
 
 ## このリポジトリ
 
 - `site/` は、`go run ./cmd/cumin-trace init CTR` で書く。すでにあるファイルは飛ばされる。
 - Go のテスト (`templates` のパッケージ) が、`site/` の10のファイルが、`templates/site/` の対応するファイル (3 と 4 は `.` のない名前) と同じバイトであることを確かめる。git が追跡する `site/` のファイル (`git ls-files` の追跡済みと、無視されない未追跡のファイル) にテンプレートのないものがあっても失敗する。git が無視するファイル (`site/.gitignore` が名前を挙げる、どの深さの `node_modules/`、`dist/`、`.astro/` と、`.DS_Store` のような git の除外設定にあるファイル) は調べない。`go test ./...` はネットワークも Node.js も使わない。
 - GitHub Pages への公開と、Pull Request でのサイトのビルドの workflow は、Maintainer が書く (要求Issue #88 の制約)。workflow は `npm --prefix site ci` と `npm --prefix site run check-site` を動かし、`site/dist/` を公開する。
+- `CTR-SITE-011` から `CTR-SITE-014` のために、`.github/workflows/` のファイルを変える必要はない。`site.yml` は、`.cumin-trace.toml`、`docs/ja/`、`site/` の変更でサイトをビルドする。名前は `.cumin-trace.toml` の `name` から来るので、checkout の `origin` に頼らない。
