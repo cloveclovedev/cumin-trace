@@ -54,7 +54,7 @@ npm --prefix site run build   # static files in site/dist/
 npm --prefix site run preview # serves site/dist/ with the base path
 ```
 
-The optional table `[site]` of `.cumin-trace.toml` sets the site. `docs_dir` is the directory of the documents (default `docs/ja`); it holds `requirements_dir`. `base` is the base path of the site (default `/`); it starts and ends with `/`. `cumin-trace check` checks both values.
+The optional table `[site]` of `.cumin-trace.toml` sets the site. `docs_dir` is the directory of the documents (default `docs/ja`); it holds `requirements_dir`. `base` is the base path of the site (default `/`); it starts and ends with `/`, with no empty, `.`, or `..` segment. `cumin-trace check` checks both values.
 
 `scripts/render-diagrams.sh` has three uses. It needs Docker.
 
@@ -83,6 +83,10 @@ The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/te
 
    # The directory of the requirement documents. Optional. The default is docs/ja/requirements.
    requirements_dir = "docs/requirements"
+
+   # The site. Optional. docs_dir must hold requirements_dir. The default is docs/ja.
+   [site]
+   docs_dir = "docs"
    ```
 
 2. Install the command from a clone of cumin-trace, and add the directory of Go commands to `PATH`.

@@ -119,17 +119,15 @@ func LoadSettings(root string) (Settings, error) {
 		}
 	}
 
-	// A product without a docs_dir keeps any requirements_dir, so that the
-	// settings of the format check alone stay valid.
 	docsDir := DefaultDocsDir
 	if meta.IsDefined("site", "docs_dir") {
 		docsDir, err = relativeDir("site.docs_dir", file.Site.DocsDir)
 		if err != nil {
 			return Settings{}, err
 		}
-		if docsDir != "." && dir != docsDir && !strings.HasPrefix(dir, docsDir+"/") {
-			return Settings{}, fmt.Errorf("%s: site.docs_dir %q must hold requirements_dir %q", SettingsFile, docsDir, dir)
-		}
+	}
+	if docsDir != "." && dir != docsDir && !strings.HasPrefix(dir, docsDir+"/") {
+		return Settings{}, fmt.Errorf("%s: site.docs_dir %q must hold requirements_dir %q", SettingsFile, docsDir, dir)
 	}
 
 	base := DefaultBase
@@ -137,6 +135,14 @@ func LoadSettings(root string) (Settings, error) {
 		base = file.Site.Base
 		if !strings.HasPrefix(base, "/") || !strings.HasSuffix(base, "/") {
 			return Settings{}, fmt.Errorf("%s: site.base %q must start and end with /", SettingsFile, base)
+		}
+		// "//" makes a page address a different host; "." and ".." move it.
+		if base != "/" {
+			for _, element := range strings.Split(base[1:len(base)-1], "/") {
+				if element == "" || element == "." || element == ".." {
+					return Settings{}, fmt.Errorf("%s: site.base %q must not contain an empty, . or .. segment", SettingsFile, base)
+				}
+			}
 		}
 	}
 
