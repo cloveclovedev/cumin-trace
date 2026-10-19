@@ -1,0 +1,6 @@
+# The documents of the cases of the site build (docs/ja/designs/site/build.md)
+prefix = "CTR"
+areas = ["DM"]
+
+[site]
+base = "/cases/"

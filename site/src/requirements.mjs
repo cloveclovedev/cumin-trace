@@ -42,11 +42,75 @@ export function references(prefix, text) {
   return refs;
 }
 
+// pageID returns the ID of the page of a document, from its path relative to
+// docs_dir. The loader gives it to glob() as generateId, so that pageURL and
+// the pages of Starlight follow one rule: each part of the path with no ".md",
+// in lower case, with "-" for each run of characters that are no letter, no
+// digit, no "_", and no "-". An index.md gives the ID of its directory.
+export function pageID(path) {
+  const parts = path.split(sep).join("/").replace(/\.md$/, "").split("/");
+  return parts.map((part) => part.toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu, "-")).join("/").replace(/\/index$/, "");
+}
+
 // pageURL returns the URL of the page of a document, from its path relative
-// to docs_dir: the path with no ".md", and the directory for an index.md.
+// to docs_dir.
 export function pageURL(base, path) {
-  const page = path.split(sep).join("/").replace(/\.md$/, "").replace(/(^|\/)index$/, "");
-  return base + (page === "" ? "" : page.toLowerCase() + "/");
+  const id = pageID(path);
+  return base + (id === "index" ? "" : id + "/");
+}
+
+// The frontmatter as Astro 7.4.0 finds it: a copy of the expressions of
+// parseFrontmatter() in @astrojs/internal-helpers. check-site compares the
+// result with the pages of Astro, through the positions of the headings.
+const frontmatterRE = /(?:^\uFEFF?|^\s*\n)(?:---|\+\+\+)([\s\S]*?\n)(?:---|\+\+\+)/;
+const frontmatterTypeRE = /(?:^\uFEFF?|^\s*\n)(---|\+\+\+)/;
+
+// frontmatter returns the text of the frontmatter of a document, or
+// undefined when it has none.
+export function frontmatter(text) {
+  return frontmatterRE.exec(text)?.[1];
+}
+
+// body returns the body of a document as the loader of Astro gives it to the
+// Markdown processor: the frontmatter blanked with spaces, then the whole text
+// trimmed. Line numbers of the body are those of the positions of the nodes.
+export function body(text) {
+  const raw = frontmatter(text);
+  if (raw === undefined) return text.trim();
+  const fence = frontmatterTypeRE.exec(text)[1];
+  return text.replace(`${fence}${raw}${fence}`, `   ${raw.replace(/[^\r\n]/g, " ")}   `).trim();
+}
+
+// atxHeadings returns the line number and the text of each ATX heading of a
+// body, outside the code blocks.
+export function atxHeadings(text) {
+  const lines = text.split(/\r?\n/);
+  const headings = [];
+  let fence = "";
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
+      continue;
+    }
+    if (open) {
+      fence = open[1];
+      continue;
+    }
+    const heading = line.match(/^ {0,3}#{1,6}(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/);
+    if (heading) headings.push({ line: i + 1, source: line, text: heading[1] ?? "" });
+  }
+  return headings;
+}
+
+// firstHeading returns the title from the first ATX heading of a body, with
+// no code span quotes, and the line of the heading. A body with no heading
+// gets the file name with no extension, and the line 0.
+export function firstHeading(text, filePath) {
+  const [first] = atxHeadings(text);
+  if (first === undefined) return { title: basename(filePath, extname(filePath)), line: 0 };
+  return { title: first.text.replace(/`/g, "").trim(), line: first.line };
 }
 
 // markdownFiles returns the Markdown files below dir, at any depth.
@@ -65,26 +129,9 @@ function markdownFiles(dir) {
 // a code span with an ID of the right form (CTR-FMT-003).
 export function headingIDs(prefix, text) {
   const valid = idPattern(prefix, false);
-  const lines = text.replace(/^﻿/, "").split(/\r?\n/);
   const ids = [];
-  let i = 0;
-  if (lines[0] === "---") {
-    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
-    i++;
-  }
-  let fence = "";
-  for (; i < lines.length; i++) {
-    const line = lines[i];
-    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (fence) {
-      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
-      continue;
-    }
-    if (open) {
-      fence = open[1];
-      continue;
-    }
-    const heading = line.match(/^ {0,3}#{1,6}[ \t]+`([^`]*)`/);
+  for (const { source } of atxHeadings(body(text))) {
+    const heading = source.match(/^ {0,3}#{1,6}[ \t]+`([^`]*)`/);
     const id = heading?.[1].replace(/^ (.*) $/, "$1");
     if (id !== undefined && valid.test(id)) ids.push(id);
   }
@@ -128,43 +175,11 @@ function isStatus(node, ctx) {
   return /^\s*状態:/.test(ctx.textContent(node));
 }
 
-// firstHeading returns the text of the first ATX heading outside the
-// frontmatter and the code blocks, or the file name with no extension.
-export function firstHeading(text, filePath) {
-  const lines = text.split(/\r?\n/);
-  let i = 0;
-  if (lines[0] === "---") {
-    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
-    i++;
-  }
-  let fence = "";
-  for (; i < lines.length; i++) {
-    const line = lines[i];
-    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (fence) {
-      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
-      continue;
-    }
-    if (open) {
-      fence = open[1];
-      continue;
-    }
-    const heading = line.match(/^ {0,3}#{1,6}(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/);
-    if (heading) {
-      return (heading[1] ?? "").replace(/`/g, "").trim();
-    }
-  }
-  return basename(filePath, extname(filePath));
-}
-
-// hasTitle reports whether the frontmatter of the document has a title.
+// hasTitle reports whether the frontmatter of the document has a key title,
+// plain or quoted, at the start of a line. check-site uses it; the plugin
+// reads the data of the frontmatter that Astro parsed.
 export function hasTitle(text) {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
-  if (lines[0] !== "---") return false;
-  for (let i = 1; i < lines.length && lines[i] !== "---"; i++) {
-    if (/^title[ \t]*:/.test(lines[i])) return true;
-  }
-  return false;
+  return /^["']?title["']?[ \t]*:/m.test(frontmatter(text) ?? "");
 }
 
 // headingLevel returns the level of a heading element, or 0 for any other
@@ -237,7 +252,7 @@ export function linkTarget(settings, root, file, href) {
   const hash = at < 0 || href[at] !== "#" ? "" : href.slice(at);
   let decoded;
   try {
-    decoded = decodeURI(path);
+    decoded = decodeURIComponent(path);
   } catch {
     return { kind: "text" };
   }
@@ -274,14 +289,18 @@ function pumlBlock(summary, content) {
   };
 }
 
-// requirementsPlugin returns the hast plugin for the settings of the site.
+// requirementsPlugin returns the factory of the hast plugin for the settings
+// of the site. The factory reads the body that the parser reads and the data
+// of the frontmatter that the loader reads.
 export function requirementsPlugin(settings, root) {
   const table = idTable(settings, root);
   const docs = join(root, settings.docsDir);
   const requirements = join(root, settings.requirementsDir);
   const valid = idPattern(settings.prefix, false);
-  return defineHastPlugin({
+  return (doc) => defineHastPlugin({
     name: "cumin-trace-requirements",
+    // The positions of the nodes find the heading that gave the title.
+    options: { position: true },
     // The first heading that became the title of the page leaves the body,
     // so that the title shows once (CTR-SITE-002). Each requirement becomes
     // one block (CTR-SITE-006).
@@ -292,9 +311,11 @@ export function requirementsPlugin(settings, root) {
       let children = [...tree.children];
       const isRequirement = (node) =>
         settings.prefix && inside(requirements, file) && requirementID(node, ctx, settings.prefix) !== undefined;
-      if (!hasTitle(readFileSync(file, "utf8"))) {
-        // A requirement heading stays, with its anchor and its block.
-        const first = children.findIndex((child) => headingLevel(child) > 0);
+      if (doc.data?.astro?.frontmatter?.title === undefined) {
+        // The heading on the line of the title leaves; a requirement heading
+        // stays, with its anchor and its block.
+        const { line } = firstHeading(doc.source, file);
+        const first = children.findIndex((child) => headingLevel(child) > 0 && child.position?.start.line === line);
         if (first >= 0 && !isRequirement(children[first])) children.splice(first, 1);
       }
       if (settings.prefix && inside(requirements, file)) {
