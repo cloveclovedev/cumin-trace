@@ -128,49 +128,6 @@ function plainText(html) {
     .replace(/\s+/g, "");
 }
 
-// CTR-SITE-010: each relative link of a document goes to the page of the
-// document and its heading, shows a diagram source in a closed collapsible
-// block, or keeps only its text. A link to a missing page or heading is a
-// broken link.
-let documents = 0;
-for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
-  if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-  const file = join(entry.parentPath, entry.name);
-  const url = pageURL(settings.base, relative(docs, file));
-  const html = page(url);
-  const name = relative(root, file);
-  if (html === undefined) {
-    problems.push(`${name}: no page at ${url}`);
-    continue;
-  }
-  documents++;
-  const content = html.slice(html.indexOf("sl-markdown-content"));
-  if (/<a [^>]*href="[^"]*\.puml(#[^"]*)?"/.test(content)) problems.push(`${name}: the page ${url} has a link to a .puml file`);
-  const hrefs = new Set([...content.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1])));
-  const blocks = [...content.matchAll(/<details>([\s\S]*?)<\/details>/g)].map((m) => m[1]);
-  for (const link of sourceLinks(readFileSync(file, "utf8"))) {
-    const target = linkTarget(settings, root, file, link.href);
-    if (target.kind === "page") {
-      const [path, hash] = target.url.split("#");
-      const html = page(path);
-      if (!hrefs.has(decoded(target.url))) {
-        problems.push(`${name}: the link to ${link.href} does not go to ${target.url}`);
-      } else if (html === undefined) {
-        problems.push(`${name}: the link to ${link.href} is broken: no page at ${path}`);
-      } else if (hash !== undefined && !html.includes(` id="${decoded(hash)}"`)) {
-        problems.push(`${name}: the link to ${link.href} is broken: ${path} has no heading #${hash}`);
-      }
-    } else if (target.kind === "puml") {
-      const source = plainText(readFileSync(target.file, "utf8").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]));
-      if (!blocks.some((block) => plainText(block).includes(source))) {
-        problems.push(`${name}: the link to ${link.href} has no closed collapsible block with the content of the file`);
-      }
-    } else if (target.kind === "text" && hrefs.has(decoded(link.href))) {
-      problems.push(`${name}: the link to ${link.href} is still a link, want only its text`);
-    }
-  }
-}
-
 // imagePaths returns the relative paths of the images of a document, outside
 // the frontmatter, the code blocks, and the code spans.
 function imagePaths(text) {
@@ -199,31 +156,64 @@ function imagePaths(text) {
   return paths;
 }
 
-// CTR-SITE-004: each image that a document links to stands in its page, and
-// the file of the image is in the output. CTR-SITE-007: each page has the
-// script that opens a diagram on a click.
+// CTR-SITE-010: each relative link of a document goes to the page of the
+// document and its heading, shows a diagram source in a closed collapsible
+// block, or keeps only its text. A link to a missing page or heading is a
+// broken link. CTR-SITE-004: each image that a document links to stands in
+// its page, and the file of the image is in the output. CTR-SITE-007: each
+// page has the script that opens a diagram on a click.
+let documents = 0;
 let images = 0;
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
   const file = join(entry.parentPath, entry.name);
-  const html = page(pageURL(settings.base, relative(docs, file)));
+  const url = pageURL(settings.base, relative(docs, file));
+  const html = page(url);
+  const name = relative(root, file);
   if (html === undefined) {
-    problems.push(`${relative(root, file)}: no page`);
+    problems.push(`${name}: no page at ${url}`);
     continue;
   }
+  documents++;
+  // The class also stands in the script of the head; the body is the div.
+  const content = html.slice(html.indexOf('<div class="sl-markdown-content"'));
+  if (/<a [^>]*href="[^"]*\.puml(#[^"]*)?"/.test(content)) problems.push(`${name}: the page ${url} has a link to a .puml file`);
+  const hrefs = new Set([...content.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1])));
+  const blocks = [...content.matchAll(/<details>([\s\S]*?)<\/details>/g)].map((m) => m[1]);
   if (!html.includes(`<script>${diagramScript}</script>`)) {
-    problems.push(`${relative(root, file)}: the page has no script that opens a diagram`);
+    problems.push(`${name}: the page ${url} has no script that opens a diagram`);
   }
-  const sources = [...html.matchAll(/<img [^>]*src="([^"]+)"/g)].map((match) => match[1]);
+  const sources = [...content.matchAll(/<img [^>]*src="([^"]+)"/g)].map((m) => m[1]);
   for (const path of imagePaths(readFileSync(file, "utf8"))) {
-    const name = basename(path).replace(/\.[^.]*$/, "");
-    const source = sources.find((src) => basename(src).startsWith(`${name}.`));
+    const image = basename(path).replace(/\.[^.]*$/, "");
+    const source = sources.find((src) => basename(src).startsWith(`${image}.`));
     if (source === undefined) {
-      problems.push(`${relative(root, file)}: the page shows no image ${path}`);
+      problems.push(`${name}: the page ${url} shows no image ${path}`);
     } else if (!source.startsWith(settings.base) || !existsSync(join(dist, source.slice(settings.base.length)))) {
-      problems.push(`${relative(root, file)}: the image ${path} goes to ${source}, which is no file under ${settings.base}`);
+      problems.push(`${name}: the image ${path} goes to ${source}, which is no file under ${settings.base}`);
     } else {
       images++;
+    }
+  }
+  for (const link of sourceLinks(readFileSync(file, "utf8"))) {
+    const target = linkTarget(settings, root, file, link.href);
+    if (target.kind === "page") {
+      const [path, hash] = target.url.split("#");
+      const html = page(path);
+      if (!hrefs.has(decoded(target.url))) {
+        problems.push(`${name}: the link to ${link.href} does not go to ${target.url}`);
+      } else if (html === undefined) {
+        problems.push(`${name}: the link to ${link.href} is broken: no page at ${path}`);
+      } else if (hash !== undefined && !html.includes(` id="${decoded(hash)}"`)) {
+        problems.push(`${name}: the link to ${link.href} is broken: ${path} has no heading #${hash}`);
+      }
+    } else if (target.kind === "puml") {
+      const source = plainText(readFileSync(target.file, "utf8").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]));
+      if (!blocks.some((block) => plainText(block).includes(source))) {
+        problems.push(`${name}: the link to ${link.href} has no closed collapsible block with the content of the file`);
+      }
+    } else if (target.kind === "text" && hrefs.has(decoded(link.href))) {
+      problems.push(`${name}: the link to ${link.href} is still a link, want only its text`);
     }
   }
 }
