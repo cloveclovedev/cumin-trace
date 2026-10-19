@@ -241,6 +241,10 @@ func TestRefusesWrongSettings(t *testing.T) {
 		{"an unknown key", settings + "area = \"FMT\"\n", "unknown key area"},
 		{"a directory above the repository", settings + "requirements_dir = \"../docs\"\n", "must not contain .."},
 		{"a directory that does not exist", settings + "requirements_dir = \"nowhere\"\n", "nowhere: no such directory"},
+		{"an unknown key in site", settings + "[site]\nbse = \"/x/\"\n", "unknown key site.bse"},
+		{"a docs_dir that does not hold requirements_dir", settings + "[site]\ndocs_dir = \"docs/en\"\n", "must hold requirements_dir"},
+		{"a base without a leading /", settings + "[site]\nbase = \"x/\"\n", "must start and end with /"},
+		{"a base without a trailing /", settings + "[site]\nbase = \"/x\"\n", "must start and end with /"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -255,6 +259,20 @@ func TestRefusesWrongSettings(t *testing.T) {
 				t.Errorf("got error %v, want an error that holds %q", err, test.want)
 			}
 		})
+	}
+}
+
+// CTR-SITE-002: a [site] table that follows the rules passes the check.
+func TestAcceptsASiteTableThatFollowsTheRules(t *testing.T) {
+	root := writeRepository(t, map[string]string{
+		".cumin-trace.toml":             settings + "[site]\ndocs_dir = \"docs/ja\"\nbase = \"/cumin-trace/\"\n",
+		"docs/ja/requirements/index.md": "# Requirements\n",
+	})
+
+	count, output := runCheck(t, root)
+
+	if count != 0 || output != "" {
+		t.Errorf("got %d errors and output:\n%s\nwant no error", count, output)
 	}
 }
 

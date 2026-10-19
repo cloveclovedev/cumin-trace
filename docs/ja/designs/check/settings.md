@@ -4,7 +4,7 @@
 
 ## キー
 
-`.cumin-trace.toml` は、リポジトリの最上位に置く。書式検査が読むキーは次の3つである (`CTR-FMT-011`、`CTR-FMT-001`)。
+`.cumin-trace.toml` は、リポジトリの最上位に置く。書式検査が読むキーは次の3つと、省略できる表 `[site]` である (`CTR-FMT-011`、`CTR-FMT-001`)。
 
 ```toml
 # プロダクトの接頭辞
@@ -15,6 +15,11 @@ areas = ["FMT", "TPL", "CHK", "EXP", "TRC", "SITE", "DASH"]
 
 # 要件文書のディレクトリ。省略できる
 requirements_dir = "docs/ja/requirements"
+
+# サイトの設定。省略できる
+[site]
+docs_dir = "docs/ja"
+base = "/"
 ```
 
 | キー | 型 | 必須 | 決まり |
@@ -22,13 +27,14 @@ requirements_dir = "docs/ja/requirements"
 | `prefix` | 文字列 | 必須 | 英大文字と数字が1文字以上 |
 | `areas` | 文字列の配列 | 必須 | 0個以上。空 (`areas = []`) は、カテゴリがまだないことを表す。キーがないことは、空とは区別して設定のエラーにする (`MetaData.IsDefined("areas")`)。それぞれ英大文字と数字が1文字以上。同じ名前を2回書かない |
 | `requirements_dir` | 文字列 | 省略できる | リポジトリの最上位からの相対パス。区切りは `/`。絶対パスと `..` は書けない。既定は `docs/ja/requirements` |
+| `[site]` | 表 | 省略できる | サイトの `docs_dir` と `base`。決まりは [サイトのファイルと設定](../site/files.md) の「設定」。`docs_dir` を書いたときは、`requirements_dir` がその中になければならない。`base` は `/` で始まり `/` で終わる |
 
-- 知らないキーがあれば、設定のエラーにする。ほかの機能 (対応づけ、サイト) がキーを足すときは、同じ構造体に足す。
+- 知らないキーがあれば、`[site]` の中のキーも含めて、設定のエラーにする。ほかの機能 (対応づけ、サイト) がキーを足すときは、同じ構造体に足す。
 - カテゴリの名前とディレクトリの名前が合っているかは、確かめない。`CTR-CHK-001` の表にないためである。
 
 ## このリポジトリの設定
 
-このリポジトリも、最上位に自分の設定ファイル [.cumin-trace.toml](../../../../.cumin-trace.toml) を持つ。接頭辞は `CTR`、カテゴリは [要件の一覧](../../requirements/index.md) の表の7つで、同じ順に並べる。`requirements_dir` は既定のままなので書かない。`cmd/cumin-trace/main_test.go` の `TestTheDocumentsOfThisRepositoryPassTheCheck` が、このリポジトリの要件文書に書式検査を実行し、エラーがないことを確かめる。
+このリポジトリも、最上位に自分の設定ファイル [.cumin-trace.toml](../../../../.cumin-trace.toml) を持つ。接頭辞は `CTR`、カテゴリは [要件の一覧](../../requirements/index.md) の表の7つで、同じ順に並べる。`requirements_dir` は既定のままなので書かない。`[site]` には `base = "/cumin-trace/"` だけを書く。`cmd/cumin-trace/main_test.go` の `TestTheDocumentsOfThisRepositoryPassTheCheck` が、このリポジトリの要件文書に書式検査を実行し、エラーがないことを確かめる。
 
 ## 確かめたこと
 

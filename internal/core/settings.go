@@ -24,6 +24,14 @@ const DefaultRequirementsDir = "docs/ja/requirements"
 // settings do not name one (CTR-TRC-001).
 const DefaultRequirementLabel = "cumin/type/requirement"
 
+// DefaultDocsDir is the directory of the documents of the site when the
+// settings do not name one (CTR-SITE-002).
+const DefaultDocsDir = "docs/ja"
+
+// DefaultBase is the base path of the site when the settings do not name one
+// (CTR-SITE-008).
+const DefaultBase = "/"
+
 // Settings is the content of the settings file (CTR-FMT-011).
 type Settings struct {
 	// Prefix is the prefix of the product, the first part of every ID.
@@ -36,6 +44,11 @@ type Settings struct {
 	// RequirementLabel is the label that marks a requirement issue. The
 	// format check does not check it; the trace does (CTR-TRC-001).
 	RequirementLabel string
+	// DocsDir is the directory of the documents of the site, relative to
+	// the top of the repository. It holds RequirementsDir (CTR-SITE-002).
+	DocsDir string
+	// Base is the base path of the site. It starts and ends with "/".
+	Base string
 }
 
 var namePattern = regexp.MustCompile(`\A[A-Z0-9]+\z`)
@@ -55,6 +68,10 @@ func LoadSettings(root string) (Settings, error) {
 		Areas            []string `toml:"areas"`
 		RequirementsDir  string   `toml:"requirements_dir"`
 		RequirementLabel string   `toml:"requirement_label"`
+		Site             struct {
+			DocsDir string `toml:"docs_dir"`
+			Base    string `toml:"base"`
+		} `toml:"site"`
 	}
 	meta, err := toml.DecodeFile(filepath.Join(root, SettingsFile), &file)
 	if err != nil {
@@ -96,16 +113,31 @@ func LoadSettings(root string) (Settings, error) {
 
 	dir := DefaultRequirementsDir
 	if meta.IsDefined("requirements_dir") {
-		dir = file.RequirementsDir
-		if dir == "" || path.IsAbs(dir) || filepath.IsAbs(dir) || strings.Contains(dir, `\`) {
-			return Settings{}, fmt.Errorf("%s: requirements_dir %q must be a relative path with / as the separator", SettingsFile, dir)
+		dir, err = relativeDir("requirements_dir", file.RequirementsDir)
+		if err != nil {
+			return Settings{}, err
 		}
-		for _, element := range strings.Split(dir, "/") {
-			if element == ".." {
-				return Settings{}, fmt.Errorf("%s: requirements_dir %q must not contain ..", SettingsFile, dir)
-			}
+	}
+
+	// A product without a docs_dir keeps any requirements_dir, so that the
+	// settings of the format check alone stay valid.
+	docsDir := DefaultDocsDir
+	if meta.IsDefined("site", "docs_dir") {
+		docsDir, err = relativeDir("site.docs_dir", file.Site.DocsDir)
+		if err != nil {
+			return Settings{}, err
 		}
-		dir = path.Clean(dir)
+		if docsDir != "." && dir != docsDir && !strings.HasPrefix(dir, docsDir+"/") {
+			return Settings{}, fmt.Errorf("%s: site.docs_dir %q must hold requirements_dir %q", SettingsFile, docsDir, dir)
+		}
+	}
+
+	base := DefaultBase
+	if meta.IsDefined("site", "base") {
+		base = file.Site.Base
+		if !strings.HasPrefix(base, "/") || !strings.HasSuffix(base, "/") {
+			return Settings{}, fmt.Errorf("%s: site.base %q must start and end with /", SettingsFile, base)
+		}
 	}
 
 	label := DefaultRequirementLabel
@@ -113,5 +145,19 @@ func LoadSettings(root string) (Settings, error) {
 		label = file.RequirementLabel
 	}
 
-	return Settings{Prefix: file.Prefix, Areas: file.Areas, RequirementsDir: dir, RequirementLabel: label}, nil
+	return Settings{Prefix: file.Prefix, Areas: file.Areas, RequirementsDir: dir, RequirementLabel: label, DocsDir: docsDir, Base: base}, nil
+}
+
+// relativeDir checks a directory of the settings: a relative path with "/" as
+// the separator and no "..". It returns the clean path.
+func relativeDir(key, dir string) (string, error) {
+	if dir == "" || path.IsAbs(dir) || filepath.IsAbs(dir) || strings.Contains(dir, `\`) {
+		return "", fmt.Errorf("%s: %s %q must be a relative path with / as the separator", SettingsFile, key, dir)
+	}
+	for _, element := range strings.Split(dir, "/") {
+		if element == ".." {
+			return "", fmt.Errorf("%s: %s %q must not contain ..", SettingsFile, key, dir)
+		}
+	}
+	return path.Clean(dir), nil
 }
