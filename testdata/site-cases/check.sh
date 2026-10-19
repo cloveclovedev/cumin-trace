@@ -4,7 +4,7 @@
 # Run it after `npm --prefix site ci`. The cases prove CTR-SITE-002 (the
 # title and the first heading), CTR-SITE-003 (the links to requirements),
 # CTR-SITE-008 (static files only), CTR-SITE-010 (the links between
-# documents), CTR-SITE-012 (the UI language and the URLs), and CTR-SITE-013 (the copy is no git repository, so the prefix
+# documents), CTR-SITE-011 (the sidebar), CTR-SITE-012 (the UI language and the URLs), and CTR-SITE-013 (the copy is no git repository, so the prefix
 # names the site).
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
@@ -34,6 +34,22 @@ if [ "$got" != "$want" ]; then
   exit 1
 fi
 echo "the sidebar follows the order of the cases, as wanted"
+# CTR-SITE-011: the sidebar lists no document under a directory or with a name
+# that starts with ".", as the docs collection loads none. check-site above
+# builds the site with sidebar/.drafts/draft.md, which the entry document
+# links to, and sidebar/.hidden.md.
+all=$(cd "$work/site" && node --input-type=module -e '
+import { readSettings, root } from "./src/settings.mjs";
+import { sidebar } from "./src/requirements.mjs";
+console.log(JSON.stringify(sidebar(readSettings(), root)));
+')
+case "$all" in
+*draft* | *hidden*)
+  echo "the sidebar lists a document of a dot path: $all"
+  exit 1
+  ;;
+esac
+echo "the sidebar lists no document of a dot path, as wanted"
 # CTR-SITE-008: a functions/ directory in the output that holds no page of a
 # document fails the check.
 rm -r "$work/docs/ja/functions"

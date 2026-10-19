@@ -114,7 +114,14 @@ export function firstHeading(text, filePath) {
   return { title: first.text.replace(/`/g, "").trim(), line: first.line };
 }
 
-// markdownFiles returns the Markdown files below dir, at any depth.
+// dotPath reports whether a part of the path starts with ".". The docs
+// collection loads no such document (glob("**/*.md")), so it has no page.
+export function dotPath(path) {
+  return path.split(sep).some((part) => part.startsWith("."));
+}
+
+// markdownFiles returns the Markdown files below dir, at any depth, with no
+// file under a directory or with a name that starts with ".".
 function markdownFiles(dir) {
   let entries;
   try {
@@ -122,7 +129,10 @@ function markdownFiles(dir) {
   } catch {
     return [];
   }
-  return entries.filter((e) => e.isFile() && e.name.endsWith(".md")).map((e) => join(e.parentPath, e.name));
+  return entries
+    .filter((e) => e.isFile() && e.name.endsWith(".md"))
+    .map((e) => join(e.parentPath, e.name))
+    .filter((file) => !dotPath(relative(dir, file)));
 }
 
 // headingIDs returns the IDs of the requirement headings of a document: an
@@ -311,8 +321,9 @@ function inside(dir, file) {
 // file, from the rules of docs/ja/designs/site/build.md: "keep" for an
 // external URL, a path from the top, or a heading of the same page; "page"
 // with its URL for a document of the site; "puml" with its file for a
-// readable diagram source; and "text" for any other relative path. A "page"
-// also has the file of the document.
+// readable diagram source; and "text" for any other relative path, also for
+// a document of a dot path, which has no page. A "page" also has the file of
+// the document.
 export function linkTarget(settings, root, file, href) {
   if (href === "" || href.startsWith("#") || href.startsWith("/") || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(href)) {
     return { kind: "keep" };
@@ -329,7 +340,7 @@ export function linkTarget(settings, root, file, href) {
   const docs = join(root, settings.docsDir);
   const target = resolve(dirname(file), decoded);
   const readable = inside(docs, target) && existsSync(target) && statSync(target).isFile();
-  if (readable && target.endsWith(".md")) return { kind: "page", url: pageURL(settings.base, relative(docs, target)) + hash, file: target };
+  if (readable && target.endsWith(".md") && !dotPath(relative(docs, target))) return { kind: "page", url: pageURL(settings.base, relative(docs, target)) + hash, file: target };
   if (readable && target.endsWith(".puml")) return { kind: "puml", file: target };
   return { kind: "text" };
 }
