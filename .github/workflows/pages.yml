@@ -26,7 +26,8 @@ jobs:
     outputs:
       changed: ${{ steps.changes.outputs.changed }}
     steps:
-      # The site is built only from these paths. Any other change leaves it
+      # The site is built only from these paths, and the cases of the page
+      # building check the code of site/. Any other change leaves it
       # as it is. When the changed files cannot be listed, the job builds.
       - name: Find whether the site changes
         id: changes
@@ -49,7 +50,7 @@ jobs:
             files="$(gh api "repos/$REPOSITORY/compare/$base...$head" --jq '.files[].filename')"; then
             # The compare API lists 300 files at most.
             if [ "$(printf '%s\n' "$files" | grep -c .)" -lt 300 ] &&
-              ! printf '%s\n' "$files" | grep -Eq '^(docs/ja/|site/|\.cumin-trace\.toml$|\.github/workflows/pages\.yml$)'; then
+              ! printf '%s\n' "$files" | grep -Eq '^(docs/ja/|site/|testdata/site-cases/|\.cumin-trace\.toml$|\.github/workflows/pages\.yml$)'; then
               changed=false
             fi
           fi
@@ -72,6 +73,12 @@ jobs:
       - name: Build and check the site
         if: steps.changes.outputs.changed == 'true'
         run: npm --prefix site run check-site
+      # The cases of the page building (docs/ja/designs/site/build.md): paths,
+      # frontmatter, titles, and links that the documents of this repository
+      # do not hold.
+      - name: Check the cases of the page building
+        if: steps.changes.outputs.changed == 'true'
+        run: testdata/site-cases/check.sh
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         if: steps.changes.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
