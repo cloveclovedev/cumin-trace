@@ -4,7 +4,7 @@
 # Run it after `npm --prefix site ci`. The cases prove CTR-SITE-002 (the
 # title and the first heading), CTR-SITE-003 (the links to requirements),
 # CTR-SITE-008 (static files only), CTR-SITE-010 (the links between
-# documents), and CTR-SITE-013 (the copy is no git repository, so the prefix
+# documents), CTR-SITE-012 (the UI language and the URLs), and CTR-SITE-013 (the copy is no git repository, so the prefix
 # names the site).
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)

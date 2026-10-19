@@ -3,7 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
-import { basename, dirname, extname, join, relative, resolve } from "node:path";
+import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
@@ -83,6 +83,32 @@ for (const name of ["_functions", "functions", "server"]) {
   const others = files.filter((file) => !documentPages.has(file));
   if (files.length === 0 || others.length > 0) {
     problems.push(`site/dist/${name}: the output has a server function, want static files only: ${others.map((file) => relative(dist, file)).join(", ") || "an empty directory"}`);
+  }
+}
+
+// CTR-SITE-012: each page is the page of a document at pageURL(), with no
+// directory above docs_dir and no language directory. Each page of a document
+// has lang "ja", and shows the search, the table of contents, and the
+// pagination in Japanese.
+for (const file of readdirSync(dist, { recursive: true, withFileTypes: true })) {
+  const path = join(file.parentPath, file.name);
+  if (file.isFile() && file.name === "index.html" && !documentPages.has(path)) {
+    problems.push(`site/dist/${relative(dist, path)}: the page is at no URL of pageURL()`);
+  }
+}
+for (const path of documentPages) {
+  if (!existsSync(path)) continue;
+  const html = readFileSync(path, "utf8");
+  const url = `${settings.base}${relative(dist, dirname(path)).split(sep).join("/")}`;
+  const ui = [
+    [/<html lang="ja"[\s>]/, '<html lang="ja">'],
+    [/<site-search [^>]*>\s*<button [^>]*aria-label="検索"/, 'search button "検索"'],
+  ];
+  if (html.includes('id="starlight__on-this-page')) ui.push([/<h2 id="starlight__on-this-page"[^>]*>目次<\/h2>/, 'table of contents "目次"']);
+  if (/<a [^>]*rel="prev"/.test(html)) ui.push([/<a [^>]*rel="prev"[^>]*>[\s\S]*?<span[^>]*>前へ<br/, 'previous link "前へ"']);
+  if (/<a [^>]*rel="next"/.test(html)) ui.push([/<a [^>]*rel="next"[^>]*>[\s\S]*?<span[^>]*>次へ<br/, 'next link "次へ"']);
+  for (const [pattern, want] of ui) {
+    if (!pattern.test(html)) problems.push(`${url}: the page has no ${want}`);
   }
 }
 

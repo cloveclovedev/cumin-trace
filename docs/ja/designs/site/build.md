@@ -101,7 +101,7 @@
 
 `astro.config.mjs` は、Starlight に `locales: { root: { label: "日本語", lang: "ja" } }` を渡し、`defaultLocale` を書かない (`CTR-SITE-012`)。
 
-- UI (検索、目次、ページ送りなど) の文字は、Starlight の日本語の訳になる。`<html>` の `lang` は `ja` になる (推測)。検索の索引 (Pagefind) の UI も同じ言語になる (推測)。
+- UI (検索、目次、ページ送りなど) の文字は、Starlight の日本語の訳になる。`<html>` の `lang` は `ja` になる。`check-site` が、各ページの `lang` と、検索のボタン、目次、ページ送りの文字を確かめる。検索の索引 (Pagefind) の UI も同じ言語になる (推測)。
 - ページの ID は `pageID()` のままで、`docs_dir` の中のパスから始まる。`root` の言語は、ID にも URL にも言語のディレクトリを足さない。
 - サイドバーは `sidebar()` の項目だけを出す。Starlight の既定のサイドバー (ファイルの構成から作るもの) は使わない。
 
