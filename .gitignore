@@ -1,2 +1,6 @@
 # The binary that `go build -o cumin-trace ./cmd/cumin-trace` writes.
 /cumin-trace
+# The dependencies and the build output of the site (site/.gitignore holds the same).
+/site/node_modules/
+/site/dist/
+/site/.astro/

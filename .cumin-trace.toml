@@ -3,3 +3,7 @@ prefix = "CTR"
 
 # The allowed areas, in the order of docs/ja/requirements/index.md
 areas = ["FMT", "TPL", "CHK", "EXP", "TRC", "SITE", "DASH", "CMD"]
+
+# The site of the documents of this repository, on GitHub Pages under /cumin-trace/
+[site]
+base = "/cumin-trace/"
