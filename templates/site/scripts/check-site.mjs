@@ -5,7 +5,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { headingIDs, pageURL } from "../src/requirements.mjs";
+import { escape, hasTitle, headingIDs, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -22,9 +22,25 @@ function page(url) {
   return existsSync(file) ? readFileSync(file, "utf8") : undefined;
 }
 
-// CTR-SITE-003: each requirement heading has an anchor whose name is its ID.
-const pages = new Map();
 const docs = join(root, settings.docsDir);
+const id = `${settings.prefix}-[A-Z0-9]+-[0-9]{3}(?:\\.[1-9][0-9]*)?`;
+
+// CTR-SITE-002: a page whose title comes from its first heading shows the
+// title once, in one <h1>.
+for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
+  if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+  const file = join(entry.parentPath, entry.name);
+  if (hasTitle(readFileSync(file, "utf8"))) continue;
+  const html = page(pageURL(settings.base, relative(docs, file)));
+  // A requirement heading of level 1 is no title.
+  const count = html?.match(new RegExp(`<h1(?! id="${id}")[\\s>]`, "g"))?.length ?? 0;
+  if (html !== undefined && count !== 1) problems.push(`${relative(root, file)}: the page has ${count} <h1>, want 1`);
+}
+
+// CTR-SITE-003: each requirement heading has an anchor whose name is its ID.
+// CTR-SITE-006: each requirement heading starts its own block, and the ID is
+// an element apart from the title.
+const pages = new Map();
 const requirements = join(root, settings.requirementsDir);
 for (const entry of existsSync(requirements) ? readdirSync(requirements, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
@@ -37,15 +53,20 @@ for (const entry of existsSync(requirements) ? readdirSync(requirements, { recur
   }
   pages.set(url, html);
   for (const id of headingIDs(settings.prefix, readFileSync(file, "utf8"))) {
-    if (!new RegExp(`<h[1-6][^>]* id="${id}"`).test(html)) {
+    if (!new RegExp(`<h[1-6][^>]* id="${escape(id)}"`).test(html)) {
       problems.push(`${relative(root, file)}: the heading of ${id} has no anchor ${id}`);
     }
+    if (!new RegExp(`<section class="requirement"><h[1-6][^>]* id="${escape(id)}"[^>]*><code class="requirement-id">${escape(id)}</code>`).test(html)) {
+      problems.push(`${relative(root, file)}: ${id} is not a block that starts with its heading and its ID apart`);
+    }
+  }
+  for (const match of html.matchAll(/<section class="requirement">(?!<h[1-6])/g)) {
+    problems.push(`${relative(root, file)}: a block of a requirement starts with no heading, at ${match.index}`);
   }
 }
 
 // CTR-SITE-003: each link to a requirement ID goes to a page under base that
 // has the anchor, and no link stands inside a code block.
-const id = `${settings.prefix}-[A-Z0-9]+-[0-9]{3}(?:\\.[1-9][0-9]*)?`;
 for (const [url, html] of pages) {
   for (const match of html.matchAll(new RegExp(`<a href="([^"#]+)#(${id})"`, "g"))) {
     const [, target, anchor] = match;

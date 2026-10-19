@@ -106,6 +106,7 @@ var siteFiles = []string{
 	"src/settings.mjs",
 	"src/content.config.mjs",
 	"src/requirements.mjs",
+	"src/requirements.css",
 	"scripts/check-site.mjs",
 }
 
