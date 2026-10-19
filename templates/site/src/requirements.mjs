@@ -2,8 +2,9 @@
 // from its ID, and turns each reference to a known ID into a link to its page
 // and anchor, also across pages (CTR-SITE-003). The places and the rules of
 // a reference are those of the format check (docs/ja/designs/check/reading.md).
-import { readdirSync, readFileSync } from "node:fs";
-import { isAbsolute, join, relative, sep } from "node:path";
+// It also rewrites the relative links between documents (CTR-SITE-010).
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineHastPlugin } from "satteri";
 
@@ -124,22 +125,106 @@ function inside(dir, file) {
   return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
+// linkTarget returns the kind of the destination of a link in the document
+// file, from the rules of docs/ja/designs/site/build.md: "keep" for an
+// external URL, a path from the top, or a heading of the same page; "page"
+// with its URL for a document of the site; "puml" with its file for a
+// readable diagram source; and "text" for any other relative path.
+export function linkTarget(settings, root, file, href) {
+  if (href === "" || href.startsWith("#") || href.startsWith("/") || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(href)) {
+    return { kind: "keep" };
+  }
+  const at = href.search(/[?#]/);
+  const path = at < 0 ? href : href.slice(0, at);
+  const hash = at < 0 || href[at] !== "#" ? "" : href.slice(at);
+  let decoded;
+  try {
+    decoded = decodeURI(path);
+  } catch {
+    return { kind: "text" };
+  }
+  const docs = join(root, settings.docsDir);
+  const target = resolve(dirname(file), decoded);
+  const readable = inside(docs, target) && existsSync(target) && statSync(target).isFile();
+  if (readable && target.endsWith(".md")) return { kind: "page", url: pageURL(settings.base, relative(docs, target)) + hash };
+  if (readable && target.endsWith(".puml")) return { kind: "puml", file: target };
+  return { kind: "text" };
+}
+
+// links returns the elements "a" below the node, in the order of the document.
+function links(node) {
+  if (node.type !== "element") return [];
+  if (node.tagName === "a") return [node];
+  return (node.children ?? []).flatMap(links);
+}
+
+// pumlBlock returns the closed collapsible block that shows a diagram source.
+function pumlBlock(summary, content) {
+  return {
+    type: "element",
+    tagName: "details",
+    properties: {},
+    children: [
+      { type: "element", tagName: "summary", properties: {}, children: [{ type: "text", value: summary }] },
+      {
+        type: "element",
+        tagName: "pre",
+        properties: {},
+        children: [{ type: "element", tagName: "code", properties: { className: ["language-plantuml"] }, children: [{ type: "text", value: content }] }],
+      },
+    ],
+  };
+}
+
 // requirementsPlugin returns the hast plugin for the settings of the site.
 export function requirementsPlugin(settings, root) {
   const table = idTable(settings, root);
   const requirements = join(root, settings.requirementsDir);
   const valid = idPattern(settings.prefix, false);
+  const docs = join(root, settings.docsDir);
+  const placed = new WeakSet();
   return defineHastPlugin({
     name: "cumin-trace-requirements",
-    element: {
-      filter: headingTags,
-      visit(node, ctx) {
-        if (!settings.prefix || !ctx.fileURL) return;
-        if (!inside(requirements, fileURLToPath(ctx.fileURL))) return;
-        const id = requirementID(node, ctx, settings.prefix);
-        if (id !== undefined && valid.test(id)) ctx.setProperty(node, "id", id);
+    element: [
+      {
+        filter: headingTags,
+        visit(node, ctx) {
+          if (!settings.prefix || !ctx.fileURL) return;
+          if (!inside(requirements, fileURLToPath(ctx.fileURL))) return;
+          const id = requirementID(node, ctx, settings.prefix);
+          if (id !== undefined && valid.test(id)) ctx.setProperty(node, "id", id);
+        },
       },
-    },
+      {
+        filter: ["a"],
+        visit(node, ctx) {
+          if (!ctx.fileURL) return;
+          const file = fileURLToPath(ctx.fileURL);
+          if (!inside(docs, file)) return;
+          const target = linkTarget(settings, root, file, String(node.properties?.href ?? ""));
+          if (target.kind === "keep") return;
+          if (target.kind === "page") {
+            ctx.setProperty(node, "href", target.url);
+            return;
+          }
+          if (target.kind === "puml") {
+            // The first link of a top-level block places the blocks of all the
+            // diagram sources of that block after it, in the order of the links.
+            let block = node;
+            while (ctx.parent(block)?.type !== "root") block = ctx.parent(block);
+            const all = links(block).filter((a) => linkTarget(settings, root, file, String(a.properties?.href ?? "")).kind === "puml");
+            if (!placed.has(block)) {
+              placed.add(block);
+              ctx.insertAfter(
+                block,
+                all.map((a) => pumlBlock(ctx.textContent(a), readFileSync(linkTarget(settings, root, file, String(a.properties.href)).file, "utf8"))),
+              );
+            }
+          }
+          ctx.replaceNode(node, [{ type: "text", value: ctx.textContent(node) }]);
+        },
+      },
+    ],
     text(node, ctx) {
       if (!settings.prefix) return;
       const refs = references(settings.prefix, node.value).filter(([from, to]) => table.has(node.value.slice(from, to)));
