@@ -45,20 +45,39 @@ for (const name of new Set([...before.keys(), ...after.keys()])) {
   if (before.get(name) !== after.get(name)) problems.push(`${name}: the build changed the file`);
 }
 
+// pageFile returns the path of the output page of a URL under base.
+function pageFile(url) {
+  return join(dist, url.slice(settings.base.length), "index.html");
+}
+
 // page returns the HTML of the output page of a URL under base, or undefined.
 function page(url) {
-  const file = join(dist, url.slice(settings.base.length), "index.html");
+  const file = pageFile(url);
   return existsSync(file) ? readFileSync(file, "utf8") : undefined;
 }
 
 const id = `${settings.prefix}-[A-Z0-9]+-[0-9]{3}(?:\\.[1-9][0-9]*)?`;
 
-// CTR-SITE-008: the site has no server functions, only static files.
+// CTR-SITE-008: the site has no server functions, only static files. A
+// directory of documents named "server" or "functions" puts their pages in
+// the output directory of that name, so such a directory may hold the pages
+// of documents, and no other file.
 const config = readFileSync(join(site, "astro.config.mjs"), "utf8");
 if (/\badapter\s*:/.test(config)) problems.push("site/astro.config.mjs: the config has an adapter, want static files only");
 if (/\boutput\s*:\s*["'`]server["'`]/.test(config)) problems.push('site/astro.config.mjs: the config has output "server", want static files only');
-for (const name of ["_worker.js", "_functions", "functions", "server"]) {
-  if (existsSync(join(dist, name))) problems.push(`site/dist/${name}: the output has a server function, want static files only`);
+if (existsSync(join(dist, "_worker.js"))) problems.push("site/dist/_worker.js: the output has a server function, want static files only");
+const documentPages = new Set();
+for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
+  if (entry.isFile() && entry.name.endsWith(".md")) documentPages.add(pageFile(pageURL(settings.base, relative(docs, join(entry.parentPath, entry.name)))));
+}
+for (const name of ["_functions", "functions", "server"]) {
+  const dir = join(dist, name);
+  if (!existsSync(dir)) continue;
+  const files = statSync(dir).isDirectory() ? readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => !e.isDirectory()).map((e) => join(e.parentPath, e.name)) : [dir];
+  const others = files.filter((file) => !documentPages.has(file));
+  if (files.length === 0 || others.length > 0) {
+    problems.push(`site/dist/${name}: the output has a server function, want static files only: ${others.map((file) => relative(dist, file)).join(", ") || "an empty directory"}`);
+  }
 }
 
 // documentTitle returns the title of a document: the title of its
@@ -81,6 +100,30 @@ function headingText(markdown) {
   return marks(markdown.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1"));
 }
 
+// sourceHeadings returns the text of each heading of a document, for
+// marks(): the ATX headings, the setext headings, and the HTML headings. The
+// page shows all three kinds as <h1> to <h6>, so the check counts them alike.
+function sourceHeadings(text) {
+  const found = atxHeadings(markdownBody(text)).map((heading) => headingText(heading.text));
+  const lines = bodyLines(text);
+  // A setext heading is a paragraph that a line of "=" or "-" ends. A list
+  // item, a quote, an ATX heading, or a table row is no such paragraph.
+  let paragraph = [];
+  for (const line of lines) {
+    if (/^ {0,3}(=+|-+)[ \t]*$/.test(line) && paragraph.length > 0) {
+      found.push(headingText(paragraph.join(" ")));
+      paragraph = [];
+    } else if (line.trim() === "" || /^ {0,3}(#{1,6}([ \t]|$)|>|[-+*][ \t]|[0-9]{1,9}[.)][ \t]|\|)/.test(line)) {
+      paragraph = [];
+    } else if (paragraph.length > 0 || !/^ {4}/.test(line)) {
+      paragraph.push(line);
+    }
+  }
+  const html = lines.join("\n").replace(/`[^`]*`/g, "");
+  for (const match of html.matchAll(/<h([1-6])(?:\s[^>]*)?>([\s\S]*?)<\/h\1\s*>/gi)) found.push(marks(plainText(match[2])));
+  return found;
+}
+
 // CTR-SITE-002: the <title> of each page starts with the title of its
 // document. A page whose title comes from its first heading shows the title
 // once, in one <h1>, and its body does not repeat the heading. A page
@@ -101,7 +144,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   const content = body(html);
   const headings = [...content.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) => marks(plainText(m[1])));
   const { title, line } = firstHeading(markdownBody(text), file);
-  const sources = atxHeadings(markdownBody(text)).filter((source) => headingText(source.text) === headingText(title)).length;
+  const sources = sourceHeadings(text).filter((heading) => heading === headingText(title)).length;
   const shown = headings.filter((heading) => heading === headingText(title)).length;
   if (hasTitle(text)) {
     if (line > 0 && shown < sources) problems.push(`${relative(root, file)}: the body has ${shown} headings "${title}", want ${sources}`);
