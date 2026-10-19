@@ -58,10 +58,11 @@ base = "/cumin-trace/"
 
 `scripts/check-site.mjs` は、次の順に動く。
 
-1. `docs_dir` の下のすべてのファイルの SHA-256 を取る。
-2. `astro build` を子のプロセスで動かす (`node_modules/.bin/astro build`)。失敗したら、その終了コードで終わる。
-3. もう一度 SHA-256 を取り、1 と比べる。
-4. `site/dist/` の HTML を読む。
+1. 前の出力 `site/dist/` と、Astro のキャッシュ `site/.astro/` と `site/node_modules/.astro/` を消す。Astro は、`.cumin-trace.toml` が変わっても、キャッシュの描画済みの文書を使い回すためである (`prefix` を変えて確かめた)。
+2. `docs_dir` の下のすべてのファイルの SHA-256 を取る。
+3. `astro build` を子のプロセスで動かす (`node_modules/.bin/astro build`)。動かせなければその理由を、失敗したらその終了コードを1行出して、失敗で終わる。
+4. もう一度 SHA-256 を取り、2 と比べる。
+5. `site/dist/` の HTML を読む。
 
 確かめるのは次のことである。1つでも合わなければ、ファイルと理由を1行ずつ出し、終了コード 1 で終わる。
 
@@ -72,16 +73,17 @@ base = "/cumin-trace/"
 | frontmatter に `title` のない文書のページで、`<h1>` が1つだけで、本文がタイトルの見出しを繰り返さない (最初の見出しが要件の見出しのときを除く) | `CTR-SITE-002` |
 | frontmatter に `title` のある文書のページで、本文が最初の見出しを残す | `CTR-SITE-002` |
 | 各要件の見出しに、ID と同じ `id` がある。各要件の見出しが `section.requirement` の最初の子で、その最初の子が `code.requirement-id` の ID である。見出しで始まらない `section.requirement` がない | `CTR-SITE-003`、`CTR-SITE-006` |
-| ID の参照のリンクが、`base` で始まり、行き先のページと `id` が出力にある | `CTR-SITE-003`、`CTR-SITE-008` |
+| `docs_dir` の下の各文書のページで、ID の参照のリンクが、`base` で始まり、行き先のページと `id` が出力にある。コードブロックの中にリンクがない | `CTR-SITE-003`、`CTR-SITE-008` |
 | 元の文書の相対 `.md` のリンクで、宛先がサイトのページ ([ビルド](build.md) の「文書のリンク」) のものが、`base` で始まるページへのリンクになり、行き先のページがある。`#見出し` 付きのリンクは、行き先のページにその `id` がある。ない `id` は、文書の切れたリンクとして報告する | `CTR-SITE-010`、`CTR-SITE-008` |
-| 元の文書の相対 `.puml` のリンクで、宛先が読める `.puml` のものごとに、閉じた `<details>` があり、中のコードブロックがその `.puml` の中身と同じである。ページに `.puml` へのリンクがない | `CTR-SITE-010` |
+| 元の文書の相対 `.puml` のリンクで、宛先が読める `.puml` のものごとに、閉じた `<details>` があり、中のコードブロックがその `.puml` の中身と同じである。ページに、`.puml` への相対のリンクがない。URL と `/` で始まるリンクは残る | `CTR-SITE-010` |
 | 元の文書の、ほかの相対パスへのリンク (サイトのページでない `.md`、読める `.puml` でない `.puml`、画像でもないもの) が、出力では `<a>` のない文字である | `CTR-SITE-010` |
-| 元の文書の相対パスの画像 (frontmatter、コードブロック、コードスパンの外の `![...](...)`) ごとに、ページに同じ名前で始まる `<img>` があり、その `src` が `base` で始まり、出力にファイルがある。各ページに、`diagramScript` と同じ文の `<script>` がある | `CTR-SITE-004`、`CTR-SITE-007`、`CTR-SITE-008` |
+| 元の文書の相対パスの画像 (frontmatter、コードブロック、コードスパン、HTML のコメントの外の `![...](...)`) ごとに、ページに、出力のファイルの名前が `<名前>.<ハッシュ><拡張子>` (SVG でない画像は、拡張子が `.webp` でもよい) の `<img>` があり、その `src` が `base` で始まり、出力にファイルがある。各ページに、`diagramScript` と同じ文の `<script>` がある | `CTR-SITE-004`、`CTR-SITE-007`、`CTR-SITE-008` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js`、`_functions/`、`functions/`、`server/` がない | `CTR-SITE-008` |
 
 文書のリンクの確かめ方 (`CTR-SITE-010`):
 
-- 元の文書の、画像でないインラインのリンク (`[文字](宛先)`) を、コードブロックとコードスパンの外から読む。宛先の種類は、プラグインと同じ `linkTarget()` で決める。
+- ページのリンクと画像は、本文だけから読む。本文は、`sl-markdown-content` の要素から、Starlight の前後のページへのリンク (`pagination-links`) の前までで、HTML のコメントを除く。
+- 元の文書の、画像でないインラインのリンク (`[文字](宛先)`) と画像を、frontmatter、コードブロック、コードスパン、HTML のコメントの外から読む。ページはコメントの中を表示しないためである。次の行まで続くコメントは、行の頭の `<!--` (HTML のブロック) で始まるものだけである。宛先の種類は、プラグインと同じ `linkTarget()` で決める。
 - 出力の `href` と宛先は、パーセントエンコードを戻してから比べる。Markdown の処理系が、`#見出し` の日本語をエンコードするためである。
 - `.puml` の中身とコードブロックは、タグ、文字参照、空白を除いた文字で比べる。Expressive Code が、行ごとにタグで包むためである。
 
@@ -92,5 +94,5 @@ base = "/cumin-trace/"
 ## このリポジトリ
 
 - `site/` は、`go run ./cmd/cumin-trace init CTR` で書く。すでにあるファイルは飛ばされる。
-- Go のテスト (`templates` のパッケージ) が、`site/` の10のファイルが、`templates/site/` の対応するファイル (3 と 4 は `.` のない名前) と同じバイトであることを確かめる。`site/` にテンプレートのないファイルがあっても失敗する。`site/.gitignore` が名前を挙げる `node_modules/`、`dist/`、`.astro/` は調べない。`go test ./...` はネットワークも Node.js も使わない。
+- Go のテスト (`templates` のパッケージ) が、`site/` の10のファイルが、`templates/site/` の対応するファイル (3 と 4 は `.` のない名前) と同じバイトであることを確かめる。git が追跡する `site/` のファイル (`git ls-files` の追跡済みと、無視されない未追跡のファイル) にテンプレートのないものがあっても失敗する。git が無視するファイル (`site/.gitignore` が名前を挙げる、どの深さの `node_modules/`、`dist/`、`.astro/` と、`.DS_Store` のような git の除外設定にあるファイル) は調べない。`go test ./...` はネットワークも Node.js も使わない。
 - GitHub Pages への公開と、Pull Request でのサイトのビルドの workflow は、Maintainer が書く (要求Issue #88 の制約)。workflow は `npm --prefix site ci` と `npm --prefix site run check-site` を動かし、`site/dist/` を公開する。
