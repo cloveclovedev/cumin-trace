@@ -66,9 +66,10 @@ func TestTheSitePinsEveryVersion(t *testing.T) {
 }
 
 // CTR-SITE-001: the site keeps the default look of Starlight. It replaces no
-// component, and its one style sheet, for the blocks of CTR-SITE-006, takes
-// every color from a variable of Starlight (--sl-color-*): no hex, rgb, hsl,
-// or named color such as white or red.
+// component, and its one style sheet, for the blocks of CTR-SITE-006 and the
+// width and the corners of CTR-SITE-014, takes every color from a variable of
+// Starlight (--sl-color-*): no hex, rgb, hsl, or named color such as white or
+// red.
 func TestTheSiteKeepsTheLookOfStarlightAndTakesItsColorsFromItsVariables(t *testing.T) {
 	config, err := templates.Files.ReadFile("site/astro.config.mjs")
 	if err != nil {
