@@ -6,12 +6,14 @@
 
 `site/src/content.config.mjs`:
 
-- `docs` のコレクションの `loader` は、`glob({ base: <リポジトリの最上位>/<docs_dir>, pattern: "**/*.md" })` を包むローダーで、`schema` は `docsSchema()` である。
+- `docs` のコレクションの `loader` は、`glob({ base: <リポジトリの最上位>/<docs_dir>/ の file URL, pattern: "**/*.md" })` を包むローダーで、`schema` は `docsSchema()` である。`base` は、Astro の文書 ([Content Loader API reference](https://docs.astro.build/en/reference/content-loader-reference/) の `glob()` の `base`) のとおり、相対パスか URL で渡す。`pathToFileURL()` の URL は、パスの `#` と `?` もパスとして保つ。最後の `/` は、ディレクトリとして解決させるためである。
 - 包むローダーは、`glob()` の `load()` に、`parseData` だけを差し替えた文脈を渡す。差し替えた `parseData` は、`data.title` がなければ、`filePath` の文書の最初の見出しの文字を `title` にしてから、元の `parseData` を呼ぶ (`CTR-SITE-002`)。
-- 最初の見出しは、frontmatter とコードブロックの外にある、最初の ATX 見出し (`#` で始まる行) である。文字は、見出しの記号と前後の空白を除き、コードスパンのバッククォートを除いたものである。見出しがない文書は、ファイル名 (拡張子なし) を `title` にする。
-- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、Sätteri のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。消すのは、プラグインの `after` (すべての訪問のあと) で、文書の最上位にある最初の見出しである。frontmatter の `title` の有無は、元のファイルを読んで決める。最初の見出しが要件の見出し (下の「要件の見出しとアンカー」) のときは、消さない。その要件のアンカーと枠を残すためで、ページではタイトルと要件の見出しの両方が出る。
+- frontmatter は、Astro のローダーと同じ読み方で見つける。`requirements.mjs` の `frontmatter()` は、Astro が使う `@astrojs/internal-helpers/frontmatter` の `parseFrontmatter()` を呼ぶ。BOM、`---` のあとの空白、`\r\n` の行末、前の空行を、Astro と同じに扱う。本文は、Astro と同じく、frontmatter を空白にして前後を `trim()` した文字である。
+- 最初の見出しは、本文のコードブロックの外にある、最初の ATX 見出し (`#` で始まる行) である。文字は、見出しの記号と前後の空白を除き、コードスパンのバッククォートを除いたものである。見出しがない文書は、ファイル名 (拡張子なし) を `title` にする。この決まりは `requirements.mjs` の `firstHeading()` だけが持ち、ローダーとプラグインが同じものを使う。
+- Starlight は `title` をページの `<h1>` に表示する。最初の見出しを `title` にした文書では、Sätteri のプラグインがその見出しを本文から消す。タイトルが2回出ない。frontmatter に `title` がある文書の見出しは消さない。消すのは、プラグインの `after` (すべての訪問のあと) で、文書の最上位にある見出しのうち、`firstHeading()` の見出しと同じ行で始まるものである。行は、本文の中の行番号で、プラグインは `options: { position: true }` でノードの位置を読む。setext 見出しや HTML の見出しが前にあっても、それは消さない。frontmatter の `title` の有無は、元のファイルを `frontmatter()` で読み、ローダーと同じく `title` があるかで決める (`hasTitle()`)。最初の見出しが要件の見出し (下の「要件の見出しとアンカー」) のときは、消さない。その要件のアンカーと枠を残すためで、ページではタイトルと要件の見出しの両方が出る。
 - `astro.config.mjs` は、`markdown.processedDirs` に `docs_dir` を渡し、Starlight の Markdown の処理 (見出しのリンクなど) を、`src/content/docs/` の外の文書にもかける。
-- ページの URL は、`glob()` の既定の ID (`docs_dir` からの相対パスで、拡張子なし) で決まる。`index.md` は、そのディレクトリの URL になる (推測)。
+- ページの URL は、`glob()` の既定の ID で決まる。ID は、`docs_dir` からの相対パスから拡張子を除き、各部分を `github-slugger` の `slug()` にしたものである (Astro 7.4.0 の `getContentEntryIdAndSlug()` のコードで確かめた)。`pageURL()` も、同じ `slug()` を各部分にかける。大文字は小文字に、空白は `-` になり、`_` は残り、`#` と `?` は消える。`index.md` は、そのディレクトリの URL になる。
+- `github-slugger` と `@astrojs/internal-helpers` は、`astro` が使うパッケージで、`package-lock.json` に固定されている。`package.json` には足さず、`astro` と同じものを使う。
 
 ## 要件の見出しとアンカー
 
@@ -66,7 +68,7 @@
 
 - Starlight は `.md` のリンクを書き換えない (推測)。書き換えないと、文書の間のリンクが切れる。
 - 書き換えるのは、`requirements.mjs` の `linksPlugin` である。`astro.config.mjs` は、`hastPlugins` に `linksPlugin`、`requirementsPlugin` の順に渡す。`requirementsPlugin` の `after` は木全体を置き換えるので、同じプラグインの中でリンクも書き換えると、その置き換えが効かなかった (`check-site` で確かめた)。別のプラグインにすると、リンクの書き換えが終わった木を `requirementsPlugin` が読む。
-- 宛先の種類は、`linkTarget()` が決める。URL の形 (`https:` などの scheme で始まる)、`/` で始まるパス、`#` で始まるリンクは、そのままにする。パスの部分は、パーセントエンコードを戻してから解決する。`?` 以降は捨てる。
+- 宛先の種類は、`linkTarget()` が決める。URL の形 (`https:` などの scheme で始まる)、`/` で始まるパス、`#` で始まるリンクは、そのままにする。パスの部分は、`/` で区切った各部分のパーセントエンコードを `decodeURIComponent()` で戻してから解決する。`%23` (`#`) と `%3F` (`?`) も戻る。`?` 以降は捨てる。
 - `.puml` の中身は、ローダーではなくプラグインが読む。1つの最上位のブロックの最初の `.puml` のリンクを読むときに、そのブロックのすべての `.puml` のリンクの `<details>` を、リンクの順に、ブロックのすぐあとに置く。
 - リンクを外すときは、リンクの文字 (`textContent`) だけを残す。リンクの中のコードスパンの見た目は残らない。
 - `#見出し` の部分は確かめない。宛先のページにその見出しがなければ、リンクは切れる。`check-site` がその切れたリンクを報告する。
@@ -79,3 +81,16 @@
 - 拡大は、`astro.config.mjs` が Starlight の `head` に足す、1行のインラインの `<script>` で作る。スクリプトの文は、`requirements.mjs` の `diagramScript` で、`check-site` も同じ文を読む。本文 (`.sl-markdown-content`) の `<img>` がクリックされたら、`location.href` をその画像の `currentSrc` にする。SVG のファイルだけが、元の大きさで開く (`CTR-SITE-007`)。戻るボタンで文書に戻る。
 - リンクで包まずにスクリプトにするのは、Astro が出力に置いた画像の URL を、Markdown のプラグインの段階では知らないためである (推測)。`currentSrc` は、ブラウザが実際に読んだ URL なので、`base` にも画像の置き場所にも左右されない。
 - 図として表示するのは、コミットした SVG だけである。`.puml` は描画せず、元の文として折りたたみに表示する (上の「文書のリンク」)。
+
+## 確かめ方
+
+`check-site` は、このリポジトリの文書のほかに、`testdata/site-cases/` の文書でも確かめる。`testdata/site-cases/check.sh` は、`site/` を一時ディレクトリに写し、その文書で `check-site` を動かす。`npm --prefix site ci` のあとに動かす。
+
+| 文書 | 確かめること |
+|---|---|
+| `requirements/Data Model_v2.md` | 大文字、空白、`_` のパスの要件への参照が、そのページとアンカーに行く (`CTR-SITE-003`) |
+| `headings/` | 受け付けるどの見出しの形でも、タイトルが1回だけ出て、本文に繰り返さない (`CTR-SITE-002`) |
+| `frontmatter/` | frontmatter に `title` がある文書は、書き方が違っても、最初の見出しを本文に残す (`CTR-SITE-002`) |
+| `links/` | `#`、`?`、空白を名前に持つファイルへのリンクが、そのページに行く (`CTR-SITE-010`) |
+
+`?` を名前に持つファイルは、Go のモジュールに入れられないので、`check.sh` が書く。

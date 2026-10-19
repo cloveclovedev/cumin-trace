@@ -5,7 +5,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { diagramScript, escape, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
+import { atxHeadings, diagramScript, escape, firstHeading, frontmatter, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -26,15 +26,30 @@ const docs = join(root, settings.docsDir);
 const id = `${settings.prefix}-[A-Z0-9]+-[0-9]{3}(?:\\.[1-9][0-9]*)?`;
 
 // CTR-SITE-002: a page whose title comes from its first heading shows the
-// title once, in one <h1>.
+// title once, in one <h1>, and its body does not repeat the heading. A page
+// with a title in its frontmatter keeps its first heading in the body.
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
   const file = join(entry.parentPath, entry.name);
-  if (hasTitle(readFileSync(file, "utf8"))) continue;
+  const text = readFileSync(file, "utf8");
   const html = page(pageURL(settings.base, relative(docs, file)));
-  // A requirement heading of level 1 is no title.
-  const count = html?.match(new RegExp(`<h1(?! id="${id}")[\\s>]`, "g"))?.length ?? 0;
-  if (html !== undefined && count !== 1) problems.push(`${relative(root, file)}: the page has ${count} <h1>, want 1`);
+  if (html === undefined) continue;
+  const body = html.slice(html.indexOf('<div class="sl-markdown-content"'));
+  const headings = [...body.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) => plainText(m[1]));
+  const { title, line } = firstHeading(text, file);
+  const same = (source) => source.text.replace(/`/g, "").replace(/\s+/g, "") === title.replace(/\s+/g, "");
+  const sources = atxHeadings(text).filter(same).length;
+  const shown = headings.filter((heading) => heading === title.replace(/\s+/g, "")).length;
+  if (hasTitle(text)) {
+    if (line > 0 && shown < sources) problems.push(`${relative(root, file)}: the body has ${shown} headings "${title}", want ${sources}`);
+    continue;
+  }
+  // A requirement heading of level 1 is no title, and it stays in the body.
+  const count = html.match(new RegExp(`<h1(?! id="${id}")[\\s>]`, "g"))?.length ?? 0;
+  if (count !== 1) problems.push(`${relative(root, file)}: the page has ${count} <h1>, want 1`);
+  if (line > 0 && headingIDs(settings.prefix, atxHeadings(text)[0].source).length === 0 && shown > sources - 1) {
+    problems.push(`${relative(root, file)}: the body repeats the title "${title}"`);
+  }
 }
 
 // CTR-SITE-003: each requirement heading has an anchor whose name is its ID.
@@ -131,15 +146,10 @@ function plainText(html) {
 // imagePaths returns the relative paths of the images of a document, outside
 // the frontmatter, the code blocks, and the code spans.
 function imagePaths(text) {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const lines = frontmatter(text).content.split(/\r?\n/);
   const paths = [];
-  let i = 0;
-  if (lines[0] === "---") {
-    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
-    i++;
-  }
   let fence = "";
-  for (; i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i++) {
     const open = lines[i].match(/^ {0,3}(`{3,}|~{3,})/);
     if (fence) {
       if (open && open[1][0] === fence[0] && open[1].length >= fence.length && lines[i].trim() === open[1]) fence = "";

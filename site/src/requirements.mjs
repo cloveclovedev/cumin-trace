@@ -7,8 +7,10 @@
 // between documents (CTR-SITE-010). The script diagramScript opens a
 // diagram that is clicked (CTR-SITE-007).
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseFrontmatter } from "@astrojs/internal-helpers/frontmatter";
+import { slug } from "github-slugger";
 import { defineHastPlugin } from "satteri";
 
 // diagramScript opens the file of an image of the body when a click lands
@@ -43,10 +45,53 @@ export function references(prefix, text) {
 }
 
 // pageURL returns the URL of the page of a document, from its path relative
-// to docs_dir: the path with no ".md", and the directory for an index.md.
+// to docs_dir: the path with no ".md", each part in the slug of the default
+// ID of glob(), and the directory for an index.md.
 export function pageURL(base, path) {
-  const page = path.split(sep).join("/").replace(/\.md$/, "").replace(/(^|\/)index$/, "");
-  return base + (page === "" ? "" : page.toLowerCase() + "/");
+  const parts = path.split(sep).join("/").replace(/\.md$/, "").split("/");
+  const page = parts.map((part) => slug(part)).join("/").replace(/(^|\/)index$/, "");
+  return base + (page === "" ? "" : page + "/");
+}
+
+// frontmatter returns the data of the frontmatter of a document and its body,
+// as the loader of Astro reads them: the body is the text with the
+// frontmatter blanked and trimmed. Line numbers are those of the body, as in
+// the positions of the nodes of the plugins.
+export function frontmatter(text) {
+  const { frontmatter: data, content } = parseFrontmatter(text, { frontmatter: "empty-with-spaces" });
+  return { data, content: content.trim() };
+}
+
+// atxHeadings returns the line number in the body and the text of each ATX
+// heading of a document, outside the frontmatter and the code blocks.
+export function atxHeadings(text) {
+  const lines = frontmatter(text).content.split(/\r?\n/);
+  const headings = [];
+  let fence = "";
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
+      continue;
+    }
+    if (open) {
+      fence = open[1];
+      continue;
+    }
+    const heading = line.match(/^ {0,3}#{1,6}(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/);
+    if (heading) headings.push({ line: i + 1, source: line, text: heading[1] ?? "" });
+  }
+  return headings;
+}
+
+// firstHeading returns the title from the first ATX heading, with no code
+// span quotes, and the line of the heading in the body. A document with no
+// heading gets the file name with no extension, and the line 0.
+export function firstHeading(text, filePath) {
+  const [first] = atxHeadings(text);
+  if (first === undefined) return { title: basename(filePath, extname(filePath)), line: 0 };
+  return { title: first.text.replace(/`/g, "").trim(), line: first.line };
 }
 
 // markdownFiles returns the Markdown files below dir, at any depth.
@@ -65,26 +110,9 @@ function markdownFiles(dir) {
 // a code span with an ID of the right form (CTR-FMT-003).
 export function headingIDs(prefix, text) {
   const valid = idPattern(prefix, false);
-  const lines = text.replace(/^﻿/, "").split(/\r?\n/);
   const ids = [];
-  let i = 0;
-  if (lines[0] === "---") {
-    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
-    i++;
-  }
-  let fence = "";
-  for (; i < lines.length; i++) {
-    const line = lines[i];
-    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (fence) {
-      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && line.trim() === open[1]) fence = "";
-      continue;
-    }
-    if (open) {
-      fence = open[1];
-      continue;
-    }
-    const heading = line.match(/^ {0,3}#{1,6}[ \t]+`([^`]*)`/);
+  for (const { source } of atxHeadings(text)) {
+    const heading = source.match(/^ {0,3}#{1,6}[ \t]+`([^`]*)`/);
     const id = heading?.[1].replace(/^ (.*) $/, "$1");
     if (id !== undefined && valid.test(id)) ids.push(id);
   }
@@ -128,14 +156,10 @@ function isStatus(node, ctx) {
   return /^\s*状態:/.test(ctx.textContent(node));
 }
 
-// hasTitle reports whether the frontmatter of the document has a title.
+// hasTitle reports whether the frontmatter of the document has a title, by
+// the same test as the loader.
 export function hasTitle(text) {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
-  if (lines[0] !== "---") return false;
-  for (let i = 1; i < lines.length && lines[i] !== "---"; i++) {
-    if (/^title[ \t]*:/.test(lines[i])) return true;
-  }
-  return false;
+  return frontmatter(text).data.title !== undefined;
 }
 
 // headingLevel returns the level of a heading element, or 0 for any other
@@ -208,7 +232,7 @@ export function linkTarget(settings, root, file, href) {
   const hash = at < 0 || href[at] !== "#" ? "" : href.slice(at);
   let decoded;
   try {
-    decoded = decodeURI(path);
+    decoded = path.split("/").map(decodeURIComponent).join("/");
   } catch {
     return { kind: "text" };
   }
@@ -253,6 +277,8 @@ export function requirementsPlugin(settings, root) {
   const valid = idPattern(settings.prefix, false);
   return defineHastPlugin({
     name: "cumin-trace-requirements",
+    // The positions of the nodes find the heading that gave the title.
+    options: { position: true },
     // The first heading that became the title of the page leaves the body,
     // so that the title shows once (CTR-SITE-002). Each requirement becomes
     // one block (CTR-SITE-006).
@@ -263,9 +289,12 @@ export function requirementsPlugin(settings, root) {
       let children = [...tree.children];
       const isRequirement = (node) =>
         settings.prefix && inside(requirements, file) && requirementID(node, ctx, settings.prefix) !== undefined;
-      if (!hasTitle(readFileSync(file, "utf8"))) {
-        // A requirement heading stays, with its anchor and its block.
-        const first = children.findIndex((child) => headingLevel(child) > 0);
+      const text = readFileSync(file, "utf8");
+      if (!hasTitle(text)) {
+        // The heading on the line of the title leaves; a requirement heading
+        // stays, with its anchor and its block.
+        const { line } = firstHeading(text, file);
+        const first = children.findIndex((child) => headingLevel(child) > 0 && child.position?.start.line === line);
         if (first >= 0 && !isRequirement(children[first])) children.splice(first, 1);
       }
       if (settings.prefix && inside(requirements, file)) {
