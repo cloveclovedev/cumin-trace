@@ -2,11 +2,11 @@
 // each problem and ends with the exit code 1 when one exists.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { basename, dirname, extname, join, relative } from "node:path";
+import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { atxHeadings, body as markdownBody, diagramScript, escape, firstHeading, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
+import { atxHeadings, body as markdownBody, diagramScript, escape, firstHeading, frontmatter, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -14,13 +14,18 @@ const settings = readSettings();
 const problems = [];
 const docs = join(root, settings.docsDir);
 
+// digest returns the SHA-256 of a file, or undefined when no file is there.
+function digest(file) {
+  return existsSync(file) && statSync(file).isFile() ? createHash("sha256").update(readFileSync(file)).digest("hex") : undefined;
+}
+
 // digests returns the SHA-256 of each file under docs_dir, by its path.
 function digests() {
   const found = new Map();
   for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
     if (!entry.isFile()) continue;
     const file = join(entry.parentPath, entry.name);
-    found.set(relative(root, file), createHash("sha256").update(readFileSync(file)).digest("hex"));
+    found.set(relative(root, file), digest(file));
   }
   return found;
 }
@@ -48,6 +53,22 @@ function page(url) {
 
 const id = `${settings.prefix}-[A-Z0-9]+-[0-9]{3}(?:\\.[1-9][0-9]*)?`;
 
+// CTR-SITE-008: the site has no server functions, only static files.
+const config = readFileSync(join(site, "astro.config.mjs"), "utf8");
+if (/\badapter\s*:/.test(config)) problems.push("site/astro.config.mjs: the config has an adapter, want static files only");
+if (/\boutput\s*:\s*["'`]server["'`]/.test(config)) problems.push('site/astro.config.mjs: the config has output "server", want static files only');
+for (const name of ["_worker.js", "_functions", "functions", "server"]) {
+  if (existsSync(join(dist, name))) problems.push(`site/dist/${name}: the output has a server function, want static files only`);
+}
+
+// documentTitle returns the title of a document: the title of its
+// frontmatter, or its first heading.
+function documentTitle(text, file) {
+  if (!hasTitle(text)) return firstHeading(markdownBody(text), file).title;
+  const line = frontmatter(text).match(/^["']?title["']?[ \t]*:[ \t]*(.*)$/m)[1];
+  return line.replace(/^(["'])(.*)\1[ \t]*$/, "$2").trim();
+}
+
 // marks returns the text with no white space and no marks that Markdown can
 // remove: "*", "_", "`", "~", and "\\".
 function marks(text) {
@@ -60,8 +81,9 @@ function headingText(markdown) {
   return marks(markdown.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1"));
 }
 
-// CTR-SITE-002: a page whose title comes from its first heading shows the
-// title once, in one <h1>, and its body does not repeat the heading. A page
+// CTR-SITE-002: the <title> of each page starts with the title of its
+// document. A page whose title comes from its first heading shows the title
+// once, in one <h1>, and its body does not repeat the heading. A page
 // with a title in its frontmatter keeps its first heading in the body.
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
@@ -69,6 +91,13 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   const text = readFileSync(file, "utf8");
   const html = page(pageURL(settings.base, relative(docs, file)));
   if (html === undefined) continue;
+  // The <title> starts with the title of the document, then the site name.
+  // A <title> holds text and entities, and no tags.
+  const want = documentTitle(text, file);
+  const pageTitle = html.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+  if (want === "" || !rawText(pageTitle ?? "").startsWith(want.replace(/\s+/g, ""))) {
+    problems.push(`${relative(root, file)}: the <title> of the page does not start with the title ${JSON.stringify(want)}`);
+  }
   const content = body(html);
   const headings = [...content.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) => marks(plainText(m[1])));
   const { title, line } = firstHeading(markdownBody(text), file);
@@ -218,9 +247,14 @@ function decoded(url) {
 // plainText returns the text of an HTML fragment with no tags, no entities,
 // and no white space.
 function plainText(html) {
+  return rawText(html.replace(/<[^>]*>/g, ""));
+}
+
+// rawText returns the text of an element that holds no tags, such as
+// <title>, with no entities and no white space.
+function rawText(html) {
   const entities = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
   return html
-    .replace(/<[^>]*>/g, "")
     .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (all, name) => {
       if (name[0] === "#") return String.fromCodePoint(name[1] === "x" || name[1] === "X" ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10));
       return entities[name] ?? all;
@@ -271,11 +305,17 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
   const sources = [...content.matchAll(/<img [^>]*src="([^"]+)"/g)].map((m) => m[1]);
   for (const path of imagePaths(readFileSync(file, "utf8"))) {
     // Astro writes the file as <name>.<hash><extension>, and a raster image
-    // as <name>.<hash>.webp.
+    // as <name>.<hash>.webp. Images with the same bytes share one file under
+    // the name of one of them. Each image takes its own <img>.
     const extension = extname(decoded(path));
     const extensions = extension.toLowerCase() === ".svg" ? escape(extension) : `(?:${escape(extension)}|\\.webp)`;
     const output = new RegExp(`^${escape(basename(decoded(path), extension))}\\.[A-Za-z0-9_-]+${extensions}$`);
-    const source = sources.find((src) => output.test(decoded(basename(src))));
+    const bytes = digest(resolve(dirname(file), decoded(path)));
+    let index = sources.findIndex((src) => output.test(decoded(basename(src))));
+    if (index === -1 && bytes !== undefined) {
+      index = sources.findIndex((src) => src.startsWith(settings.base) && digest(join(dist, decoded(src).slice(settings.base.length))) === bytes);
+    }
+    const source = index === -1 ? undefined : sources.splice(index, 1)[0];
     if (source === undefined) {
       problems.push(`${name}: the page ${url} shows no image ${path}`);
     } else if (!source.startsWith(settings.base) || !existsSync(join(dist, decoded(source).slice(settings.base.length)))) {
