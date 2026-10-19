@@ -6,7 +6,9 @@
 // rewrites the relative links between documents (CTR-SITE-010). Astro shows
 // each SVG next to a document from its relative path (CTR-SITE-004), and a
 // script in the head opens a diagram on a click (CTR-SITE-007). The name at
-// the top left comes from siteName() (CTR-SITE-013).
+// the top left comes from siteName() (CTR-SITE-013). The one root locale
+// shows the UI in Japanese, and adds no language directory to the URLs
+// (CTR-SITE-012).
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import { satteri } from "@astrojs/markdown-satteri";
@@ -23,6 +25,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: siteName(settings, root),
+      locales: { root: { label: "日本語", lang: "ja" } },
       customCss: ["./src/requirements.css"],
       head: [{ tag: "script", content: diagramScript }],
     }),
