@@ -6,7 +6,7 @@ import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { diagramScript, escape, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
+import { atxHeadings, body as markdownBody, diagramScript, escape, firstHeading, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -48,16 +48,42 @@ function page(url) {
 
 const id = `${settings.prefix}-[A-Z0-9]+-[0-9]{3}(?:\\.[1-9][0-9]*)?`;
 
+// marks returns the text with no white space and no marks that Markdown can
+// remove: "*", "_", "`", "~", and "\\".
+function marks(text) {
+  return text.replace(/[\s*_`~\\]/g, "");
+}
+
+// headingText returns the text of the Markdown of a heading as it reads in
+// the HTML, for marks(): a link or an image keeps only its text.
+function headingText(markdown) {
+  return marks(markdown.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1"));
+}
+
 // CTR-SITE-002: a page whose title comes from its first heading shows the
-// title once, in one <h1>.
+// title once, in one <h1>, and its body does not repeat the heading. A page
+// with a title in its frontmatter keeps its first heading in the body.
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
   const file = join(entry.parentPath, entry.name);
-  if (hasTitle(readFileSync(file, "utf8"))) continue;
+  const text = readFileSync(file, "utf8");
   const html = page(pageURL(settings.base, relative(docs, file)));
-  // A requirement heading of level 1 is no title.
-  const count = html?.match(new RegExp(`<h1(?! id="${id}")[\\s>]`, "g"))?.length ?? 0;
-  if (html !== undefined && count !== 1) problems.push(`${relative(root, file)}: the page has ${count} <h1>, want 1`);
+  if (html === undefined) continue;
+  const content = body(html);
+  const headings = [...content.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) => marks(plainText(m[1])));
+  const { title, line } = firstHeading(markdownBody(text), file);
+  const sources = atxHeadings(markdownBody(text)).filter((source) => headingText(source.text) === headingText(title)).length;
+  const shown = headings.filter((heading) => heading === headingText(title)).length;
+  if (hasTitle(text)) {
+    if (line > 0 && shown < sources) problems.push(`${relative(root, file)}: the body has ${shown} headings "${title}", want ${sources}`);
+    continue;
+  }
+  // A requirement heading of level 1 is no title, and it stays in the body.
+  const count = html.match(new RegExp(`<h1(?! id="${id}")[\\s>]`, "g"))?.length ?? 0;
+  if (count !== 1) problems.push(`${relative(root, file)}: the page has ${count} <h1>, want 1`);
+  if (line > 0 && headingIDs(settings.prefix, atxHeadings(markdownBody(text))[0].source).length === 0 && shown > sources - 1) {
+    problems.push(`${relative(root, file)}: the body repeats the title "${title}"`);
+  }
 }
 
 // CTR-SITE-003: each requirement heading has an anchor whose name is its ID.
@@ -122,16 +148,11 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
 // bodyLines returns the lines of a document outside the frontmatter, the code
 // blocks, and the HTML comments. The page shows none of them.
 function bodyLines(text) {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const lines = markdownBody(text).split(/\r?\n/);
   const found = [];
-  let i = 0;
-  if (lines[0] === "---") {
-    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
-    i++;
-  }
   let fence = "";
   let comment = false;
-  for (; i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
     if (comment) {
       const end = line.indexOf("-->");
@@ -171,7 +192,8 @@ function bodyLines(text) {
 }
 
 // sourceLinks returns the destination and the text of each inline link of a
-// document that is no image, outside the code blocks and the code spans.
+// document that is no image, outside the frontmatter, the code blocks, and
+// the code spans.
 function sourceLinks(text) {
   const found = [];
   for (const line of bodyLines(text)) {

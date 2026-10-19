@@ -57,7 +57,7 @@ The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/te
 
 ### Preview the site
 
-The site shows every Markdown document under `docs/ja/` as one page. A document without frontmatter takes its first heading as its title. The site reads the documents where they are and changes no file under `docs/ja/`. It needs Node.js 22.22.0 or later, and no token.
+The site shows every Markdown document under `docs/ja/` as one page. A document with no title in its frontmatter takes its first heading as its title. The site reads the documents where they are and changes no file under `docs/ja/`. It needs Node.js 22.22.0 or later, and no token.
 
 ```sh
 npm --prefix site ci          # once; installs the pinned versions
