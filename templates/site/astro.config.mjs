@@ -3,12 +3,14 @@
 // Markdown processor, Sätteri, adds the anchors and the links of the
 // requirement IDs (CTR-SITE-003) and the block of each requirement
 // (CTR-SITE-006). The one style sheet draws the blocks. A first plugin
-// rewrites the relative links between documents (CTR-SITE-010).
+// rewrites the relative links between documents (CTR-SITE-010). Astro shows
+// each SVG next to a document from its relative path (CTR-SITE-004), and a
+// script in the head opens a diagram on a click (CTR-SITE-007).
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import { satteri } from "@astrojs/markdown-satteri";
 import { readSettings, root } from "./src/settings.mjs";
-import { linksPlugin, requirementsPlugin } from "./src/requirements.mjs";
+import { diagramScript, linksPlugin, requirementsPlugin } from "./src/requirements.mjs";
 
 const settings = readSettings();
 
@@ -21,6 +23,7 @@ export default defineConfig({
     starlight({
       title: settings.prefix || "Requirements",
       customCss: ["./src/requirements.css"],
+      head: [{ tag: "script", content: diagramScript }],
     }),
   ],
 });

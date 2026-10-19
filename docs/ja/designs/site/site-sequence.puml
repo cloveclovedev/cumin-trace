@@ -24,7 +24,7 @@ loop each page
   remark -> remark : id = ID on each requirement heading
   remark -> remark : <section class="requirement">\nfrom the heading to ---
   remark -> remark : read references in the shown text,\nadd links
-  remark -> remark : .md links -> page URLs,\n.puml links -> closed details with the source,\nother relative links -> text only,\nadd ./ to relative image paths
+  remark -> remark : .md links -> page URLs,\n.puml links -> closed details with the source,\nother relative links -> text only
   remark --> astro : the changed tree
   astro -> docs : read the SVG next to the document
   astro -> astro : write the HTML page with base\nand the head script (click opens the SVG)

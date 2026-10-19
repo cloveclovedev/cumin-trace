@@ -4,11 +4,18 @@
 // one block, with the ID apart from the title (CTR-SITE-006). The places and
 // the rules of a requirement and of a reference are those of the format check
 // (docs/ja/designs/check/reading.md). It also rewrites the relative links
-// between documents (CTR-SITE-010).
+// between documents (CTR-SITE-010). The script diagramScript opens a
+// diagram that is clicked (CTR-SITE-007).
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineHastPlugin } from "satteri";
+
+// diagramScript opens the file of an image of the body when a click lands
+// on the image. The browser shows the SVG alone, at its own size, and the
+// back button returns to the page (CTR-SITE-007).
+export const diagramScript =
+  'document.addEventListener("click",(e)=>{const i=e.target.closest?.(".sl-markdown-content img");if(i)location.href=i.currentSrc||i.src;});';
 
 export const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

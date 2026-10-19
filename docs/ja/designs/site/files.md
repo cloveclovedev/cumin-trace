@@ -15,11 +15,11 @@
 | 5 | `site/astro.config.mjs` | 設定を読み、`base`、`satteri()` とその `hastPlugins`、Starlight の `title`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008` |
 | 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う | `CTR-SITE-002` |
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
-| 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図のパス | `CTR-SITE-003`、`CTR-SITE-004`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
+| 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図を開くスクリプトの文 | `CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010` |
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目 | `CTR-SITE-006` |
 | 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-010` |
 
-- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`)、`customCss` (9 だけ) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`) を作る。10 は、下の表の `CTR-SITE-002` の `<h1>`、`CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-010` を確かめる。8 と 10 と 5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
+- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (接頭辞、なければ `Requirements`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。10 は、下の表の `CTR-SITE-002` の `<h1>`、`CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-010`、`CTR-SITE-004` と `CTR-SITE-007` の行を確かめる。8 と 10 と 5 の残りは、要求Issue #88 のあとの実装の Issue で足す。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使う (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
@@ -75,7 +75,7 @@ base = "/cumin-trace/"
 | 元の文書の相対 `.md` のリンクで、宛先がサイトのページ ([ビルド](build.md) の「文書のリンク」) のものが、`base` で始まるページへのリンクになり、行き先のページがある。`#見出し` 付きのリンクは、行き先のページにその `id` がある。ない `id` は、文書の切れたリンクとして報告する | `CTR-SITE-010`、`CTR-SITE-008` |
 | 元の文書の相対 `.puml` のリンクで、宛先が読める `.puml` のものごとに、閉じた `<details>` があり、中のコードブロックがその `.puml` の中身と同じである。ページに `.puml` へのリンクがない | `CTR-SITE-010` |
 | 元の文書の、ほかの相対パスへのリンク (サイトのページでない `.md`、読める `.puml` でない `.puml`、画像でもないもの) が、出力では `<a>` のない文字である | `CTR-SITE-010` |
-| 各図の `<img>` の `src` のファイルが出力にある。各ページに、図を開くスクリプトがある | `CTR-SITE-004`、`CTR-SITE-007` |
+| 元の文書の相対パスの画像 (frontmatter、コードブロック、コードスパンの外の `![...](...)`) ごとに、ページに同じ名前で始まる `<img>` があり、その `src` が `base` で始まり、出力にファイルがある。各ページに、`diagramScript` と同じ文の `<script>` がある | `CTR-SITE-004`、`CTR-SITE-007`、`CTR-SITE-008` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js`、`_functions/`、`functions/`、`server/` がない | `CTR-SITE-008` |
 
 文書のリンクの確かめ方 (`CTR-SITE-010`):

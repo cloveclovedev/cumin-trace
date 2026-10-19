@@ -2,10 +2,10 @@
 // each problem and ends with the exit code 1 when one exists.
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSettings, root } from "../src/settings.mjs";
-import { escape, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
+import { diagramScript, escape, hasTitle, headingIDs, linkTarget, pageURL } from "../src/requirements.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -128,11 +128,42 @@ function plainText(html) {
     .replace(/\s+/g, "");
 }
 
+// imagePaths returns the relative paths of the images of a document, outside
+// the frontmatter, the code blocks, and the code spans.
+function imagePaths(text) {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const paths = [];
+  let i = 0;
+  if (lines[0] === "---") {
+    for (i = 1; i < lines.length && lines[i] !== "---"; i++);
+    i++;
+  }
+  let fence = "";
+  for (; i < lines.length; i++) {
+    const open = lines[i].match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && lines[i].trim() === open[1]) fence = "";
+      continue;
+    }
+    if (open) {
+      fence = open[1];
+      continue;
+    }
+    for (const match of lines[i].replace(/`[^`]*`/g, "").matchAll(/!\[[^\]]*\]\(<?([^)\s>]+)/g)) {
+      if (!URL.canParse(match[1]) && !match[1].startsWith("/")) paths.push(match[1]);
+    }
+  }
+  return paths;
+}
+
 // CTR-SITE-010: each relative link of a document goes to the page of the
 // document and its heading, shows a diagram source in a closed collapsible
 // block, or keeps only its text. A link to a missing page or heading is a
-// broken link.
+// broken link. CTR-SITE-004: each image that a document links to stands in
+// its page, and the file of the image is in the output. CTR-SITE-007: each
+// page has the script that opens a diagram on a click.
 let documents = 0;
+let images = 0;
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
   if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
   const file = join(entry.parentPath, entry.name);
@@ -144,10 +175,26 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
     continue;
   }
   documents++;
-  const content = html.slice(html.indexOf("sl-markdown-content"));
+  // The class also stands in the script of the head; the body is the div.
+  const content = html.slice(html.indexOf('<div class="sl-markdown-content"'));
   if (/<a [^>]*href="[^"]*\.puml(#[^"]*)?"/.test(content)) problems.push(`${name}: the page ${url} has a link to a .puml file`);
   const hrefs = new Set([...content.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1])));
   const blocks = [...content.matchAll(/<details>([\s\S]*?)<\/details>/g)].map((m) => m[1]);
+  if (!html.includes(`<script>${diagramScript}</script>`)) {
+    problems.push(`${name}: the page ${url} has no script that opens a diagram`);
+  }
+  const sources = [...content.matchAll(/<img [^>]*src="([^"]+)"/g)].map((m) => m[1]);
+  for (const path of imagePaths(readFileSync(file, "utf8"))) {
+    const image = basename(path).replace(/\.[^.]*$/, "");
+    const source = sources.find((src) => basename(src).startsWith(`${image}.`));
+    if (source === undefined) {
+      problems.push(`${name}: the page ${url} shows no image ${path}`);
+    } else if (!source.startsWith(settings.base) || !existsSync(join(dist, source.slice(settings.base.length)))) {
+      problems.push(`${name}: the image ${path} goes to ${source}, which is no file under ${settings.base}`);
+    } else {
+      images++;
+    }
+  }
   for (const link of sourceLinks(readFileSync(file, "utf8"))) {
     const target = linkTarget(settings, root, file, link.href);
     if (target.kind === "page") {
@@ -173,4 +220,4 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
 
 for (const problem of problems) console.log(problem);
 if (problems.length > 0) process.exit(1);
-console.log(`check-site: ${pages.size} pages of requirements and ${documents} pages of documents checked`);
+console.log(`check-site: ${pages.size} pages of requirements, ${documents} pages of documents, and ${images} images checked`);
