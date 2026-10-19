@@ -54,7 +54,7 @@ Astro 7.4.0 と Starlight 0.42.6 に固定する (下の「バージョン」)�
 | 既定のサイドバーは、ファイルの構成から作り、ファイルの名前の順に並ぶ。`sidebar` には、ページの `slug` (文字だけの短い書き方も可)、`label` と `items` の組 (入れ子にできる) を並べる。`slug` の項目の表示は、既定でそのページの `title` である | Starlight [Sidebar Navigation](https://starlight.astro.build/guides/sidebar/) |
 | `title` は、サイトの名前で、文字か、言語ごとの文字の表である。メタデータとブラウザのタブのタイトルにも使う | Starlight [Configuration Reference](https://starlight.astro.build/reference/configuration/) の `title` |
 | 本文の幅は、CSS の変数 `--sl-content-width` で決まる。`customCss` に、CSS のファイルのパスを足す | Starlight [CSS & Styling](https://starlight.astro.build/guides/css-and-tailwind/) |
-| 0.42.6 では、`--sl-content-width` の既定は `45rem` で、`.sl-container` の `max-width` がこの変数を使う。角の丸みの変数はない | Starlight のリポジトリの、タグ `@astrojs/starlight@0.42.6` の `src/style/props.css` と `src/components/ContentPanel.astro` |
+| 0.42.6 では、`--sl-content-width` の既定は `45rem` である。`.sl-container` の `max-width` と、`.main-pane` の幅の計算が、この変数を使う。どちらの規則も `@layer starlight.core` の中にある。角の丸みの変数はない | Starlight のリポジトリの、タグ `@astrojs/starlight@0.42.6` の `src/style/props.css`、`src/components/ContentPanel.astro`、`src/components/TwoColumnContent.astro` |
 
 上の表にない Astro と Starlight の振る舞いは、この文書では推測として書き、「推測」と記す。実装の Issue で、確認のコマンド (`npm run check-site`) で確かめる。表の、1つの言語のサイトの行から下の7行は、2026-10-19 に読んだ。
 
@@ -157,7 +157,7 @@ Starlight の `locales` に `root` の1つだけを置き、`lang` を `ja`、`l
 `settings.mjs` の `siteName()` が、Starlight の `title` を決める (`CTR-SITE-013`)。
 
 1. `.cumin-trace.toml` の `[site]` の `name`
-2. `git config --get remote.origin.url` の URL の、最後の部分から `.git` を除いた名前
+2. `git config --get remote.origin.url` の URL から、末尾の `/` と `.git` を除き、最後の部分を取った名前
 3. `prefix`
 
 `git` がない、リポジトリでない、`origin` がない、名前が空のときは、3 に進む。エラーにしない。このリポジトリは `name = "cumin-trace"` を書くので、GitHub Pages のビルドも、手元と同じ名前になる。
@@ -171,12 +171,13 @@ Starlight の `locales` に `root` の1つだけを置き、`lang` を `ja`、`l
 
 ### 要件のページは、要件の枠を持つページとし、CSS だけで幅と角を変える
 
-要件のページは、本文に `section.requirement` (要件の枠、`CTR-SITE-006`) を持つページである。`requirements.css` が、そのページの `.sl-container` の `max-width` を `calc(var(--sl-content-width) * 4 / 3)` (既定で `60rem`) にする。本文の画像の角は `border-radius: 0.5rem` で丸める。要件の枠と同じ値である (`CTR-SITE-014`)。
+要件のページは、本文に `section.requirement` (要件の枠、`CTR-SITE-006`) を持つページである。`requirements.css` が、そのページだけで、`:root` の `--sl-content-width` を `60rem` (既定は `45rem`) にする。そのページの本文の画像の角を、`border-radius: 0.5rem` で丸める。要件の枠と同じ値である (`CTR-SITE-014`)。
 
-- 理由: 要件のページを決めるのに、新しい決まりも、Starlight の部品の差し替えも要らない。CSS の `:has()` で、そのページだけを選べる。幅は Starlight の変数から決めるので、Starlight の既定が変わっても比が保たれる。Starlight には角の丸みの変数がないので、値を書く。
+- 理由: 要件のページを決めるのに、新しい決まりも、Starlight の部品の差し替えも要らない。CSS の `:has()` で、そのページだけを選べる。Starlight は、本文の枠 (`.sl-container`) と本文の欄 (`.main-pane`) の両方の幅を `--sl-content-width` から決める。変数を変えれば、両方が同じに広がる。Starlight には角の丸みの変数がないので、値を書く。
 - 採らなかった案: すべてのページの `--sl-content-width` を広げる。`CTR-SITE-001` は、要件が求めるものだけを変えることを求める。
 - 採らなかった案: `requirements_dir` の下のページを、Starlight の部品 (`PageFrame` など) の差し替えでクラスを付けて選ぶ。保守するコードが増える。
-- 採らなかった案: `.sl-container` の上で `--sl-content-width` を自分自身から計算し直す。CSS の変数の循環になり、無効になる。
+- 採らなかった案: `.sl-container` の `max-width` だけを広げる。`.main-pane` の幅は変わらないので、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。
+- 採らなかった案: `--sl-content-width` を、自分自身の値から計算し直す (`calc(var(--sl-content-width) * 4 / 3)`)。CSS の変数の循環になり、無効になる。
 - 細部: [ファイルと設定](files.md) の「テンプレートのファイル」
 
 ### workflow は変えない

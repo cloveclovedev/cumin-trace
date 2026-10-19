@@ -19,14 +19,14 @@
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。要件のページの幅と、本文の画像の角 | `CTR-SITE-006`、`CTR-SITE-014` |
 | 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013` |
 
-- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 10 が使う、文書の最初の見出し (`firstHeading()`) も持つ。10 は、下の表のすべての行を確かめる。
+- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 10 が使う、文書の最初の見出し (`firstHeading()`) も持つ。8 は、サイドバーの項目 (`sidebar()`、`CTR-SITE-011`) も作る。そのために、`check-site.mjs` から `documentTitle()`、`sourceLinks()`、`bodyLines()` を 8 に移す。10 は、これらを 8 から読み込む。10 は、下の表のすべての行を確かめる。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使い、要件が求めるものだけを変える (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
 - `requirements.css` の要件のページ (`CTR-SITE-014`): 要件のページは、本文に `section.requirement` を持つページである。
-  - 幅: `.sl-container:has(section.requirement)` の `max-width` を `calc(var(--sl-content-width) * 4 / 3)` にする。Starlight 0.42.6 の既定 `45rem` では `60rem` である。
-  - 角: `.sl-markdown-content img` の `border-radius` を `0.5rem` にする。要件の枠と同じ値である。Starlight に角の丸みの変数はない。画像はすべてのページで丸める。要件は要件のページの画像を求め、ほかのページだけ角を残す理由がないためである。
-  - この規則が Starlight の `.sl-container` の規則より優先されることは推測である。Starlight の規則は CSS の cascade layer の中にあり、`customCss` の規則は layer の外にある (推測)。HTML には現れないので、Maintainer が `inspection` で見る。
+  - 幅: `:root:has(section.requirement)` で、`--sl-content-width` を `60rem` にする。Starlight 0.42.6 の既定は `45rem` である。`.sl-container` の `max-width` だけでなく、`.main-pane` の幅も、この変数から決まる (`TwoColumnContent.astro`)。`max-width` だけを広げると、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。決まった値なので、変数の循環にならない。
+  - 角: `.sl-container:has(section.requirement) img` の `border-radius` を `0.5rem` にする。要件のページの画像だけを丸める (`CTR-SITE-001`)。要件の枠と同じ値である。Starlight に角の丸みの変数はない。
+  - Starlight 0.42.6 の `.sl-container` と `.main-pane` の規則は、`@layer starlight.core` の中にある (タグの `ContentPanel.astro` と `TwoColumnContent.astro`)。layer の外の規則は、layer の中の規則より優先される。`customCss` の規則が layer の外に置かれることは推測である。HTML には現れないので、Maintainer が `inspection` で見る。
 
 ## 設定
 
@@ -51,7 +51,10 @@ base = "/cumin-trace/"
 `siteName(settings, root)` は、サイトの名前を次の順に決める (`CTR-SITE-013`)。
 
 1. `name` が空でなければ、`name`
-2. `root` で `git config --get remote.origin.url` を `execFileSync` で動かし、出力の URL の最後の部分 (最後の `/` か `:` のあと) から、末尾の `/` と `.git` を除いた名前。空でなければ、その名前
+2. `root` で `git config --get remote.origin.url` を `execFileSync` で動かした出力から、次の順に作った名前。空でなければ、その名前
+   1. 前後の空白と改行を除く
+   2. 末尾の `/` を除き、次に末尾の `.git` を除く
+   3. 最後の `/` か `:` のあとの部分を取る
 3. `prefix`。空なら `Requirements`
 
 `git` がない、`root` がリポジトリでない、`origin` がない、終了コードが 0 でない、のどれでも、例外を出さずに 3 に進む。`https://github.com/owner/repo.git`、`git@github.com:owner/repo.git`、`/path/to/repo` は、どれも `repo` になる。`git` はネットワークを使わない。
@@ -93,8 +96,8 @@ base = "/cumin-trace/"
 | 元の文書の、ほかの相対パスへのリンク (サイトのページでない `.md`、読める `.puml` でない `.puml`、画像でもないもの) が、出力では `<a>` のない文字である | `CTR-SITE-010` |
 | 元の文書の相対パスの画像 (frontmatter、コードブロック、コードスパン、HTML のコメントの外の `![...](...)`) ごとに、ページに、出力のファイルの名前が `<名前>.<ハッシュ><拡張子>` (SVG でない画像は、拡張子が `.webp` でもよい) の `<img>` があり、その `src` が `base` で始まり、出力にファイルがある。同じバイトの SVG の画像は、Astro が1つの名前の1つのファイルにまとめるので、名前の合う `<img>` がなければ、出力のファイルが元の画像と同じ SHA-256 の `<img>` でもよい。1つの `<img>` は1つの画像にだけ数える。各ページに、`diagramScript` と同じ文の `<script>` がある | `CTR-SITE-004`、`CTR-SITE-007`、`CTR-SITE-008` |
 | 入口の文書のページのサイドバーの `<a>` の `href` が、`sidebar()` の項目のページの URL と同じ順に並ぶ。`docs_dir` の下の各文書のページが、サイドバーに1回だけ出る。入口の文書がサイトのページへリンクする順に、サイドバーの最初の項目が並ぶ (最初の項目は入口の文書のページ) | `CTR-SITE-011` |
-| 各ページの `<html>` の `lang` が `ja` である。サイドバーの最上位の項目とグループに、`docs_dir` の部分 (`docs`、`ja` など) の名前のものがない (文書のディレクトリにその名前があるときを除く)。各ページの URL が `<base><pageID()>/` である (上の「ページがある」の行と同じ決まり) | `CTR-SITE-012` |
-| 各ページのサイトの名前 (`.site-title` の文字) が、`siteName()` と同じである | `CTR-SITE-013` |
+| 各ページの `<html>` の `lang` が `ja` である。サイドバーの最上位の項目とグループに、`docs_dir` の部分 (`docs`、`ja` など) の名前のものがない (文書のディレクトリにその名前があるときを除く)。各ページの URL が `pageURL()` である | `CTR-SITE-012` |
+| 各ページのサイトの名前 (`.site-title` の文字) が、文書群ごとに決めた名前と同じである。このリポジトリでは `cumin-trace`、`testdata/site-cases/` では接頭辞である。期待する名前は、引数 `--site-name` があればその値、なければ設定の `[site]` の `name` である。どちらもなければ、この行は確かめない。`check.sh` は `--site-name` に接頭辞を渡す。`siteName()` の値とは比べない | `CTR-SITE-013` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js` がない。`site/dist/` の `_functions/`、`functions/`、`server/` は、文書のページ (`docs_dir` の下の文書の `index.html`) だけを持つ。`server` や `functions` という名前の文書のディレクトリ (要件の領域など) のページはそこにできるので、受け付ける。空のディレクトリや、文書のページでないファイルを持つものは失敗する | `CTR-SITE-008` |
 
 文書のリンクの確かめ方 (`CTR-SITE-010`):

@@ -35,12 +35,13 @@ name = "cumin-trace"
 
 ## `name` のテスト
 
-`internal/check` の `service_test.go` の、`[site]` の表のテスト (`TestAcceptsASiteTableThatFollowsTheRules` など) に並べて、次の2つを足す (`CTR-SITE-013`)。設定を読むのは `internal/core` で、テストは `check` を通して確かめる。
+`internal/check` の `service_test.go` の、`[site]` の表のテスト (`TestAcceptsASiteTableThatFollowsTheRules` など) に並べて、次の3つを足す (`CTR-SITE-013`)。設定を読むのは `internal/core` で、テストは `check` を通して確かめる。
 
 | テストが確かめること | 例 |
 |---|---|
 | `[site]` の `name` を受け付け、その値を設定に持つ | `name = "cumin-trace"` |
-| 空、空白だけ、改行を持つ、文字列でない `name` は、`site.base` と同じ形の設定のエラーになる | `name = ""`、`name = " "`、`name = "a\nb"`、`name = 1` |
+| 空、空白だけ、改行を持つ `name` は、`site.base` と同じ形の設定のエラーになる | `name = ""`、`name = " "`、`name = "a\nb"` |
+| 文字列でない `name` は、TOML のデコーダーのエラーになる | `name = 1` |
 
 ## このリポジトリの設定
 
