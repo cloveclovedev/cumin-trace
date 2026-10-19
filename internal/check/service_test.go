@@ -65,7 +65,7 @@ func TestReadsDocumentWithoutFrontmatterInTheDefaultDirectory(t *testing.T) {
 // CTR-FMT-001: the settings name the directory of the requirement documents.
 func TestReadsTheDirectoryThatTheSettingsName(t *testing.T) {
 	root := writeRepository(t, map[string]string{
-		".cumin-trace.toml":              settings + "requirements_dir = \"requirements\"\n",
+		".cumin-trace.toml":              settings + "requirements_dir = \"requirements\"\n[site]\ndocs_dir = \".\"\n",
 		"requirements/deep/down/page.md": "## `CTR-OTHER-001` In the named directory\n- 検証: `test` It works\n",
 		"docs/ja/requirements/index.md":  "## `CTR-NOWHERE-001` In the default directory\n- 検証: `test` It works\n",
 	})
@@ -240,7 +240,14 @@ func TestRefusesWrongSettings(t *testing.T) {
 		{"an area named twice", "prefix = \"CTR\"\nareas = [\"FMT\", \"FMT\"]\n", "named twice"},
 		{"an unknown key", settings + "area = \"FMT\"\n", "unknown key area"},
 		{"a directory above the repository", settings + "requirements_dir = \"../docs\"\n", "must not contain .."},
-		{"a directory that does not exist", settings + "requirements_dir = \"nowhere\"\n", "nowhere: no such directory"},
+		{"a directory that does not exist", settings + "requirements_dir = \"docs/ja/nowhere\"\n", "nowhere: no such directory"},
+		{"a requirements_dir outside the default docs_dir", settings + "requirements_dir = \"spec/requirements\"\n", "must hold requirements_dir"},
+		{"an unknown key in site", settings + "[site]\nbse = \"/x/\"\n", "unknown key site.bse"},
+		{"a docs_dir that does not hold requirements_dir", settings + "[site]\ndocs_dir = \"docs/en\"\n", "must hold requirements_dir"},
+		{"a base without a leading /", settings + "[site]\nbase = \"x/\"\n", "must start and end with /"},
+		{"a base without a trailing /", settings + "[site]\nbase = \"/x\"\n", "must start and end with /"},
+		{"a base with an empty segment", settings + "[site]\nbase = \"//\"\n", "must not contain an empty"},
+		{"a base with a .. segment", settings + "[site]\nbase = \"/../\"\n", "must not contain an empty"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -253,6 +260,32 @@ func TestRefusesWrongSettings(t *testing.T) {
 
 			if err == nil || !strings.Contains(err.Error(), test.want) {
 				t.Errorf("got error %v, want an error that holds %q", err, test.want)
+			}
+		})
+	}
+}
+
+// CTR-SITE-002: a [site] table that follows the rules passes the check.
+func TestAcceptsASiteTableThatFollowsTheRules(t *testing.T) {
+	tests := []struct {
+		name string
+		site string
+	}{
+		{"the default directory and a base", "[site]\ndocs_dir = \"docs/ja\"\nbase = \"/cumin-trace/\"\n"},
+		{"the top of the repository", "[site]\ndocs_dir = \".\"\n"},
+		{"the directory of the requirements", "[site]\ndocs_dir = \"docs/ja/requirements\"\n"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := writeRepository(t, map[string]string{
+				".cumin-trace.toml":             settings + test.site,
+				"docs/ja/requirements/index.md": "# Requirements\n",
+			})
+
+			count, output := runCheck(t, root)
+
+			if count != 0 || output != "" {
+				t.Errorf("got %d errors and output:\n%s\nwant no error", count, output)
 			}
 		})
 	}

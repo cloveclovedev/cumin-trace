@@ -51,7 +51,10 @@ The site shows every Markdown document under `docs/ja/` as one page. A document 
 npm --prefix site ci          # once; installs the pinned versions
 npm --prefix site run dev     # the preview
 npm --prefix site run build   # static files in site/dist/
+npm --prefix site run preview # serves site/dist/ with the base path
 ```
+
+The optional table `[site]` of `.cumin-trace.toml` sets the site. `docs_dir` is the directory of the documents (default `docs/ja`); it holds `requirements_dir`. `base` is the base path of the site (default `/`); it starts and ends with `/`, with no empty, `.`, or `..` segment. `cumin-trace check` checks both values.
 
 `scripts/render-diagrams.sh` has three uses. It needs Docker.
 
@@ -80,6 +83,10 @@ The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/te
 
    # The directory of the requirement documents. Optional. The default is docs/ja/requirements.
    requirements_dir = "docs/requirements"
+
+   # The site. Optional. docs_dir must hold requirements_dir. The default is docs/ja.
+   [site]
+   docs_dir = "docs"
    ```
 
 2. Install the command from a clone of cumin-trace, and add the directory of Go commands to `PATH`.
@@ -169,3 +176,16 @@ go run ./cmd/cumin-trace check
 ```
 
 The check prints nothing and exits with 0. `go test ./...` runs the same check in `TestTheDocumentsOfThisRepositoryPassTheCheck`.
+
+## Build the site of this repository
+
+The site of this repository is in `site/`, written by `go run ./cmd/cumin-trace init CTR`. Its base path `/cumin-trace/` is in `[site]` of `.cumin-trace.toml`, and nowhere else. It needs Node.js 22.22.0 or later.
+
+```sh
+npm --prefix site ci                 # once; installs the pinned versions
+npm --prefix site run build          # static files in site/dist/
+npm --prefix site run preview        # serves site/dist/ under /cumin-trace/
+npm --prefix site run check-site     # builds, then checks the pages
+```
+
+`go test ./...` checks that each file of `site/` is the same as the template in `templates/site/`.
