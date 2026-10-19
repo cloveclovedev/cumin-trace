@@ -1,4 +1,4 @@
-name: pages
+name: site
 
 # Builds the site of the documents on pull requests, and publishes it on
 # GitHub Pages on every push to main that changes the site.
@@ -19,8 +19,8 @@ permissions:
 
 jobs:
   # A ruleset may require this job by its name. Do not rename it.
-  site:
-    name: site
+  site-build:
+    name: site-build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -50,7 +50,7 @@ jobs:
             files="$(gh api "repos/$REPOSITORY/compare/$base...$head" --jq '.files[].filename')"; then
             # The compare API lists 300 files at most.
             if [ "$(printf '%s\n' "$files" | grep -c .)" -lt 300 ] &&
-              ! printf '%s\n' "$files" | grep -Eq '^(docs/ja/|site/|testdata/site-cases/|\.cumin-trace\.toml$|\.github/workflows/pages\.yml$)'; then
+              ! printf '%s\n' "$files" | grep -Eq '^(docs/ja/|site/|testdata/site-cases/|\.cumin-trace\.toml$|\.github/workflows/site\.yml$)'; then
               changed=false
             fi
           fi
@@ -84,10 +84,10 @@ jobs:
         with:
           path: site/dist
 
-  deploy:
-    name: deploy
-    needs: site
-    if: needs.site.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+  site-deploy:
+    name: site-deploy
+    needs: site-build
+    if: needs.site-build.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
