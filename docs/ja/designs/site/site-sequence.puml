@@ -31,7 +31,8 @@ loop each page
 end
 
 note over astro, docs
-  inputs: documents, diagrams, .cumin-trace.toml, site/ only
+  inputs of the document pages: documents, diagrams, .cumin-trace.toml, site/ only
+  (the dashboard page also reads site/trace.json: see the dashboard design)
   the source files are never written
 end note
 @enduml

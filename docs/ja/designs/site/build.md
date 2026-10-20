@@ -1,6 +1,6 @@
 # ビルド
 
-[サイトの設計](index.md) の細部。Starlight のビルドが、文書と図から1つのページを作るまでを決める。入力は `docs_dir` の下の文書と図、`.cumin-trace.toml`、`site/` のテンプレートだけである (`CTR-SITE-009`)。cumin-trace のコマンド、出力 (`CTR-EXP-001`)、対応づけの結果 (`CTR-TRC-008`) は読まない。
+[サイトの設計](index.md) の細部。Starlight のビルドが、文書と図から1つの文書のページを作るまでを決める。文書のページの入力は `docs_dir` の下の文書と図、`.cumin-trace.toml`、`site/` のテンプレートだけである (`CTR-SITE-009`)。文書のページは、cumin-trace のコマンド、出力 (`CTR-EXP-001`)、対応づけの結果 (`CTR-TRC-008`) を読まない。対応づけの結果を読むのは、ダッシュボードのページだけである ([ダッシュボードの設計](../dashboard/index.md))。
 
 ## 文書を読むローダー
 

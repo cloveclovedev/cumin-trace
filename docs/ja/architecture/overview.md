@@ -19,5 +19,5 @@ cumin-trace のコードの地図である。機能ごとの設計文書は、�
 | `internal/platform` | GitHub の GraphQL API を読み、自分で定義した Go の型で返す。GraphQL の型はここで止める (要求Issueの一覧、sub-issue、閉じた Pull Request を実装) | [要件と要求Issueの対応づけ](../designs/trace/index.md) |
 | `internal/scaffold` | `cumin-trace init`。テンプレート、skill、スクリプト、workflow をリポジトリに書く。サイトのテンプレートを書く | [テンプレートの生成](../designs/templates/index.md)、[サイト](../designs/site/index.md) |
 | `templates` | リポジトリに書く文を埋め込む。リポジトリの最上位のディレクトリ | [テンプレートの生成](../designs/templates/index.md) |
-| `templates/site` | サイトのテンプレートを埋め込む。`init` がプロダクトの `site/` に書く | [サイト](../designs/site/index.md) |
-| `site` (プロダクトのリポジトリ) | Astro + Starlight のサイト。文書と図だけからページを作る。Go のパッケージではない | [サイト](../designs/site/index.md) |
+| `templates/site` | サイトのテンプレートを埋め込む。`init` がプロダクトの `site/` に書く | [サイト](../designs/site/index.md)、[ダッシュボード](../designs/dashboard/index.md) |
+| `site` (プロダクトのリポジトリ) | Astro + Starlight のサイト。文書と図だけから文書のページを作る。ダッシュボードのページは `site/trace.json` (`cumin-trace trace` の出力) を読む (未実装)。Go のパッケージではない | [サイト](../designs/site/index.md)、[ダッシュボード](../designs/dashboard/index.md) |

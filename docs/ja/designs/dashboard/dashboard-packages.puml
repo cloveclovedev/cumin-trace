@@ -1,0 +1,43 @@
+@startuml dashboard-packages
+title Parts of the dashboard
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "product repository" {
+  file ".cumin-trace.toml\nbase, prefix" as toml
+  package "site/" {
+    file "trace.json\nstdout of cumin-trace trace\n(git ignored)" as trace #LightYellow
+    [package.json\ndev-trace script:\ntrace, then astro dev] as pkg #LightYellow
+    [astro.config.mjs\nsidebar: one dashboard link first,\nthen the items of sidebar()] as config #LightYellow
+    [src/dashboard.mjs\nread trace.json, tree, summary,\nfile next, discrepancies, links] as dash #LightYellow
+    [src/pages/dashboard.astro\nStarlightPage at <base>dashboard/\nfilter script] as page #LightYellow
+    [src/settings.mjs\nread .cumin-trace.toml] as settings
+    [scripts/check-site.mjs\nchecks the dashboard page] as check #LightYellow
+  }
+  package ".github/workflows/" {
+    [cumin-trace-site.yml\n(example, CTR-DASH-008)\ntrace, then build] as wf #LightYellow
+  }
+}
+
+[cumin-trace trace] as ct
+cloud "GitHub API" as gh
+folder "site/dist/dashboard/index.html\nstatic file" as dist
+folder "testdata/site-cases/trace.json\nfixture" as fixture #LightYellow
+
+pkg --> ct : runs
+wf --> ct : runs
+ct --> gh : reads (read only)
+ct --> trace : writes only on success
+page --> dash
+dash --> trace : reads (missing or invalid:\nonly "could not read GitHub")
+dash --> settings
+settings --> toml : reads
+page --> dist : astro build
+check --> dist : reads
+fixture --> trace : copied by check.sh
+
+legend right
+  yellow = designed in this document
+  arrow = imports, runs, reads, or writes
+endlegend
+@enduml

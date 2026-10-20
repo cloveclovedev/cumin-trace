@@ -11,7 +11,7 @@
 | 1 | `site/package.json` | 固定したバージョン、`engines`、スクリプト (下の表) | `CTR-SITE-001`、`CTR-SITE-005` |
 | 2 | `site/package-lock.json` | 1 の依存とその依存の、固定したバージョン。`npm ci` が使う | `CTR-SITE-001`、`CTR-SITE-005` |
 | 3 | `site/.node-version` | `24` の1行 | `CTR-SITE-001` |
-| 4 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/` | `CTR-SITE-001` |
+| 4 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/`。ダッシュボードの入力 `trace.json` も足す ([ダッシュボードの設計](../dashboard/index.md)) | `CTR-SITE-001`、`CTR-DASH-006` |
 | 5 | `site/astro.config.mjs` | 設定を読み、`base`、`satteri()` とその `hastPlugins`、Starlight の `title`、`locales`、`sidebar`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008`、`CTR-SITE-011`、`CTR-SITE-012`、`CTR-SITE-013` |
 | 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う。サイトの名前を決める (`siteName()`) | `CTR-SITE-002`、`CTR-SITE-013` |
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
@@ -19,6 +19,7 @@
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。すべてのページの本文の幅と、本文の画像の角 | `CTR-SITE-006`、`CTR-SITE-014` |
 | 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013` |
 
+- ダッシュボードのために、`site/src/dashboard.mjs` と `site/src/pages/dashboard.astro` を足す ([ダッシュボードのページ](../dashboard/page.md) の「ファイル」)。
 - いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 10 が使う、文書の最初の見出し (`firstHeading()`) も持つ。8 は、サイドバーの項目 (`sidebar()`、`CTR-SITE-011`) も作る。そのために、8 は `documentTitle()`、`sourceLinks()`、`bodyLines()`、`dotPath()` を持つ。10 は、これらを 8 から読み込む。10 は、下の表のすべての行を確かめる。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
@@ -61,12 +62,13 @@ base = "/cumin-trace/"
 
 ## コマンド
 
-`site/package.json` のスクリプト。すべて `site/` で動き、token もネットワークの GitHub も使わない (`CTR-SITE-005`、`CTR-SITE-009`)。
+`site/package.json` のスクリプト。すべて `site/` で動く。`dev-trace` のほかは、token もネットワークの GitHub も使わない (`CTR-SITE-005`、`CTR-SITE-009`)。
 
 | コマンド | すること |
 |---|---|
 | `npm --prefix site ci` | 最初に1回。`package-lock.json` のとおりに依存を入れる。CI も同じ |
 | `npm --prefix site run dev` | 手元のプレビュー (`astro dev`)。`CTR-SITE-005` の1つのコマンド |
+| `npm --prefix site run dev-trace` | `cumin-trace trace` で `trace.json` を書いてから、手元のプレビューを始める。GitHub を読む ([ダッシュボードのページ](../dashboard/page.md) の「コマンド」) |
 | `npm --prefix site run build` | 静的なファイルを `site/dist/` に書く (`astro build`)。`CTR-SITE-008` |
 | `npm --prefix site run preview` | `site/dist/` を手元で配信する (`astro preview`)。配信先と同じ base path で見る |
 | `npm --prefix site run check-site` | `node scripts/check-site.mjs`。スクリプトが自分でビルドする (下の「確かめるコマンド」) |
