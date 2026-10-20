@@ -521,8 +521,10 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       const wanted = requirements[i];
       if (wanted === undefined || wanted.id !== tile.id) break;
       if (tile.state !== wanted.state) problems.push(`${dashboardURL}: the tile of ${tile.id} has the progress ${tile.state}, want ${wanted.state}`);
-      const parts = [wanted.id, wanted.progress, ...(wanted.total > 0 ? [`${wanted.closed}/${wanted.total}`] : [])].map((part) => part.replace(/\s+/g, ""));
-      if (parts.some((part) => !tile.label.includes(part))) problems.push(`${dashboardURL}: the tile of ${tile.id} reads ${JSON.stringify(tile.label)}, want ${JSON.stringify(parts)} in it`);
+      // The label is the ID, the title, the progress, and the implementation
+      // issues closed / total.
+      const label = `${wanted.id} ${wanted.title} ・ ${wanted.progress}${wanted.total > 0 ? ` ・ 実装Issue ${wanted.closed} / ${wanted.total}` : ""}`.replace(/\s+/g, "");
+      if (tile.label !== label) problems.push(`${dashboardURL}: the tile of ${tile.id} reads ${JSON.stringify(tile.label)}, want ${JSON.stringify(label)}`);
     }
     for (const [i, line] of lines.entries()) {
       const wanted = requirements[i];

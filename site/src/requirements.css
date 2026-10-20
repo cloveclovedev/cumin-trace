@@ -96,6 +96,7 @@
 .dashboard-tile[data-state="parent"],
 .dashboard-bar [data-state="parent"] {
   background: none;
+  box-shadow: inset 0 0 0 1px var(--sl-color-gray-4);
 }
 
 .dashboard-count {
@@ -136,7 +137,7 @@
   color: var(--sl-color-black);
   display: flex;
   flex-direction: column;
-  font-family: var(--__sl-font-mono);
+  font-family: var(--sl-font-mono, var(--sl-font-system-mono));
   font-size: 0.68rem;
   height: 2.1rem;
   justify-content: space-between;
@@ -151,13 +152,16 @@
 }
 
 .dashboard a.dashboard-tile[data-state="not_filed"],
-.dashboard-tile[data-state="not_filed"] {
+.dashboard-tile[data-state="not_filed"],
+:root[data-theme="light"] .dashboard a.dashboard-tile[data-state="not_filed"],
+:root[data-theme="light"] .dashboard-tile[data-state="not_filed"] {
   color: var(--sl-color-gray-3);
 }
 
 .dashboard a.dashboard-tile[data-state="parent"],
-.dashboard-tile[data-state="parent"] {
-  box-shadow: inset 0 0 0 1px var(--sl-color-gray-4);
+.dashboard-tile[data-state="parent"],
+:root[data-theme="light"] .dashboard a.dashboard-tile[data-state="parent"],
+:root[data-theme="light"] .dashboard-tile[data-state="parent"] {
   color: var(--sl-color-gray-2);
 }
 
@@ -261,7 +265,7 @@
 
 .dashboard-id {
   color: var(--sl-color-text-accent);
-  font-family: var(--__sl-font-mono);
+  font-family: var(--sl-font-mono, var(--sl-font-system-mono));
   font-size: 0.75rem;
   grid-area: id;
   white-space: nowrap;
@@ -276,10 +280,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.dashboard-line[data-depth="2"] .dashboard-title {
-  padding-inline-start: 1rem;
 }
 
 .dashboard-line[data-state="parent"] {

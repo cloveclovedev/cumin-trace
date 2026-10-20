@@ -3,7 +3,7 @@
 // pure, apart from the reads of the trace and of the titles of the areas, and
 // run at build time only (CTR-DASH-007).
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { documentTitle } from "./requirements.mjs";
 
 const isString = (value) => typeof value === "string";
@@ -114,7 +114,7 @@ export function tree(trace) {
     const children = r.children !== null && r.children !== undefined;
     if (!children) {
       category.total++;
-      if (r.progress in category.counts) category.counts[r.progress]++;
+      if (Object.hasOwn(category.counts, r.progress)) category.counts[r.progress]++;
     }
     const subs = subIssues(r);
     rows.push({
@@ -143,7 +143,8 @@ export function tree(trace) {
 // category ID when that document is not in docs_dir (an old trace).
 export function areaTitle(settings, root, row) {
   const file = row.file ?? "";
-  if (!file.startsWith(`${settings.docsDir}/`)) return row.id;
+  const inDocs = relative(join(root, settings.docsDir), join(root, file));
+  if (file === "" || inDocs === "" || inDocs.startsWith("..")) return row.id;
   try {
     return documentTitle(readFileSync(join(root, file), "utf8"), file) || row.id;
   } catch {
