@@ -133,7 +133,7 @@ func TestWritesTheWorkflowThatRebuildsTheSiteWithTheTrace(t *testing.T) {
 			t.Errorf("the workflow has no %q:\n%s", want, workflow)
 		}
 	}
-	for _, unwanted := range []string{"{{version}}", "write", "pages", "deploy", "upload"} {
+	for _, unwanted := range []string{"{{version}}", ": write", "uses: actions/upload-", "uses: actions/deploy-"} {
 		if strings.Contains(workflow, unwanted) {
 			t.Errorf("the workflow has %q:\n%s", unwanted, workflow)
 		}

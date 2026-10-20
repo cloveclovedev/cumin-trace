@@ -19,6 +19,8 @@
 - [コマンド](../../requirements/command/index.md)
   - `CTR-CMD-002` バージョンの表示 ([コマンド](command.md))
   - `CTR-CMD-003` 引数の誤り ([コマンド](command.md))
+- [ダッシュボード](../../requirements/dashboard/index.md)
+  - `CTR-DASH-008` 自動での更新 ([リリースと workflow](release.md))
 
 ## 全体像
 

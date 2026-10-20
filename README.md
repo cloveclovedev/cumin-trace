@@ -38,7 +38,7 @@ cumin-trace init <prefix> [<area>]
 | `tools/plantuml/Dockerfile` | The PlantUML image of the script, with a Japanese font |
 | `site/` | The Astro + Starlight site of the documents: `package.json` and `package-lock.json` with pinned versions, `.node-version`, `.gitignore`, `astro.config.mjs`, `src/settings.mjs`, `src/content.config.mjs`, `src/requirements.mjs`, `src/requirements.css`, and `scripts/check-site.mjs` |
 | `.github/workflows/cumin-trace-check.yml` | The workflow `cumin-trace check`. It runs the format check on every pull request with the release binary of the same version as `init` |
-| `.github/workflows/cumin-trace-site.yml` | The example workflow `cumin-trace site`. On a push to `main` and once a day, it runs `cumin-trace trace > site/trace.json` with the same release binary, then builds the site. A failed trace stops the job before the build. It has read permissions only and publishes nothing: add your own last step that publishes `site/dist/` |
+| `.github/workflows/cumin-trace-site.yml` | The example workflow `cumin-trace site`. On a push to `main` and once a day, it runs `cumin-trace trace > site/trace.json` with the same release binary, then builds the site. A failed trace stops the job before the build. It has read permissions only and publishes nothing: add your own last step that publishes `site/dist/`. The publish step also needs its own write permissions |
 
 Without an area, `init` writes `.cumin-trace.toml` with `areas = []`, and every page except the area page and its diagram. The skill still holds all nine templates. Its area template holds `<AREA>` in place of the area.
 

@@ -63,7 +63,7 @@ jobs:
 
 | ファイル | 中身 |
 |---|---|
-| `cumin-trace-linux-amd64` | GitHub のランナー用。check の workflow が使う |
+| `cumin-trace-linux-amd64` | GitHub のランナー用。check の workflow とサイトの workflow が使う |
 | `cumin-trace-linux-arm64`、`cumin-trace-darwin-amd64`、`cumin-trace-darwin-arm64` | 手元で `init` と `check` を実行する人のため |
 | `checksums.txt` | 4つのバイナリの SHA-256。`sha256sum` の出力の形 (`<hash>  <file>`) |
 
@@ -125,13 +125,17 @@ name: cumin-trace site
 
 # Rebuilds the site with the progress of the requirements on every push to
 # main and once a day. The workflow does not publish the site. Add a last
-# step that puts site/dist/ where the site is published.
+# step that puts site/dist/ where the site is published. The publish step
+# also needs its own write permissions.
+#
+# GitHub can delay or drop a scheduled run when the load is high, mostly at
+# the start of an hour. The minute 17 avoids the start of the hour.
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '17 0 * * *'
 
 permissions:
   contents: read
@@ -169,18 +173,21 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: site/.node-version
+          cache: npm
+          cache-dependency-path: site/package-lock.json
       - name: npm ci
         run: npm --prefix site ci
       - name: Build the site
         run: npm --prefix site run build
 ```
 
-- きっかけは、`main` への `push` と、毎日 0:00 (UTC) の `schedule` である。文書の変更と、GitHub の Issue の変化の両方を、1日以内にサイトに出す。
+- きっかけは、`main` への `push` と、毎日 0:17 (UTC) の `schedule` である。文書の変更と、GitHub の Issue の変化の両方を、ふつうは1日以内にサイトに出す。GitHub は、負荷が高いときに schedule の実行を遅らせるか落とすことがあり、毎時0分に多い。そのため0分を避ける。公開リポジトリで60日間活動がないと、GitHub は schedule を止める。
 - 権限は `contents: read`、`issues: read`、`pull-requests: read` だけである。`trace` に渡す token は、Issue と pull request を読むだけで足りる (`CTR-TRC-007`)。
 - cumin-trace のダウンロードは、check の workflow と同じ step である。
 - `trace` の step には `shell` を書かない。GitHub は `bash -e {0}` を実行するので、`trace` が 0 以外の終了コードで終わると、step が失敗する。続く step は既定の `if: success()` で動かないので、サイトはビルドされない。公開している場所のサイトは前のまま残る。
 - `GITHUB_REPOSITORY` は、GitHub Actions が設定する。`trace` は、そこから読むリポジトリを決める ([対応づけのコマンド](../trace/command.md))。
-- 公開の step も、成果物のアップロードもない。`site/dist/` をどこに置くかは、プロダクトが最後に step を足して決める。
+- 公開の step も、成果物のアップロードもない。`site/dist/` をどこに置くかは、プロダクトが最後に step を足して決める。書いていない権限は `none` になるので、公開の step に要る書き込みの権限も、プロダクトが足す。
+- `setup-node` は、`.github/workflows/site.yml` と同じく npm のキャッシュを使う。
 - `actions/checkout` と `actions/setup-node` のコミットは、このリポジトリの `.github/workflows/site.yml` と同じである。
 
 ## 確かめたこと
@@ -192,6 +199,7 @@ jobs:
 - <https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/using-github-cli-in-workflows>: GitHub CLI は GitHub のランナーに最初から入っている。step ごとに `GH_TOKEN` を設定する。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax>: `on.push.tags` は `refs/tags` に対するパターンである。フィルタのパターンで、`+` は直前の文字の1回以上、`[]` は括弧の中の1文字に合う (例 `v[12].[0-9]+.[0-9]+`)。`shell` を書かないと `bash -e {0}`、`shell: bash` では `bash --noprofile --norc -eo pipefail {0}` を実行する。「By default, fail-fast behavior is enforced using `set -e` for both `sh` and `bash`.」`continue-on-error` は「Prevents a job from failing when a step fails」で、サイトの workflow には書かない。`contents: write` で、リリースを作れる。権限を1つでも書くと、書かない権限は `none` になる。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/expressions> (2026-10-20 に読んだ): `success()` は「Returns `true` when all previous steps have succeeded」。「A default status check of `success()` is applied unless you include one of these functions.」このため、失敗した step のあとの step は動かない。
+- <https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows> (2026-10-20 に読んだ): `schedule` は「can be delayed during periods of high loads」、「High load times include the start of every hour」、「some queued jobs may be dropped」。「In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred in 60 days.」
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/contexts>: `github.ref_name` は、実行のきっかけのブランチかタグの短い名前である。
 - `actions/checkout` と `actions/setup-go` のコミットは、このリポジトリの `.github/workflows/ci.yml` と同じである。
 
