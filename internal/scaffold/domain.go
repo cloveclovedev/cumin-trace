@@ -66,6 +66,9 @@ func Files(area string) []File {
 	// The workflow that runs the format check on pull requests, with the
 	// release binary of this version (CTR-CHK-005).
 	files = append(files, File{Target: CheckWorkflow, Source: "workflows/cumin-trace-check.yml", Mode: 0o644, NeedsVersion: true})
+	// The example workflow that rebuilds the site with the trace, with the
+	// release binary of this version (CTR-DASH-008).
+	files = append(files, File{Target: SiteWorkflow, Source: "workflows/cumin-trace-site.yml", Mode: 0o644, NeedsVersion: true})
 	return files
 }
 
@@ -78,6 +81,10 @@ const RenderScript = "scripts/render-diagrams.sh"
 // CheckWorkflow is the workflow that runs the format check on pull requests
 // (CTR-CHK-005).
 const CheckWorkflow = ".github/workflows/cumin-trace-check.yml"
+
+// SiteWorkflow is the example workflow that rebuilds the site with the
+// trace (CTR-DASH-008).
+const SiteWorkflow = ".github/workflows/cumin-trace-site.yml"
 
 // skillTemplates names the templates of the skill, one for each kind of
 // document, in the order that init writes them. The seven kinds of

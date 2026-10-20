@@ -23,7 +23,7 @@ cumin-trace init <prefix> [<area>]
 |---|---|
 | ファイルを書いた | `written <path>` |
 | ファイルがすでにある | `skipped <path>: already exists` |
-| バージョンのないバイナリで、workflow がまだない | `skipped .github/workflows/cumin-trace-check.yml: this cumin-trace has no version; use a release binary` |
+| バージョンのないバイナリで、workflow がまだない | `skipped <path>: this cumin-trace has no version; use a release binary`。`cumin-trace-check.yml` と `cumin-trace-site.yml` のそれぞれに1行 |
 
 ファイルがあるかを先に確かめ、なければバージョンを確かめる。バージョンのないバイナリでも、workflow がすでにあれば `already exists` の行になる。
 
@@ -40,6 +40,7 @@ written docs/ja/requirements/task/overview.svg
 written docs/ja/architecture/overview.md
 ...
 written .github/workflows/cumin-trace-check.yml
+written .github/workflows/cumin-trace-site.yml
 ```
 
 例 (`cumin-trace init PC`、空のリポジトリ)。カテゴリのページと図の例の行がない:
@@ -52,6 +53,7 @@ written docs/ja/requirements/backlog.md
 written docs/ja/architecture/overview.md
 ...
 written .github/workflows/cumin-trace-check.yml
+written .github/workflows/cumin-trace-site.yml
 ```
 
 ## 終了コード

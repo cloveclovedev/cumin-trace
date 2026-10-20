@@ -1,6 +1,6 @@
 # テンプレートの生成の設計
 
-`cumin-trace init` が、プロダクトのリポジトリに何を、どう書くかを決める。書くものは、要件文書とソースコード全体構成のテンプレート、文書を書くための skill、図を描画するスクリプト、Pull Request の check の workflow である。
+`cumin-trace init` が、プロダクトのリポジトリに何を、どう書くかを決める。書くものは、要件文書とソースコード全体構成のテンプレート、文書を書くための skill、図を描画するスクリプト、Pull Request の check の workflow、サイトを作り直す workflow の例である。
 
 ## 要件
 
@@ -98,7 +98,7 @@
 
 ### check の workflow は、固定したバージョンのリリースのバイナリを使う
 
-`.github/workflows/cumin-trace-check.yml` は、このリポジトリの GitHub のリリースから、決まったバージョンの Linux (amd64) のバイナリと `checksums.txt` を `gh release download` で取り、チェックサムを確かめてから `check` を実行する。Go は要らない。バージョンは、`init` を実行したバイナリのバージョンである。バージョンを持たないバイナリは、workflow を書かずに `skipped` を出す。
+`.github/workflows/cumin-trace-check.yml` は、このリポジトリの GitHub のリリースから、決まったバージョンの Linux (amd64) のバイナリと `checksums.txt` を `gh release download` で取り、チェックサムを確かめてから `check` を実行する。Go は要らない。バージョンは、`init` を実行したバイナリのバージョンである。バージョンを持たないバイナリは、workflow を書かずに `skipped` を出す。サイトの workflow の例 (`cumin-trace-site.yml`) も、同じバイナリで `trace` を実行し、同じ規則で書く。
 
 - 理由: `gh` は GitHub のランナーに最初から入っていて、`GH_TOKEN` だけで動く。バージョンを固定すると、cumin-trace の新しいリリースで check の結果が黙って変わらない。
 - 採らなかった案: workflow で `go install ...@<version>`。実行のたびにソースを取ってビルドする。
