@@ -113,7 +113,7 @@
 | 文書 | 確かめること |
 |---|---|
 | `requirements/Data Model_v2.md` | 大文字、空白、`_` のパスの要件への参照が、そのページとアンカーに行く (`CTR-SITE-003`) |
-| `trace.json` (`docs/` の外) | `check.sh` が `site/trace.json` に写す。ダッシュボードの木が、決まりから手で書いた値と同じになり、要件と Issue のリンクが行き先に合う (`CTR-DASH-001`、`CTR-DASH-005`)。読んだ時刻が、ビルドの手元の時間帯と関係なく、手で書いた日本時間 (`2026-10-17 18:10:55`、`2026-1-5 5:05:03`) になる (`CTR-DASH-006`)。そのあと JSON でない `trace.json` を書き、ページが GitHub を読めなかった1文だけを表示することを確かめる (`CTR-DASH-006`) |
+| `trace.json` (`docs/` の外) | `check.sh` が `site/trace.json` に写す。ダッシュボードの木とカテゴリの名前が、決まりから手で書いた値と同じになり、要件と Issue のリンクが行き先に合う (`CTR-DASH-001`、`CTR-DASH-005`)。読んだ時刻が、ビルドの手元の時間帯と関係なく、手で書いた日本時間 (`2026-10-17 18:10:55`、`2026-1-5 5:05:03`) になる (`CTR-DASH-006`)。そのあと JSON でない `trace.json` を書き、ページが GitHub を読めなかった1文だけを表示することを確かめる (`CTR-DASH-006`) |
 | `headings/` | 受け付けるどの見出しの形でも、タイトルが1回だけ出て、本文に繰り返さない。本文がタイトルと同じ文字の見出しを ATX、setext、HTML のどれで繰り返しても、その見出しは残る (`CTR-SITE-002`) |
 | `frontmatter/` | frontmatter に `title` がある文書は、書き方が違っても、最初の見出しを本文に残す (`CTR-SITE-002`) |
 | `server/`、`functions/` | `server` や `functions` という名前の文書のディレクトリのページは、サーバの関数ではない (`CTR-SITE-008`)。`check.sh` は、そのあと `functions/` の文書を消し、`site/public/functions/` にファイルを置いて、`check-site` が失敗することも確かめる |

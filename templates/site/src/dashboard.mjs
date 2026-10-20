@@ -1,9 +1,10 @@
 // The values of the dashboard page, from site/trace.json, the output of
 // `cumin-trace trace` (docs/ja/designs/dashboard/page.md). The functions are
-// pure, apart from the read of the file, and run at build time only
-// (CTR-DASH-007).
+// pure, apart from the reads of the trace and of the titles of the areas, and
+// run at build time only (CTR-DASH-007).
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
+import { documentTitle } from "./requirements.mjs";
 
 const isString = (value) => typeof value === "string";
 
@@ -71,7 +72,7 @@ function subIssues(requirement) {
       const key = `${sub.repository}#${sub.number}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      found.push({ repository: sub.repository, number: sub.number });
+      found.push({ repository: sub.repository, number: sub.number, closed: sub.state === "closed" });
     }
   }
   return found;
@@ -80,7 +81,11 @@ function subIssues(requirement) {
 // tree returns the rows of the requirement tree (CTR-DASH-001): one row for
 // each category where it first shows, then its requirements in the order of
 // the trace, each child one level below its parent. A deprecated requirement
-// and its descendants have no row.
+// and its descendants have no row. A category row holds the file of its first
+// requirement, for areaTitle(), and the counts of its requirements with no
+// children by progress. A requirement row holds its ID without the prefix and
+// the category (short), its progress (state, or "parent" for a requirement
+// with children), and its implementation issues closed and in all.
 export function tree(trace) {
   const byID = new Map(trace.requirements.map((r) => [r.id, r]));
   const hidden = (r) => {
@@ -101,7 +106,7 @@ export function tree(trace) {
   for (const r of shown) {
     const name = categoryOf(r);
     if (!categories.has(name)) {
-      const row = { kind: "category", id: name, depth: 0, progress: "", done: 0, total: 0 };
+      const row = { kind: "category", id: name, depth: 0, progress: "", file: r.file, counts: { done: 0, in_progress: 0, not_filed: 0 }, total: 0 };
       categories.set(name, row);
       rows.push(row);
     }
@@ -109,24 +114,42 @@ export function tree(trace) {
     const children = r.children !== null && r.children !== undefined;
     if (!children) {
       category.total++;
-      if (r.progress === "done") category.done++;
+      if (Object.hasOwn(category.counts, r.progress)) category.counts[r.progress]++;
     }
     const subs = subIssues(r);
     rows.push({
       kind: "requirement",
       id: r.id,
+      short: r.id.split("-").slice(2).join("-"),
       title: r.title ?? "",
       depth: depth(r) + 1,
       leaf: !children,
+      state: children ? "parent" : r.progress,
       progress: children ? `完了 ${r.children.done} / ${r.children.total}` : (progressLabels[r.progress] ?? ""),
       issues: planned(r).map((issue) => issue.number),
       milestones: milestones(r),
       implementation: r.implementation_issues.total === 0 ? "" : `${r.implementation_issues.closed} / ${r.implementation_issues.total}`,
+      closed: r.implementation_issues.closed,
+      total: r.implementation_issues.total,
       subIssues: subs,
     });
   }
-  for (const category of categories.values()) category.progress = `完了 ${category.done} / ${category.total}`;
-  return rows.map(({ done, total, ...row }) => row);
+  for (const category of categories.values()) category.progress = `完了 ${category.counts.done} / ${category.total}`;
+  return rows;
+}
+
+// areaTitle returns the name of a category on the dashboard: the title of the
+// document that holds its first requirement, as the site shows it, or the
+// category ID when that document is not in docs_dir (an old trace).
+export function areaTitle(settings, root, row) {
+  const file = row.file ?? "";
+  const inDocs = relative(join(root, settings.docsDir), join(root, file));
+  if (file === "" || inDocs === "" || inDocs.startsWith("..")) return row.id;
+  try {
+    return documentTitle(readFileSync(join(root, file), "utf8"), file) || row.id;
+  } catch {
+    return row.id;
+  }
 }
 
 // requirementURL returns the URL of the page and the anchor of a requirement

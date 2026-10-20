@@ -16,7 +16,7 @@
 | 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う。サイトの名前を決める (`siteName()`) | `CTR-SITE-002`、`CTR-SITE-013` |
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
 | 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図を開くスクリプトの文、文書の最初の見出しとタイトル、サイドバーの項目 (`sidebar()`) | `CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010`、`CTR-SITE-011` |
-| 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。すべてのページの本文の幅と、本文の画像の角 | `CTR-SITE-006`、`CTR-SITE-014` |
+| 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。すべてのページの本文の幅と、本文の画像の角。ダッシュボードのタイルの地図と要件の一覧 | `CTR-SITE-006`、`CTR-SITE-014`、`CTR-DASH-001` |
 | 10 | `site/src/dashboard.mjs` | `trace.json` を読み、ダッシュボードの値とリンクを作る ([ダッシュボードのページ](../dashboard/page.md) の「ファイル」) | `CTR-DASH-001`、`CTR-DASH-005`、`CTR-DASH-006` |
 | 11 | `site/src/pages/dashboard.astro` | ダッシュボードのページ | `CTR-DASH-001`、`CTR-DASH-005`、`CTR-DASH-006`、`CTR-DASH-007` |
 | 12 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013`、`CTR-DASH-001`、`CTR-DASH-005` から `CTR-DASH-007` |
@@ -104,7 +104,7 @@ base = "/cumin-trace/"
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js` がない。`site/dist/` の `_functions/`、`functions/`、`server/` は、文書のページ (`docs_dir` の下の文書の `index.html`) だけを持つ。`server` や `functions` という名前の文書のディレクトリ (要件の領域など) のページはそこにできるので、受け付ける。空のディレクトリや、文書のページでないファイルを持つものは失敗する | `CTR-SITE-008` |
 | `site/dist/dashboard/index.html` があり、目次を持たない。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
 | `trace.json` が読めないとき、ページの本文 (Starlight の `footer` の前まで) が、GitHub を読めなかった1文だけで、表がない。読めたとき、`<time>` の `datetime` が `read_at` と同じで、`<time>` の文字が `japanTime()` の日本時間と同じである | `CTR-DASH-006` |
-| 木の行 (`tr` の `data-id`) が `tree()` と同じ順である。各行の進捗、要求Issueのリンク、マイルストーン、実装Issueの数、`<details>` の実装Issueのリンクが、`tree()` と `issueURL()` の値と同じである。廃止した要件の行がない | `CTR-DASH-001`、`CTR-DASH-005` |
+| タイルの地図と要件の一覧のカテゴリが、`tree()` のカテゴリの順で、名前が `areaTitle()` と同じで、`完了 <n> / <m>` が `tree()` と同じである。タイル (`.dashboard-tile`) と一覧の行 (`.dashboard-line`) の `data-id` が、`tree()` の要件の行と同じ順である。タイルの `data-state` と `aria-label` (ID、進捗、実装Issueの数)、一覧の行の進捗 (`data-state` と読み上げ用の文字)、要求Issueのリンク、マイルストーン、実装Issueの数、四角の実装Issueのリンクと閉じたかどうかが、`tree()` と `issueURL()` の値と同じである。廃止した要件がない。表と `<details>` がない | `CTR-DASH-001`、`CTR-DASH-005` |
 | 要件のリンクが `requirementURL()` と同じで、行き先のページとその `id` が出力にある。表にない ID はリンクでない | `CTR-DASH-005` |
 | `site/dist/` に `trace.json` がない | `CTR-DASH-007` |
 

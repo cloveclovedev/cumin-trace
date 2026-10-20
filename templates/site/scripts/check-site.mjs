@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
 import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, dotPath, escape, firstHeading, hasTitle, headingIDs, idTable, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
-import { issueURL, japanTime, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
+import { areaTitle, issueURL, japanTime, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -445,10 +445,12 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
 // first link of the sidebar of each page goes to it. CTR-DASH-006: without a
 // valid site/trace.json, the body of the page is only the sentence of the
 // failed read; with one, the <time> of the page has read_at as its datetime
-// and japanTime() of read_at as its text. CTR-DASH-001: the rows of
-// the requirement tree have the order and the values of tree(), and no row
-// of a deprecated requirement. CTR-DASH-005: each requirement link goes to
-// a page with its anchor, and each issue link is issueURL(). CTR-DASH-007:
+// and japanTime() of read_at as its text. CTR-DASH-001: the map of tiles and
+// the list have the categories of tree() with the titles of areaTitle(), and
+// one tile and one line for each requirement row of tree(), in its order and
+// with its values, and no deprecated requirement; the section has no table
+// and no details element. CTR-DASH-005: each requirement link goes to a page
+// with its anchor, and each issue link is issueURL(). CTR-DASH-007:
 // the output holds no trace.json.
 {
   const html = page(dashboardURL);
@@ -477,45 +479,83 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
     if (time === null || rawText(time[2]) !== japanTime(trace.read_at).replace(/\s+/g, "")) problems.push(`${dashboardURL}: the page shows the read time ${time?.[2]}, want ${japanTime(trace.read_at)}`);
     const table = idTable(settings, root);
     const want = tree(trace);
-    const rows = [...content.matchAll(/<tr data-kind="([^"]*)" data-id="([^"]*)"[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => ({ kind: m[1], id: m[2], cells: [...m[3].matchAll(/<td[^>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g)].map((c) => c[1] ?? "") }));
-    if (rows.map((row) => row.id).join("\n") !== want.map((row) => row.id).join("\n")) {
-      problems.push(`${dashboardURL}: the tree has the rows ${JSON.stringify(rows.map((row) => row.id))}, want the rows of tree() ${JSON.stringify(want.map((row) => row.id))}`);
-    }
+    const categories = want.filter((row) => row.kind === "category");
+    const requirements = want.filter((row) => row.kind === "requirement");
+    const ids = (items) => JSON.stringify(items.map((item) => item.id));
     const hrefs = (html) => [...html.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1]));
-    for (const [i, row] of rows.entries()) {
-      const wanted = want[i];
-      if (wanted === undefined || wanted.id !== row.id) break;
-      const [name, progress, issues, milestones, implementation] = row.cells;
-      const got = {
-        progress: plainText(progress ?? ""),
-        issues: hrefs(issues ?? "").join(" "),
-        milestones: plainText(milestones ?? ""),
-        implementation: plainText((implementation ?? "").split("<details")[0]),
-        subIssues: hrefs((implementation ?? "").split("<details")[1] ?? "").join(" "),
+    const attrs = (tag) => Object.fromEntries([...tag.matchAll(/([a-z-]+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+    if (content.includes("<table") || content.includes("<details")) problems.push(`${dashboardURL}: the progress of the requirements has a table or a details element, want the tiles and the lines`);
+    // The map: one row for each category, then one tile for each requirement.
+    const mapRows = [...content.matchAll(/<div class="dashboard-map-row"([^>]*)>[\s\S]*?<b>([\s\S]*?)<\/b>[\s\S]*?<span class="dashboard-count">([\s\S]*?)<\/span>/g)].map((m) => ({ id: attrs(m[1])["data-id"], title: plainText(m[2]), count: plainText(m[3]) }));
+    const tiles = [...content.matchAll(/<(?:a|span) class="dashboard-tile"([^>]*)>/g)].map((m) => { const a = attrs(m[1]); return { id: a["data-id"], state: a["data-state"], link: a.href === undefined ? undefined : decoded(a.href), label: rawText(a["aria-label"] ?? "") }; });
+    // The list: a header for each category, then one line for each requirement.
+    const groups = [...content.matchAll(/<section class="dashboard-group"([^>]*)>[\s\S]*?<h3>([\s\S]*?)<small>[\s\S]*?<span class="dashboard-count">([\s\S]*?)<\/span>/g)].map((m) => ({ id: attrs(m[1])["data-id"], title: plainText(m[2]), count: plainText(m[3]) }));
+    const lines = [...content.matchAll(/<div class="dashboard-line"([^>]*)>([\s\S]*?)<\/div>/g)].map((m) => {
+      const inner = m[2];
+      const [, issues = "", implementation = ""] = inner.match(/<span class="dashboard-issues">([\s\S]*?)<span class="dashboard-implementation">([\s\S]*)$/) ?? [];
+      return {
+        id: attrs(m[1])["data-id"],
+        state: attrs(m[1])["data-state"],
+        progress: plainText(inner.match(/<span class="sr-only">([\s\S]*?)<\/span>/)?.[1] ?? ""),
+        link: inner.match(/<a class="dashboard-id" href="([^"]*)"/)?.[1],
+        issues: hrefs(issues.split('<span class="dashboard-milestone"')[0]).join(" "),
+        milestones: [...issues.matchAll(/<span class="dashboard-milestone">([\s\S]*?)<\/span>/g)].map((s) => plainText(s[1])).join("、"),
+        implementation: plainText(implementation.match(/<span class="dashboard-count">([\s\S]*?)<\/span>/)?.[1] ?? ""),
+        subIssues: [...implementation.matchAll(/<a class="dashboard-square"([^>]*)>/g)].map((s) => { const a = attrs(s[1]); return `${decoded(a.href)} ${a["data-closed"]}`; }).join(" "),
       };
+    });
+    for (const [name, got] of [["map", mapRows], ["list", groups]]) {
+      if (ids(got) !== ids(categories)) problems.push(`${dashboardURL}: the ${name} has the categories ${ids(got)}, want ${ids(categories)}`);
+      for (const [i, item] of got.entries()) {
+        const category = categories[i];
+        if (category === undefined || category.id !== item.id) break;
+        const title = plainText(areaTitle(settings, root, category));
+        if (item.title !== title) problems.push(`${dashboardURL}: the ${name} names the category ${item.id} ${JSON.stringify(item.title)}, want ${JSON.stringify(title)}`);
+        if (!item.count.endsWith(category.progress.replace(/\s+/g, ""))) problems.push(`${dashboardURL}: the ${name} shows ${JSON.stringify(item.count)} for the category ${item.id}, want ${JSON.stringify(category.progress)}`);
+      }
+    }
+    for (const [name, got] of [["map", tiles], ["list", lines]]) {
+      if (ids(got) !== ids(requirements)) problems.push(`${dashboardURL}: the ${name} has the requirements ${ids(got)}, want the rows of tree() ${ids(requirements)}`);
+    }
+    for (const [i, tile] of tiles.entries()) {
+      const wanted = requirements[i];
+      if (wanted === undefined || wanted.id !== tile.id) break;
+      if (tile.state !== wanted.state) problems.push(`${dashboardURL}: the tile of ${tile.id} has the progress ${tile.state}, want ${wanted.state}`);
+      // The label is the ID, the title, the progress, and the implementation
+      // issues closed / total.
+      const label = `${wanted.id} ${wanted.title} ・ ${wanted.progress}${wanted.total > 0 ? ` ・ 実装Issue ${wanted.closed} / ${wanted.total}` : ""}`.replace(/\s+/g, "");
+      if (tile.label !== label) problems.push(`${dashboardURL}: the tile of ${tile.id} reads ${JSON.stringify(tile.label)}, want ${JSON.stringify(label)}`);
+    }
+    for (const [i, line] of lines.entries()) {
+      const wanted = requirements[i];
+      if (wanted === undefined || wanted.id !== line.id) break;
       const expected = {
+        state: wanted.state,
         progress: wanted.progress.replace(/\s+/g, ""),
-        issues: (wanted.issues ?? []).map((number) => issueURL(trace.repository, number)).join(" "),
-        milestones: (wanted.milestones ?? []).join("、"),
-        implementation: (wanted.implementation ?? "").replace(/\s+/g, ""),
-        subIssues: (wanted.subIssues ?? []).map((sub) => issueURL(sub.repository, sub.number)).join(" "),
+        issues: wanted.issues.map((number) => issueURL(trace.repository, number)).join(" "),
+        milestones: wanted.milestones.join("、"),
+        implementation: wanted.implementation.replace(/\s+/g, ""),
+        subIssues: wanted.subIssues.map((sub) => `${issueURL(sub.repository, sub.number)} ${sub.closed}`).join(" "),
       };
       for (const key of Object.keys(expected)) {
-        if (got[key] !== expected[key]) problems.push(`${dashboardURL}: the row ${row.id} shows ${key} ${JSON.stringify(got[key])}, want ${JSON.stringify(expected[key])}`);
+        if (line[key] !== expected[key]) problems.push(`${dashboardURL}: the line of ${line.id} shows ${key} ${JSON.stringify(line[key])}, want ${JSON.stringify(expected[key])}`);
       }
-      if (row.kind !== "requirement") continue;
-      const link = hrefs(name ?? "")[0];
-      const target = requirementURL(table, row.id);
+    }
+    // Each requirement link of a tile and of a line goes to a page with its
+    // anchor; an ID that no document has is no link.
+    for (const item of [...tiles, ...lines]) {
+      const link = item.link === undefined ? undefined : decoded(item.link);
+      const target = requirementURL(table, item.id);
       if (link !== (target === undefined ? undefined : decoded(target))) {
-        problems.push(`${dashboardURL}: the requirement ${row.id} links to ${link}, want ${target}`);
+        problems.push(`${dashboardURL}: the requirement ${item.id} links to ${link}, want ${target}`);
       } else if (link !== undefined) {
         const [path, anchor] = link.split("#");
         const html = path.startsWith(settings.base) ? page(path) : undefined;
-        if (html === undefined || !html.includes(` id="${anchor}"`)) problems.push(`${dashboardURL}: the link of ${row.id} goes to ${link}, which is no page with the anchor ${anchor}`);
+        if (html === undefined || !html.includes(` id="${anchor}"`)) problems.push(`${dashboardURL}: the link of ${item.id} goes to ${link}, which is no page with the anchor ${anchor}`);
       }
     }
     for (const requirement of trace.requirements.filter((r) => r.status === "deprecated")) {
-      if (rows.some((row) => row.id === requirement.id)) problems.push(`${dashboardURL}: the tree shows the deprecated requirement ${requirement.id}`);
+      if ([...tiles, ...lines].some((item) => item.id === requirement.id)) problems.push(`${dashboardURL}: the page shows the deprecated requirement ${requirement.id}`);
     }
   }
 }
