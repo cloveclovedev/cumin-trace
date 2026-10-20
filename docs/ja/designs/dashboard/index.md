@@ -58,12 +58,12 @@
 - 理由: `trace` は失敗すると何も書かない。手元で token なしにプレビューしても、文書のページは表示される (`CTR-SITE-005`)。
 - 採らなかった案: ビルドを失敗にする。文書のページも作られなくなる。
 
-### ページは `src/pages/dashboard.astro` の `StarlightPage` で、サイドバーの最後に1つのリンクを足す
+### ページは `src/pages/dashboard.astro` の `StarlightPage` で、サイドバーの最初に1つのリンクを置く
 
-`site/src/pages/dashboard.astro` が `StarlightPage` でページを作る。URL は `<base>dashboard/` である。`astro.config.mjs` は、`sidebar()` の項目の後ろに `{ label: "ダッシュボード", link: "/dashboard/" }` を1つ足す。Starlight が `base` を足すので、リンクの行き先は `<base>dashboard/` になる。
+`site/src/pages/dashboard.astro` が `StarlightPage` でページを作る。URL は `<base>dashboard/` である。`astro.config.mjs` は、`sidebar()` の項目の前に、最初の項目として `{ label: "ダッシュボード", link: "/dashboard/" }` を1つ置く。Starlight が `base` を足すので、リンクの行き先は `<base>dashboard/` になる。
 
-- 理由: docs のコレクションは文書だけを読む (`CTR-SITE-009`)。コレクションの外のページなら、文書のページの作り方を変えない。
-- Starlight 0.42.6 は、プロトコルのない `link` に `base` を足す。`dist/utils/navigation.js` の `linkFromSidebarLinkItem()` が `makeSidebarLink()` を呼び、`formatPath()` が `dist/utils/createPathFormatter.js` の `addBase` で `base` を足す (2026-10-20 にパッケージのコードで確かめた)。`link` に `<base>` を書くと、`base` が2回付く。`check-site` が、サイドバーのリンクの `href` が `<base>dashboard/` であることを確かめる。
+- 理由: docs のコレクションは文書だけを読む (`CTR-SITE-009`)。コレクションの外のページなら、文書のページの作り方を変えない。ダッシュボードはサイトの目的なので、長いサイドバーの最後ではなく、最初に置いて見つけやすくする。
+- Starlight 0.42.6 は、プロトコルのない `link` に `base` を足す。`dist/utils/navigation.js` の `linkFromSidebarLinkItem()` が `makeSidebarLink()` を呼び、`formatPath()` が `dist/utils/createPathFormatter.js` の `addBase` で `base` を足す (2026-10-20 にパッケージのコードで確かめた)。`link` に `<base>` を書くと、`base` が2回付く。`check-site` が、サイドバーの最初のリンクの `href` が `<base>dashboard/` であることを確かめる。
 - 採らなかった案: `docs_dir` にダッシュボードの文書を置かせる。文書が GitHub の状態を持つことになる。
 - 細部: [ページ](page.md)
 

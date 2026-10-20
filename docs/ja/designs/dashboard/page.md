@@ -13,7 +13,7 @@
 
 ほかに、次のファイルを変える。
 
-- `site/astro.config.mjs`: `sidebar()` の項目の後ろに、ダッシュボードへのリンクを1つ足す。
+- `site/astro.config.mjs`: `sidebar()` の項目の前に、最初の項目として、ダッシュボードへのリンクを1つ置く。
 - `site/package.json`: スクリプト `dev-trace` を足す (下の「コマンド」)。
 - `site/.gitignore` (`templates/site/gitignore`): `trace.json` を足す。
 - `site/scripts/check-site.mjs`: 下の「確かめ方」の行を足す。
@@ -146,7 +146,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 | 今の行 | 失敗する理由 | 変更 |
 |---|---|---|
 | `CTR-SITE-012` 各ページが `pageURL()` の URL にある | `site/dist/dashboard/index.html` は文書のページではない | 文書のページのほかに、`dashboard/index.html` の1つだけを受け付ける。ほかの `index.html` は今のとおり失敗する |
-| `CTR-SITE-011` サイドバーの `<a>` が `sidebar()` の項目と同じ順 | サイドバーの最後に、ダッシュボードへのリンクが1つ増える | サイドバーのリンクの最後が `<base>dashboard/` であることを確かめ、そのリンクを除いた並びを、今のとおり `sidebar()` の項目と比べる |
+| `CTR-SITE-011` サイドバーの `<a>` が `sidebar()` の項目と同じ順 | サイドバーの最初に、ダッシュボードへのリンクが1つ増える | サイドバーの最初のリンクが `<base>dashboard/` であることを確かめ、そのあとのリンクの並びを、今のとおり `sidebar()` の項目と比べる。入口の文書のページは、2つ目のリンクになる |
 
 `CTR-SITE-002` から `CTR-SITE-010` の行は、`docs_dir` の文書から作ったページだけを調べるので、変えない。
 
@@ -156,7 +156,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 
 | 確かめること | 要件 |
 |---|---|
-| `site/dist/dashboard/index.html` がある。各ページのサイドバーの最後のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
+| `site/dist/dashboard/index.html` がある。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
 | `trace.json` が「読めない」とき、ページの本文が GitHub を読めなかった1文だけで、表がない | `CTR-DASH-006` |
 | 読めたとき、読んだ時刻が `read_at` と同じである | `CTR-DASH-006` |
 | 木の行が `tree()` と同じ順と値である。廃止した要件の行がない | `CTR-DASH-001` |
