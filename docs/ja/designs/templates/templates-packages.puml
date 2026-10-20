@@ -21,7 +21,7 @@ package "product repository" {
   file ".cumin-trace.toml\ndocs/ja/requirements/...\ndocs/ja/architecture/overview.md" as docs
   file ".claude/skills/cumin-trace-docs/..." as skill
   file "scripts/render-diagrams.sh\ntools/plantuml/Dockerfile" as script
-  file ".github/workflows/cumin-trace-check.yml" as workflow
+  file ".github/workflows/cumin-trace-check.yml\n.github/workflows/cumin-trace-site.yml" as workflow
 }
 
 main --> service

@@ -133,7 +133,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 - きっかけ: `main` への `push` と `schedule`。
 - 権限: `contents: read`、`issues: read`、`pull-requests: read`。
 - step: checkout、`cumin-trace-check.yml` と同じ cumin-trace のダウンロード、`cumin-trace trace > site/trace.json` (`GITHUB_TOKEN: ${{ github.token }}`)、`actions/setup-node` (`node-version-file: site/.node-version`)、`npm --prefix site ci`、`npm --prefix site run build`。
-- trace が失敗すると、step が失敗し、続く step は動かない (推測。GitHub Actions の既定の振る舞いとして、実装の Issue で公式文書を確かめる)。ビルドしないので、公開している場所のサイトは前のまま残る。
+- trace が失敗すると、step が失敗し、続く step は動かない (公式文書で確かめた。[リリースと workflow](../templates/release.md) の「プロダクトのサイトの workflow」)。ビルドしないので、公開している場所のサイトは前のまま残る。
 - `site/dist/` をどこに置くかは書かない。プロダクトが、最後に step を足す。
 - このリポジトリの `.github/workflows/` は変えない。
 

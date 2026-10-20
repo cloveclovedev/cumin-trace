@@ -24,6 +24,7 @@
 | 14 | `tools/plantuml/Dockerfile` | `tools/plantuml/Dockerfile` | なし | `CTR-TPL-006` |
 | 14a | `site/` の下のファイル ([サイトのファイルと設定](../site/files.md)) | `site/` の下の同じパス (先頭の `.` を除いた名前) | なし | `CTR-SITE-001` |
 | 15 | `.github/workflows/cumin-trace-check.yml` | `workflows/cumin-trace-check.yml` | `{{version}}` | `CTR-CHK-005` |
+| 16 | `.github/workflows/cumin-trace-site.yml` | `workflows/cumin-trace-site.yml` | `{{version}}` | `CTR-DASH-008` |
 
 12 は、次の9つを、この順に書く。
 
@@ -40,7 +41,7 @@
 | `design-detail.md` | 設計文書の細部 | skill だけ |
 
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。書く先のパスは、`internal/scaffold/domain.go` の表だけが持つ。
-- 15 は、バージョンを持つバイナリのときだけ書く ([リリースと workflow](release.md))。`internal/scaffold/domain.go` の表では、`NeedsVersion` で示す。
+- 15 と 16 は、バージョンを持つバイナリのときだけ書く ([リリースと workflow](release.md))。`internal/scaffold/domain.go` の表では、`NeedsVersion` で示す。
 
 ## カテゴリの図
 

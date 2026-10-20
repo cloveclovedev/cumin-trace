@@ -13,7 +13,7 @@ import (
 // and writes one line for each file to stdout (CTR-TPL-001). An empty area
 // says that the product has no area yet. The version is the version of the
 // binary, which is a release version or not. Without a release version, it
-// skips the files that name the version (CTR-CHK-005). It keeps every file that exists.
+// skips the files that name the version (CTR-CHK-005, CTR-DASH-008). It keeps every file that exists.
 // The returned error says that a file cannot be written; the files before it
 // stay.
 func Run(root, prefix, area, version string, stdout io.Writer) error {
