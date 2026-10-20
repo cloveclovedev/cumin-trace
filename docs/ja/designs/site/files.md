@@ -12,15 +12,16 @@
 | 2 | `site/package-lock.json` | 1 の依存とその依存の、固定したバージョン。`npm ci` が使う | `CTR-SITE-001`、`CTR-SITE-005` |
 | 3 | `site/.node-version` | `24` の1行 | `CTR-SITE-001` |
 | 4 | `site/.gitignore` | `node_modules/`、`dist/`、`.astro/`。ダッシュボードの入力 `trace.json` も足す ([ダッシュボードの設計](../dashboard/index.md)) | `CTR-SITE-001`、`CTR-DASH-006` |
-| 5 | `site/astro.config.mjs` | 設定を読み、`base`、`satteri()` とその `hastPlugins`、Starlight の `title`、`locales`、`sidebar`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める | `CTR-SITE-001`、`CTR-SITE-008`、`CTR-SITE-011`、`CTR-SITE-012`、`CTR-SITE-013` |
+| 5 | `site/astro.config.mjs` | 設定を読み、`base`、`satteri()` とその `hastPlugins`、Starlight の `title`、`locales`、`sidebar`、`customCss`、`head` (図を開くスクリプト)、`markdown.processedDirs` を決める。サイドバーの最初の項目は、ダッシュボードへのリンクである | `CTR-SITE-001`、`CTR-SITE-008`、`CTR-SITE-011`、`CTR-SITE-012`、`CTR-SITE-013`、`CTR-DASH-005` |
 | 6 | `site/src/settings.mjs` | `.cumin-trace.toml` を読み、既定値を補う。サイトの名前を決める (`siteName()`) | `CTR-SITE-002`、`CTR-SITE-013` |
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
 | 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図を開くスクリプトの文、文書の最初の見出しとタイトル、サイドバーの項目 (`sidebar()`) | `CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010`、`CTR-SITE-011` |
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。すべてのページの本文の幅と、本文の画像の角 | `CTR-SITE-006`、`CTR-SITE-014` |
-| 10 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013` |
+| 10 | `site/src/dashboard.mjs` | `trace.json` を読み、ダッシュボードの値とリンクを作る ([ダッシュボードのページ](../dashboard/page.md) の「ファイル」) | `CTR-DASH-001`、`CTR-DASH-005`、`CTR-DASH-006` |
+| 11 | `site/src/pages/dashboard.astro` | ダッシュボードのページ | `CTR-DASH-001`、`CTR-DASH-005`、`CTR-DASH-006`、`CTR-DASH-007` |
+| 12 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013`、`CTR-DASH-001`、`CTR-DASH-005` から `CTR-DASH-007` |
 
-- ダッシュボードのために、`site/src/dashboard.mjs` と `site/src/pages/dashboard.astro` を足す ([ダッシュボードのページ](../dashboard/page.md) の「ファイル」)。
-- いまのテンプレートは 1 から 10 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 10 が使う、文書の最初の見出し (`firstHeading()`) も持つ。8 は、サイドバーの項目 (`sidebar()`、`CTR-SITE-011`) も作る。そのために、8 は `documentTitle()`、`sourceLinks()`、`bodyLines()`、`dotPath()` を持つ。10 は、これらを 8 から読み込む。10 は、下の表のすべての行を確かめる。
+- いまのテンプレートは 1 から 12 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 12 が使う、文書の最初の見出し (`firstHeading()`) も持つ。8 は、サイドバーの項目 (`sidebar()`、`CTR-SITE-011`) も作る。そのために、8 は `documentTitle()`、`sourceLinks()`、`bodyLines()`、`dotPath()` を持つ。12 は、これらを 8 から読み込む。12 は、下の表のすべての行を確かめる。
 - 埋め込むパスに、`.claude`、`CLAUDE.md`、`.github/workflows` は現れない。
 - `site/package-lock.json` もテンプレートに含める。`npm ci` が、どのプロダクトでも同じ依存を入れる。
 - Starlight の既定の見た目のまま使い、要件が求めるものだけを変える (`CTR-SITE-001`)。`requirements.css` は、Starlight の CSS の変数 (`--sl-color-*`) だけで色を決める。
@@ -47,7 +48,7 @@ name = "cumin-trace"
 base = "/cumin-trace/"
 ```
 
-`site/src/settings.mjs` は、`site/` の親をリポジトリの最上位として、`.cumin-trace.toml` を `smol-toml` で読む。`prefix`、`requirements_dir` (既定 `docs/ja/requirements`)、`docs_dir`、`base`、`name` (既定 空) を返す。値を確かめるのは Go の `check` で、サイトは確かめない。
+`site/src/settings.mjs` は、`site/` の親 (`readSettings()` に渡したディレクトリがあれば、そのディレクトリ) をリポジトリの最上位として、`.cumin-trace.toml` を `smol-toml` で読む。`prefix`、`requirements_dir` (既定 `docs/ja/requirements`)、`docs_dir`、`base`、`name` (既定 空) を返す。値を確かめるのは Go の `check` で、サイトは確かめない。
 
 `siteName(settings, root)` は、サイトの名前を次の順に決める (`CTR-SITE-013`)。
 
@@ -97,10 +98,15 @@ base = "/cumin-trace/"
 | 元の文書の相対 `.puml` のリンクで、宛先が読める `.puml` のものごとに、閉じた `<details>` があり、中のコードブロックがその `.puml` の中身と同じである。ページに、`.puml` への相対のリンクがない。URL と `/` で始まるリンクは残る | `CTR-SITE-010` |
 | 元の文書の、ほかの相対パスへのリンク (サイトのページでない `.md`、読める `.puml` でない `.puml`、画像でもないもの) が、出力では `<a>` のない文字である | `CTR-SITE-010` |
 | 元の文書の相対パスの画像 (frontmatter、コードブロック、コードスパン、HTML のコメントの外の `![...](...)`) ごとに、ページに、出力のファイルの名前が `<名前>.<ハッシュ><拡張子>` (SVG でない画像は、拡張子が `.webp` でもよい) の `<img>` があり、その `src` が `base` で始まり、出力にファイルがある。同じバイトの SVG の画像は、Astro が1つの名前の1つのファイルにまとめるので、名前の合う `<img>` がなければ、出力のファイルが元の画像と同じ SHA-256 の `<img>` でもよい。1つの `<img>` は1つの画像にだけ数える。各ページに、`diagramScript` と同じ文の `<script>` がある | `CTR-SITE-004`、`CTR-SITE-007`、`CTR-SITE-008` |
-| 入口の文書のページのサイドバーの `<a>` の `href` が、`sidebar()` の項目のページの URL と同じ順に並ぶ。`docs_dir` の下の各文書のページが、サイドバーに1回だけ出る。入口の文書がサイトのページへリンクする順に、サイドバーの最初の項目が並ぶ (最初の項目は入口の文書のページ) | `CTR-SITE-011` |
-| 各ページの `<html>` の `lang` が `ja` である。サイドバーの最上位の項目とグループに、`docs_dir` の部分 (`docs`、`ja` など) の名前のものがない (文書のディレクトリにその名前があるときを除く)。各ページの URL が `pageURL()` である | `CTR-SITE-012` |
+| 入口の文書のページのサイドバーの最初の `<a>` の `href` が `<base>dashboard/` である。そのあとの `<a>` の `href` が、`sidebar()` の項目のページの URL と同じ順に並ぶ。`docs_dir` の下の各文書のページが、サイドバーに1回だけ出る。ダッシュボードへのリンクのあと、入口の文書がサイトのページへリンクする順に、サイドバーの最上位の項目が並ぶ (入口の文書のページは、最上位の2つ目の項目) | `CTR-SITE-011` |
+| 各ページの `<html>` の `lang` が `ja` である。サイドバーの最上位の項目とグループに、`docs_dir` の部分 (`docs`、`ja` など) の名前のものがない (文書のディレクトリにその名前があるときを除く)。各ページの URL が `pageURL()` である。ただし、`dashboard/index.html` の1つだけは受け付ける | `CTR-SITE-012` |
 | 各ページのサイトの名前 (`.site-title` の文字) が、文書群ごとに決めた名前と同じである。このリポジトリでは `cumin-trace`、`testdata/site-cases/` では接頭辞である。期待する名前は、引数 `--site-name` があればその値、なければ設定の `[site]` の `name` である。どちらもなければ、この行は確かめない。`check.sh` は `--site-name` に接頭辞を渡す。`siteName()` の値とは比べない | `CTR-SITE-013` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js` がない。`site/dist/` の `_functions/`、`functions/`、`server/` は、文書のページ (`docs_dir` の下の文書の `index.html`) だけを持つ。`server` や `functions` という名前の文書のディレクトリ (要件の領域など) のページはそこにできるので、受け付ける。空のディレクトリや、文書のページでないファイルを持つものは失敗する | `CTR-SITE-008` |
+| `site/dist/dashboard/index.html` がある。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
+| `trace.json` が読めないとき、ページの本文 (Starlight の `footer` の前まで) が、GitHub を読めなかった1文だけで、表がない。読めたとき、`<time>` の読んだ時刻が `read_at` と同じである | `CTR-DASH-006` |
+| 木の行 (`tr` の `data-id`) が `tree()` と同じ順である。各行の進捗、要求Issueのリンク、マイルストーン、実装Issueの数、`<details>` の実装Issueのリンクが、`tree()` と `issueURL()` の値と同じである。廃止した要件の行がない | `CTR-DASH-001`、`CTR-DASH-005` |
+| 要件のリンクが `requirementURL()` と同じで、行き先のページとその `id` が出力にある。表にない ID はリンクでない | `CTR-DASH-005` |
+| `site/dist/` に `trace.json` がない | `CTR-DASH-007` |
 
 文書のリンクの確かめ方 (`CTR-SITE-010`):
 

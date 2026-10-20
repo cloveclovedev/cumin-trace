@@ -23,6 +23,8 @@
 
 `dashboard.mjs` の `readTrace(root)` が、`<root>/site/trace.json` を `fs.readFileSync()` で読み、`JSON.parse()` する。`import` で読まないのは、ファイルがないときにビルドを止めないためである (推測)。
 
+`dashboard.astro` は、`root` を `settings.mjs` から読まず、`process.cwd()` の親とする。ビルドはページを `site/dist/` の下にまとめるので、`settings.mjs` の `import.meta.url` から決めた `root` は `site/dist` になる (2026-10-20 にビルドで確かめた)。Astro は `site/` で動き、`site/` を自分の root とするので、その親がリポジトリの最上位である。設定は `readSettings(root)` に渡して読む。
+
 次のどれかのとき、`readTrace()` は「読めない」を返す。
 
 - ファイルがない、または読めない
@@ -146,7 +148,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 | 今の行 | 失敗する理由 | 変更 |
 |---|---|---|
 | `CTR-SITE-012` 各ページが `pageURL()` の URL にある | `site/dist/dashboard/index.html` は文書のページではない | 文書のページのほかに、`dashboard/index.html` の1つだけを受け付ける。ほかの `index.html` は今のとおり失敗する |
-| `CTR-SITE-011` サイドバーの `<a>` が `sidebar()` の項目と同じ順 | サイドバーの最初に、ダッシュボードへのリンクが1つ増える | サイドバーの最初のリンクが `<base>dashboard/` であることを確かめ、そのあとのリンクの並びを、今のとおり `sidebar()` の項目と比べる。入口の文書のページは、2つ目のリンクになる |
+| `CTR-SITE-011` サイドバーの `<a>` が `sidebar()` の項目と同じ順 | サイドバーの最初に、ダッシュボードへのリンクが1つ増える | サイドバーの最初のリンクが `<base>dashboard/` であることを確かめ、そのあとのリンクの並びを、今のとおり `sidebar()` の項目と比べる。最上位の項目の確かめ方も、ダッシュボードへのリンクを飛ばす。入口の文書のページは最上位の2つ目の項目で、入口の文書のリンクの順との比べ方は、そのあとから始まる |
 
 `CTR-SITE-002` から `CTR-SITE-010` の行は、`docs_dir` の文書から作ったページだけを調べるので、変えない。
 

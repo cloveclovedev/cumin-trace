@@ -59,9 +59,12 @@ The files pass `cumin-trace check` at once. The design is in [docs/ja/designs/te
 
 The site shows every Markdown document under `docs/ja/` as one page. A document with no title in its frontmatter takes its first heading as its title. The site reads the documents where they are and changes no file under `docs/ja/`. It needs Node.js 22.22.0 or later, and no token.
 
+The first page of the sidebar is the dashboard (`<base>dashboard/`). It reads `site/trace.json`, the output of `cumin-trace trace`, at build time. It shows the time of the read, and the tree of the requirements with their progress, requirement issues, milestones, and implementation issues. Without a valid `site/trace.json`, the dashboard shows only that GitHub could not be read, and the other pages stay as they are. `dev-trace` writes `site/trace.json` only when the trace succeeds; pass the token as `GITHUB_TOKEN=$(gh auth token) npm --prefix site run dev-trace`. Git ignores `site/trace.json`.
+
 ```sh
 npm --prefix site ci          # once; installs the pinned versions
 npm --prefix site run dev     # the preview
+npm --prefix site run dev-trace # runs cumin-trace trace into site/trace.json, then the preview
 npm --prefix site run build   # static files in site/dist/
 npm --prefix site run preview # serves site/dist/ with the base path
 ```
