@@ -6,7 +6,8 @@
 # CTR-SITE-008 (static files only), CTR-SITE-010 (the links between
 # documents), CTR-SITE-011 (the sidebar), CTR-SITE-012 (the UI language and the URLs), and CTR-SITE-013 (the copy is no git repository, so the prefix
 # names the site). With the trace of trace.json, they prove CTR-DASH-001
-# (the requirement tree), CTR-DASH-005 (the links), and CTR-DASH-006 (the
+# (the requirement tree), CTR-DASH-002 (the summary), CTR-DASH-003 (the
+# requirements to file next), CTR-DASH-005 (the links), and CTR-DASH-006 (the
 # read time, or only the failed read).
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
@@ -45,6 +46,23 @@ if [ "$got" != "$want" ]; then
   exit 1
 fi
 echo "the tree follows the rules of the design, as wanted"
+# CTR-DASH-002, CTR-DASH-003: the summary and the requirements to file next,
+# written by hand from the rules of docs/ja/designs/dashboard/page.md: only
+# the requirements with no children count, each once in each milestone of its
+# requirement issues, with no issue closed as not planned and no deprecated
+# requirement or child of one. The row of no milestone is last.
+want='{"rows":[{"milestone":"v0.1","in_progress":1,"done":2},{"milestone":"v0.2","in_progress":1,"done":0},{"milestone":"(マイルストーンなし)","in_progress":0,"done":1}],"notFiled":1}|[{"id":"CTR-DM-002.1","title":"The first child"}]'
+got=$(cd "$work/site" && node --input-type=module -e '
+import { fileNext, readTrace, summary } from "./src/dashboard.mjs";
+const trace = readTrace("..");
+console.log(`${JSON.stringify(summary(trace))}|${JSON.stringify(fileNext(trace))}`);
+')
+if [ "$got" != "$want" ]; then
+  echo "the summary and the requirements to file next are $got"
+  echo "want $want"
+  exit 1
+fi
+echo "the summary and the requirements to file next follow the rules of the design, as wanted"
 # CTR-DASH-005: the links of the dashboard.
 got=$(cd "$work/site" && node --input-type=module -e '
 import { readSettings, root } from "./src/settings.mjs";

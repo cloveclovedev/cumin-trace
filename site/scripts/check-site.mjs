@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
 import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, dotPath, escape, firstHeading, hasTitle, headingIDs, idTable, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
-import { areaTitle, issueURL, japanTime, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
+import { areaTitle, fileNext, issueURL, japanTime, readTrace, requirementURL, summary, tree } from "../src/dashboard.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -450,8 +450,11 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
 // one tile and one line for each requirement row of tree(), in its order and
 // with its values, and no deprecated requirement; the section has no table
 // and no details element. CTR-DASH-005: each requirement link goes to a page
-// with its anchor, and each issue link is issueURL(). CTR-DASH-007:
-// the output holds no trace.json.
+// with its anchor, and each issue link is issueURL(). CTR-DASH-002: each
+// count of the summary equals the count of the lines of the list with no
+// children of that progress and milestone. CTR-DASH-003: the requirements to
+// file next are the not filed lines of the list, in its order, with the
+// links of requirementURL(). CTR-DASH-007: the output holds no trace.json.
 {
   const html = page(dashboardURL);
   if (html === undefined) problems.push(`${dashboardURL}: no dashboard page`);
@@ -484,7 +487,8 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
     const ids = (items) => JSON.stringify(items.map((item) => item.id));
     const hrefs = (html) => [...html.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1]));
     const attrs = (tag) => Object.fromEntries([...tag.matchAll(/([a-z-]+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
-    if (content.includes("<table") || content.includes("<details")) problems.push(`${dashboardURL}: the progress of the requirements has a table or a details element, want the tiles and the lines`);
+    const progress = content.slice(Math.max(0, content.indexOf(">要件の進捗</h2>")));
+    if (progress.includes("<table") || progress.includes("<details")) problems.push(`${dashboardURL}: the progress of the requirements has a table or a details element, want the tiles and the lines`);
     // The map: one row for each category, then one tile for each requirement.
     const mapRows = [...content.matchAll(/<div class="dashboard-map-row"([^>]*)>[\s\S]*?<b>([\s\S]*?)<\/b>[\s\S]*?<span class="dashboard-count">([\s\S]*?)<\/span>/g)].map((m) => ({ id: attrs(m[1])["data-id"], title: plainText(m[2]), count: plainText(m[3]) }));
     const tiles = [...content.matchAll(/<(?:a|span) class="dashboard-tile"([^>]*)>/g)].map((m) => { const a = attrs(m[1]); return { id: a["data-id"], state: a["data-state"], link: a.href === undefined ? undefined : decoded(a.href), label: rawText(a["aria-label"] ?? "") }; });
@@ -553,6 +557,42 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
         const html = path.startsWith(settings.base) ? page(path) : undefined;
         if (html === undefined || !html.includes(` id="${anchor}"`)) problems.push(`${dashboardURL}: the link of ${item.id} goes to ${link}, which is no page with the anchor ${anchor}`);
       }
+    }
+    // The summary, counted again from the lines of the list with no children.
+    // The milestones of a line are plain text with no white space.
+    const counted = new Map();
+    for (const line of lines.filter((line) => line.state === "in_progress" || line.state === "done")) {
+      for (const milestone of line.milestones.split("、").filter((m) => m !== "")) {
+        const title = milestone === "なし" ? "(マイルストーンなし)" : milestone;
+        if (!counted.has(title)) counted.set(title, { in_progress: 0, done: 0 });
+        counted.get(title)[line.state]++;
+      }
+    }
+    const summaryTable = content.match(/<table class="dashboard-summary"[^>]*>([\s\S]*?)<\/table>/)?.[1] ?? "";
+    const shownRows = [...summaryTable.matchAll(/<tr data-milestone="[^"]*"[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) => plainText(c[1])));
+    const wantRows = summary(trace).rows.map((row) => [row.milestone, String(row.in_progress), String(row.done)].map((cell) => cell.replace(/\s+/g, "")));
+    if (JSON.stringify(shownRows) !== JSON.stringify(wantRows)) problems.push(`${dashboardURL}: the summary shows ${JSON.stringify(shownRows)}, want summary() ${JSON.stringify(wantRows)}`);
+    for (const [milestone, inProgress, done] of shownRows) {
+      const want = counted.get(milestone) ?? { in_progress: 0, done: 0 };
+      if (inProgress !== String(want.in_progress) || done !== String(want.done)) problems.push(`${dashboardURL}: the summary counts ${inProgress} in progress and ${done} done for ${milestone}, want ${want.in_progress} and ${want.done} from the list`);
+    }
+    for (const milestone of counted.keys()) {
+      if (!shownRows.some((row) => row[0] === milestone)) problems.push(`${dashboardURL}: the summary has no row for ${milestone}, which the list has`);
+    }
+    const notFiledLines = lines.filter((line) => line.state === "not_filed");
+    const notFiled = plainText(summaryTable.match(/<tr class="dashboard-not-filed"[^>]*>([\s\S]*?)<\/tr>/)?.[1] ?? "");
+    if (notFiled !== `未起票(要求Issueなし):${notFiledLines.length}`) problems.push(`${dashboardURL}: the summary shows ${JSON.stringify(notFiled)}, want ${notFiledLines.length} not filed from the list`);
+    // The requirements to file next: the not filed lines of the list.
+    const nextTable = content.match(/<table class="dashboard-file-next"[^>]*>([\s\S]*?)<\/table>/)?.[1];
+    const nextRows = [...(nextTable ?? "").matchAll(/<tr data-id="([^"]*)"[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => ({ id: m[1], link: m[2].match(/<a href="([^"]*)"/)?.[1], title: plainText(m[2].split("</td>")[1] ?? "") }));
+    if (ids(nextRows) !== ids(notFiledLines)) problems.push(`${dashboardURL}: the requirements to file next are ${ids(nextRows)}, want the not filed lines ${ids(notFiledLines)}`);
+    if (notFiledLines.length === 0 && !content.includes('<p class="dashboard-file-next-empty">未起票の要件はありません。</p>')) problems.push(`${dashboardURL}: with no requirement to file next, the page does not say so`);
+    for (const [i, row] of nextRows.entries()) {
+      const wanted = fileNext(trace)[i];
+      if (wanted === undefined || wanted.id !== row.id) break;
+      if (row.title !== plainText(wanted.title)) problems.push(`${dashboardURL}: the requirement to file next ${row.id} has the title ${JSON.stringify(row.title)}, want ${JSON.stringify(wanted.title)}`);
+      const target = requirementURL(table, row.id);
+      if ((row.link === undefined ? undefined : decoded(row.link)) !== (target === undefined ? undefined : decoded(target))) problems.push(`${dashboardURL}: the requirement to file next ${row.id} links to ${row.link}, want ${target}`);
     }
     for (const requirement of trace.requirements.filter((r) => r.status === "deprecated")) {
       if ([...tiles, ...lines].some((item) => item.id === requirement.id)) problems.push(`${dashboardURL}: the page shows the deprecated requirement ${requirement.id}`);

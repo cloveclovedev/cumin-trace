@@ -17,8 +17,8 @@
 | 7 | `site/src/content.config.mjs` | `docs` のコレクションと、`title` を補うローダー | `CTR-SITE-002`、`CTR-SITE-009` |
 | 8 | `site/src/requirements.mjs` | アンカー、枠、参照のリンク、文書のリンク、`.puml` の折りたたみ、図を開くスクリプトの文、文書の最初の見出しとタイトル、サイドバーの項目 (`sidebar()`) | `CTR-SITE-003`、`CTR-SITE-006`、`CTR-SITE-007`、`CTR-SITE-010`、`CTR-SITE-011` |
 | 9 | `site/src/requirements.css` | 要件の枠と ID の見た目。すべてのページの本文の幅と、本文の画像の角。ダッシュボードのタイルの地図と要件の一覧 | `CTR-SITE-006`、`CTR-SITE-014`、`CTR-DASH-001` |
-| 10 | `site/src/dashboard.mjs` | `trace.json` を読み、ダッシュボードの値とリンクを作る ([ダッシュボードのページ](../dashboard/page.md) の「ファイル」) | `CTR-DASH-001`、`CTR-DASH-005`、`CTR-DASH-006` |
-| 11 | `site/src/pages/dashboard.astro` | ダッシュボードのページ | `CTR-DASH-001`、`CTR-DASH-005`、`CTR-DASH-006`、`CTR-DASH-007` |
+| 10 | `site/src/dashboard.mjs` | `trace.json` を読み、ダッシュボードの値とリンクを作る ([ダッシュボードのページ](../dashboard/page.md) の「ファイル」) | `CTR-DASH-001`、`CTR-DASH-002`、`CTR-DASH-003`、`CTR-DASH-005`、`CTR-DASH-006` |
+| 11 | `site/src/pages/dashboard.astro` | ダッシュボードのページ | `CTR-DASH-001`、`CTR-DASH-002`、`CTR-DASH-003`、`CTR-DASH-005`、`CTR-DASH-006`、`CTR-DASH-007` |
 | 12 | `site/scripts/check-site.mjs` | 出力の HTML を調べる | `CTR-SITE-001` から `CTR-SITE-013`、`CTR-DASH-001`、`CTR-DASH-005` から `CTR-DASH-007` |
 
 - いまのテンプレートは 1 から 12 を持つ。5 は `base`、`satteri()` と 8 のプラグイン、Starlight の `title` (`siteName()`)、`locales` (`root` の日本語)、`sidebar` (`sidebar()`)、`customCss` (9 だけ)、`head` (図を開くスクリプト) を決める。8 は ID のアンカーと参照のリンク (`CTR-SITE-003`)、要件の枠と ID のクラス (`CTR-SITE-006`)、タイトルになった見出しを本文から消すこと (`CTR-SITE-002`)、文書のリンクと `.puml` の折りたたみ (`CTR-SITE-010`)、図を開くスクリプトの文 (`CTR-SITE-007`) を作る。8 は、7 と 12 が使う、文書の最初の見出し (`firstHeading()`) も持つ。8 は、サイドバーの項目 (`sidebar()`、`CTR-SITE-011`) も作る。そのために、8 は `documentTitle()`、`sourceLinks()`、`bodyLines()`、`dotPath()` を持つ。12 は、これらを 8 から読み込む。12 は、下の表のすべての行を確かめる。
@@ -104,7 +104,9 @@ base = "/cumin-trace/"
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js` がない。`site/dist/` の `_functions/`、`functions/`、`server/` は、文書のページ (`docs_dir` の下の文書の `index.html`) だけを持つ。`server` や `functions` という名前の文書のディレクトリ (要件の領域など) のページはそこにできるので、受け付ける。空のディレクトリや、文書のページでないファイルを持つものは失敗する | `CTR-SITE-008` |
 | `site/dist/dashboard/index.html` があり、目次を持たない。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
 | `trace.json` が読めないとき、ページの本文 (Starlight の `footer` の前まで) が、GitHub を読めなかった1文だけで、表がない。読めたとき、`<time>` の `datetime` が `read_at` と同じで、`<time>` の文字が `japanTime()` の日本時間と同じである | `CTR-DASH-006` |
-| タイルの地図と要件の一覧のカテゴリが、`tree()` のカテゴリの順で、名前が `areaTitle()` と同じで、`完了 <n> / <m>` が `tree()` と同じである。タイル (`.dashboard-tile`) と一覧の行 (`.dashboard-line`) の `data-id` が、`tree()` の要件の行と同じ順である。タイルの `data-state` と `aria-label` (ID、進捗、実装Issueの数)、一覧の行の進捗 (`data-state` と読み上げ用の文字)、要求Issueのリンク、マイルストーン、実装Issueの数、四角の実装Issueのリンクと閉じたかどうかが、`tree()` と `issueURL()` の値と同じである。廃止した要件がない。表と `<details>` がない | `CTR-DASH-001`、`CTR-DASH-005` |
+| タイルの地図と要件の一覧のカテゴリが、`tree()` のカテゴリの順で、名前が `areaTitle()` と同じで、`完了 <n> / <m>` が `tree()` と同じである。タイル (`.dashboard-tile`) と一覧の行 (`.dashboard-line`) の `data-id` が、`tree()` の要件の行と同じ順である。タイルの `data-state` と `aria-label` (ID、進捗、実装Issueの数)、一覧の行の進捗 (`data-state` と読み上げ用の文字)、要求Issueのリンク、マイルストーン、実装Issueの数、四角の実装Issueのリンクと閉じたかどうかが、`tree()` と `issueURL()` の値と同じである。廃止した要件がない。見出し「要件の進捗」から後に、表と `<details>` がない | `CTR-DASH-001`、`CTR-DASH-005` |
+| 集計の表 (`.dashboard-summary`) の行が `summary()` と同じ順と値である。各行の進行中と完了の数が、一覧の進行中と完了の行を、そのマイルストーン (`なし` は `(マイルストーンなし)`) ごとに数えた数と同じである。一覧にあるマイルストーンの行がすべてある。最後の行 `未起票 (要求Issueなし): <数>` の数が、一覧の未起票の行の数と同じである | `CTR-DASH-002` |
+| 次に起票する要件の表 (`.dashboard-file-next`) の行が、一覧の未起票の行と同じ ID の並びで、タイトルが `fileNext()` と同じで、リンクが `requirementURL()` と同じである。未起票の行がなければ、`未起票の要件はありません。` の1文がある | `CTR-DASH-003`、`CTR-DASH-005` |
 | 要件のリンクが `requirementURL()` と同じで、行き先のページとその `id` が出力にある。表にない ID はリンクでない | `CTR-DASH-005` |
 | `site/dist/` に `trace.json` がない | `CTR-DASH-007` |
 

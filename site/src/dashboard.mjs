@@ -138,6 +138,47 @@ export function tree(trace) {
   return rows;
 }
 
+// leaves returns the requirements with no children, with no deprecated
+// requirement and no descendant of one, in the order of the trace: the
+// requirements that have a progress in tree().
+function leaves(trace) {
+  return tree(trace).filter((row) => row.kind === "requirement" && row.leaf);
+}
+
+const noMilestone = "(マイルストーンなし)";
+
+// summary returns the summary of the dashboard (CTR-DASH-002): one row for
+// each milestone of the requirement issues of the leaves of tree(), with the
+// counts of the requirements in progress and done, and the count of the
+// requirements not filed. A requirement counts once in each different
+// milestone of its requirement issues that are not closed as not planned.
+// The rows are in the code unit order of the titles, and the row of the
+// issues with no milestone, "(マイルストーンなし)", is last.
+export function summary(trace) {
+  const rows = new Map();
+  let notFiled = 0;
+  for (const row of leaves(trace)) {
+    if (row.state === "not_filed") notFiled++;
+    if (row.state !== "in_progress" && row.state !== "done") continue;
+    for (const milestone of row.milestones) {
+      const title = milestone === "なし" ? noMilestone : milestone;
+      if (!rows.has(title)) rows.set(title, { milestone: title, in_progress: 0, done: 0 });
+      rows.get(title)[row.state]++;
+    }
+  }
+  const order = (a, b) => (a.milestone === noMilestone) - (b.milestone === noMilestone) || (a.milestone < b.milestone ? -1 : a.milestone > b.milestone ? 1 : 0);
+  return { rows: [...rows.values()].sort(order), notFiled };
+}
+
+// fileNext returns the ID and the title of each requirement not filed, in
+// the order of the trace (CTR-DASH-003): the leaves of tree() with no
+// requirement issue that is not closed as not planned.
+export function fileNext(trace) {
+  return leaves(trace)
+    .filter((row) => row.state === "not_filed")
+    .map((row) => ({ id: row.id, title: row.title }));
+}
+
 // areaTitle returns the name of a category on the dashboard: the title of the
 // document that holds its first requirement, as the site shows it, or the
 // category ID when that document is not in docs_dir (an old trace).

@@ -1,8 +1,10 @@
 ---
 // The dashboard page (docs/ja/designs/dashboard/page.md). It reads
 // site/trace.json at build time, and shows the time of the read and the
-// progress of the requirements (CTR-DASH-001, CTR-DASH-006) as static HTML
-// (CTR-DASH-007): a map of tiles, then one line for each requirement. Each
+// summary per milestone (CTR-DASH-002), the requirements to file next
+// (CTR-DASH-003), and the progress of the requirements (CTR-DASH-001,
+// CTR-DASH-006) as static HTML (CTR-DASH-007): a map of tiles, then one line
+// for each requirement. Each
 // requirement links to its anchor in the site, and each issue to GitHub
 // (CTR-DASH-005). Without a valid trace, the page shows only that GitHub
 // could not be read.
@@ -10,7 +12,7 @@ import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 import { join } from "node:path";
 import { readSettings } from "../settings.mjs";
 import { idTable } from "../requirements.mjs";
-import { areaTitle, issueURL, japanTime, readTrace, requirementURL, tree } from "../dashboard.mjs";
+import { areaTitle, fileNext, issueURL, japanTime, readTrace, requirementURL, summary, tree } from "../dashboard.mjs";
 
 // The build bundles this page under site/dist, so the root of settings.mjs
 // is wrong here. Astro builds in site/, its project root, so the top of the
@@ -20,6 +22,8 @@ const settings = readSettings(top);
 const table = idTable(settings, top);
 let trace = readTrace(top);
 let groups = [];
+let counts = { rows: [], notFiled: 0 };
+let next = [];
 let readAt = "";
 if (trace !== undefined) {
   try {
@@ -28,6 +32,8 @@ if (trace !== undefined) {
       if (row.kind === "category") groups.push({ ...row, title: areaTitle(settings, top, row), rows: [] });
       else groups.at(-1).rows.push({ ...row, url: requirementURL(table, row.id) });
     }
+    counts = summary(trace);
+    next = fileNext(trace).map((row) => ({ ...row, url: requirementURL(table, row.id) }));
     readAt = japanTime(trace.read_at);
   } catch {
     trace = undefined;
@@ -48,6 +54,51 @@ const subText = (sub) => `${sub.repository}#${sub.number} ${sub.closed ? "閉じ
         <p class="dashboard-read-at">
           GitHub を読んだ時刻: <time datetime={trace.read_at}>{readAt}</time>
         </p>
+        <h2>集計</h2>
+        <table class="dashboard-summary">
+          <thead>
+            <tr>
+              <th>要求Issueのマイルストーン</th>
+              <th>進行中</th>
+              <th>完了</th>
+            </tr>
+          </thead>
+          <tbody>
+            {counts.rows.map((row) => (
+              <tr data-milestone={row.milestone}>
+                <td>{row.milestone}</td>
+                <td>{row.in_progress}</td>
+                <td>{row.done}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr class="dashboard-not-filed">
+              <td colspan="3">未起票 (要求Issueなし): {counts.notFiled}</td>
+            </tr>
+          </tfoot>
+        </table>
+        <h2>次に起票する要件</h2>
+        {next.length === 0 ? (
+          <p class="dashboard-file-next-empty">未起票の要件はありません。</p>
+        ) : (
+          <table class="dashboard-file-next">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>タイトル</th>
+              </tr>
+            </thead>
+            <tbody>
+              {next.map((row) => (
+                <tr data-id={row.id}>
+                  <td>{row.url === undefined ? <code>{row.id}</code> : <a href={row.url}><code>{row.id}</code></a>}</td>
+                  <td>{row.title}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         <h2>要件の進捗</h2>
         <div class="dashboard not-content">
           <p class="dashboard-legend">
