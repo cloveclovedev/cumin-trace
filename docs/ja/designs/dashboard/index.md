@@ -12,7 +12,7 @@
 | `CTR-DASH-002` マイルストーンごとの集計 | `site/src/dashboard.mjs` の `summary()` | [ページ](page.md) の「集計」 |
 | `CTR-DASH-003` 次に起票する要件 | `site/src/dashboard.mjs` の `fileNext()` | [ページ](page.md) の「次に起票する要件」 |
 | `CTR-DASH-004` 絞り込み | `site/src/pages/dashboard.astro` のインラインのスクリプト | [ページ](page.md) の「絞り込み」 |
-| `CTR-DASH-005` リンク | `site/src/dashboard.mjs` の `requirementURL()` と `issueURL()` | [ページ](page.md) の「リンク」 |
+| `CTR-DASH-005` リンク | `site/src/dashboard.mjs` の `requirementURL()` と `issueURL()`、`site/astro.config.mjs` のサイドバーのリンク | [ページ](page.md) の「リンク」 |
 | `CTR-DASH-006` 読んだ時刻の表示 | `site/src/dashboard.mjs` の `readTrace()` | [ページ](page.md) の「入力」 |
 | `CTR-DASH-007` 静的なページ | `site/src/pages/dashboard.astro` (`astro build` の出力の HTML) | [ページ](page.md) の「確かめ方」 |
 | `CTR-DASH-008` 自動での更新 | `templates/workflows/cumin-trace-site.yml` (`init` が `.github/workflows/cumin-trace-site.yml` に書く) | [ページ](page.md) の「workflow の例」 |
@@ -60,10 +60,10 @@
 
 ### ページは `src/pages/dashboard.astro` の `StarlightPage` で、サイドバーの最後に1つのリンクを足す
 
-`site/src/pages/dashboard.astro` が `StarlightPage` でページを作る。URL は `<base>dashboard/` である。`astro.config.mjs` は、`sidebar()` の項目の後ろに `{ label: "ダッシュボード", link: "<base>dashboard/" }` を1つ足す。
+`site/src/pages/dashboard.astro` が `StarlightPage` でページを作る。URL は `<base>dashboard/` である。`astro.config.mjs` は、`sidebar()` の項目の後ろに `{ label: "ダッシュボード", link: "/dashboard/" }` を1つ足す。Starlight が `base` を足すので、リンクの行き先は `<base>dashboard/` になる。
 
 - 理由: docs のコレクションは文書だけを読む (`CTR-SITE-009`)。コレクションの外のページなら、文書のページの作り方を変えない。
-- 推測: Starlight が `link` に `base` を足すかは、公式文書に書いていない。`check-site` が、サイドバーのリンクの `href` が `<base>dashboard/` であることを確かめる。
+- Starlight 0.42.6 は、プロトコルのない `link` に `base` を足す。`dist/utils/navigation.js` の `linkFromSidebarLinkItem()` が `makeSidebarLink()` を呼び、`formatPath()` が `dist/utils/createPathFormatter.js` の `addBase` で `base` を足す (2026-10-20 にパッケージのコードで確かめた)。`link` に `<base>` を書くと、`base` が2回付く。`check-site` が、サイドバーのリンクの `href` が `<base>dashboard/` であることを確かめる。
 - 採らなかった案: `docs_dir` にダッシュボードの文書を置かせる。文書が GitHub の状態を持つことになる。
 - 細部: [ページ](page.md)
 
@@ -71,7 +71,7 @@
 
 表示のための値は、すべて `site/src/dashboard.mjs` の純粋な関数で、ビルドのときに作る。ブラウザで動くのは、絞り込みのインラインのスクリプトだけである (`CTR-DASH-007`)。
 
-- 理由: 値を関数にすると、`check-site` が同じ関数で期待する値を作れる。
+- 理由: 値を関数にすると、`check.sh` が関数の出力を固定の値と比べられ、`check-site` が HTML をその出力と比べられる。
 - 採らなかった案: ブラウザで `trace.json` を読んで描く。表示に JavaScript が要り、`check-site` が HTML で確かめられない。
 - 細部: [ページ](page.md)
 
@@ -84,7 +84,7 @@
 
 ### テストは `check-site` の行と、`testdata/site-cases/` の trace の fixture
 
-`check-site` が、ダッシュボードのページを HTML で確かめる。`testdata/site-cases/trace.json` を `check.sh` が `site/trace.json` に写し、決まった値で確かめる。
+`check-site` が、ダッシュボードのページを HTML で確かめる。`testdata/site-cases/trace.json` を `check.sh` が `site/trace.json` に写し、決まった値で確かめる。ダッシュボードのページのために、今の `check-site` の2つの行 (`CTR-SITE-011` のサイドバーの順、`CTR-SITE-012` のページの URL) を変える。
 
 - 理由: `check-site` はネットワークも token も使わない。fixture なら、どの手元でも同じ結果になる。
 - 細部: [ページ](page.md) の「確かめ方」
