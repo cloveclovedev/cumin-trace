@@ -587,10 +587,11 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
     const nextRows = [...(nextTable ?? "").matchAll(/<tr data-id="([^"]*)"[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => ({ id: m[1], link: m[2].match(/<a href="([^"]*)"/)?.[1], title: plainText(m[2].split("</td>")[1] ?? "") }));
     if (ids(nextRows) !== ids(notFiledLines)) problems.push(`${dashboardURL}: the requirements to file next are ${ids(nextRows)}, want the not filed lines ${ids(notFiledLines)}`);
     if (notFiledLines.length === 0 && !content.includes('<p class="dashboard-file-next-empty">未起票の要件はありません。</p>')) problems.push(`${dashboardURL}: with no requirement to file next, the page does not say so`);
+    const wantedNext = fileNext(trace);
     for (const [i, row] of nextRows.entries()) {
-      const wanted = fileNext(trace)[i];
+      const wanted = wantedNext[i];
       if (wanted === undefined || wanted.id !== row.id) break;
-      if (row.title !== plainText(wanted.title)) problems.push(`${dashboardURL}: the requirement to file next ${row.id} has the title ${JSON.stringify(row.title)}, want ${JSON.stringify(wanted.title)}`);
+      if (row.title !== wanted.title.replace(/\s+/g, "")) problems.push(`${dashboardURL}: the requirement to file next ${row.id} has the title ${JSON.stringify(row.title)}, want ${JSON.stringify(wanted.title)}`);
       const target = requirementURL(table, row.id);
       if ((row.link === undefined ? undefined : decoded(row.link)) !== (target === undefined ? undefined : decoded(target))) problems.push(`${dashboardURL}: the requirement to file next ${row.id} links to ${row.link}, want ${target}`);
     }
