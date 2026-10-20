@@ -1,6 +1,6 @@
 # サイトの設計
 
-要件文書を Astro + Starlight のサイトとして表示する仕組みを決める。`cumin-trace init` がサイトのテンプレートを `site/` に書き、Starlight のビルドが、文書と図だけからページを作る。ダッシュボード (`CTR-DASH-001`) は、この文書では決めない。
+要件文書を Astro + Starlight のサイトとして表示する仕組みを決める。`cumin-trace init` がサイトのテンプレートを `site/` に書き、Starlight のビルドが、文書と図だけから文書のページを作る。ダッシュボードのページ (`CTR-DASH-001`) は、対応づけの結果 (`site/trace.json`) を読む。その設計は [ダッシュボードの設計](../dashboard/index.md) で決める。
 
 ## 要件
 

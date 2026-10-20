@@ -7,6 +7,7 @@ package "product repository" {
   file ".cumin-trace.toml" as toml
   file "docs/ja/requirements/**/*.md" as docs
   folder "site/\nAstro + Starlight" as site
+  file "site/trace.json\nstdout of cumin-trace trace" as tracejson
 }
 
 package "cumin-trace" {
@@ -45,6 +46,8 @@ scaffold --> tsite : reads
 scaffold --> site : writes
 site --> toml : reads
 site --> docs : reads (build)
+site --> tracejson : reads (dashboard page)
+trace --> tracejson : writes (stdout)
 check --> requirement : read requirements
 check --> core : read settings
 core --> toml : reads
