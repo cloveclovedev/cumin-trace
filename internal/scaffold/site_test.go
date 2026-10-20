@@ -66,10 +66,10 @@ func TestTheSitePinsEveryVersion(t *testing.T) {
 }
 
 // CTR-SITE-001: the site keeps the default look of Starlight. It replaces no
-// component, and its one style sheet, for the blocks of CTR-SITE-006 and the
-// width and the corners of CTR-SITE-014, takes every color from a variable of
-// Starlight (--sl-color-*): no hex, rgb, hsl, or named color such as white or
-// red.
+// component, and its one style sheet, for the blocks of CTR-SITE-006, the
+// width and the corners of CTR-SITE-014, and the progress on the dashboard
+// (CTR-DASH-001), takes every color from a variable of Starlight
+// (--sl-color-*): no hex, rgb, hsl, or named color such as white or red.
 func TestTheSiteKeepsTheLookOfStarlightAndTakesItsColorsFromItsVariables(t *testing.T) {
 	config, err := templates.Files.ReadFile("site/astro.config.mjs")
 	if err != nil {
@@ -105,7 +105,7 @@ func TestTheColorCheckFindsEveryColorThatIsNotAVariableOfStarlight(t *testing.T)
 			t.Errorf("found no color in %q", css)
 		}
 	}
-	css := "a { border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem; color: var(--sl-color-text); margin: 0 auto; }"
+	css := "a { border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem; color: var(--sl-color-text); margin: 0 auto; text-decoration: underline; }"
 	if colors := badColors(css); len(colors) > 0 {
 		t.Errorf("found the colors %v in %q, want none", colors, css)
 	}
@@ -118,8 +118,9 @@ var (
 	colorProperty  = regexp.MustCompile(`color|background|border|outline|shadow|fill|stroke|decoration|caret|accent`)
 	starlightColor = regexp.MustCompile(`var\(--sl-color-[a-z0-9-]+\)`)
 	// The words of a value that a property of color can hold beside a
-	// color: lengths, numbers, and the styles of a line.
-	notAColor = regexp.MustCompile(`^(-?[0-9.]+[a-z%]*|none|hidden|solid|dashed|dotted|double|groove|ridge|inset|outset)$`)
+	// color: lengths, numbers, the styles of a line, and the lines of a
+	// text decoration.
+	notAColor = regexp.MustCompile(`^(-?[0-9.]+[a-z%]*|none|hidden|solid|dashed|dotted|double|groove|ridge|inset|outset|underline|overline|line-through)$`)
 )
 
 // badColors returns each word of a property of color in css that is not a

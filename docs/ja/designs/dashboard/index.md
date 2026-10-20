@@ -8,7 +8,7 @@
 
 | 要件 | 実装するファイル | 決まり |
 |---|---|---|
-| `CTR-DASH-001` 要件の木 | `site/src/dashboard.mjs` の `tree()`、`site/src/pages/dashboard.astro` | [ページ](page.md) の「要件の進捗」 |
+| `CTR-DASH-001` 要件の木 | `site/src/dashboard.mjs` の `tree()` と `areaTitle()`、`site/src/pages/dashboard.astro`、`site/src/requirements.css` | [ページ](page.md) の「要件の進捗」 |
 | `CTR-DASH-002` マイルストーンごとの集計 | `site/src/dashboard.mjs` の `summary()` | [ページ](page.md) の「集計」 |
 | `CTR-DASH-003` 次に起票する要件 | `site/src/dashboard.mjs` の `fileNext()` | [ページ](page.md) の「次に起票する要件」 |
 | `CTR-DASH-004` 絞り込み | `site/src/pages/dashboard.astro` のインラインのスクリプト | [ページ](page.md) の「絞り込み」 |
