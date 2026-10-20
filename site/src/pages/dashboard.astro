@@ -1,0 +1,101 @@
+---
+// The dashboard page (docs/ja/designs/dashboard/page.md). It reads
+// site/trace.json at build time, and shows the time of the read and the
+// requirement tree (CTR-DASH-001, CTR-DASH-006) as static HTML
+// (CTR-DASH-007). Each requirement links to its anchor in the site, and each
+// issue to GitHub (CTR-DASH-005). Without a valid trace, the page shows only
+// that GitHub could not be read.
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+import { join } from "node:path";
+import { readSettings } from "../settings.mjs";
+import { idTable } from "../requirements.mjs";
+import { issueURL, readTrace, requirementURL, tree } from "../dashboard.mjs";
+
+// The build bundles this page under site/dist, so the root of settings.mjs
+// is wrong here. Astro builds in site/, its project root, so the top of the
+// repository is its parent.
+const top = join(process.cwd(), "..");
+const settings = readSettings(top);
+const table = idTable(settings, top);
+let trace = readTrace(top);
+let rows = [];
+if (trace !== undefined) {
+  try {
+    rows = tree(trace);
+  } catch {
+    trace = undefined;
+  }
+}
+---
+
+<StarlightPage frontmatter={{ title: "ダッシュボード" }}>
+  {
+    trace === undefined ? (
+      <p class="dashboard-failed">GitHub を読めなかったため、進捗を表示できません。</p>
+    ) : (
+      <>
+        <p class="dashboard-read-at">
+          GitHub を読んだ時刻: <time>{trace.read_at}</time>
+        </p>
+        <h2>要件の木</h2>
+        <table class="dashboard-tree">
+          <thead>
+            <tr>
+              <th>要件</th>
+              <th>進捗</th>
+              <th>要求Issue</th>
+              <th>マイルストーン</th>
+              <th>実装Issue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) =>
+              row.kind === "category" ? (
+                <tr data-kind="category" data-id={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.progress}</td>
+                  <td />
+                  <td />
+                  <td />
+                </tr>
+              ) : (
+                <tr data-kind="requirement" data-id={row.id} data-depth={row.depth}>
+                  <td style={`padding-left: ${row.depth * 1.5}em`}>
+                    {requirementURL(table, row.id) === undefined ? <code>{row.id}</code> : <a href={requirementURL(table, row.id)}><code>{row.id}</code></a>} {row.title}
+                  </td>
+                  <td>{row.progress}</td>
+                  <td>
+                    {row.issues.map((number, i) => (
+                      <>
+                        {i > 0 && " "}
+                        <a href={issueURL(trace.repository, number)}>#{number}</a>
+                      </>
+                    ))}
+                  </td>
+                  <td>{row.milestones.join("、")}</td>
+                  <td>
+                    {row.implementation !== "" && (
+                      <>
+                        {row.implementation}
+                        <details>
+                          <summary>一覧</summary>
+                          <ul>
+                            {row.subIssues.map((sub) => (
+                              <li>
+                                <a href={issueURL(sub.repository, sub.number)}>{`${sub.repository}#${sub.number}`}</a>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+      </>
+    )
+  }
+</StarlightPage>

@@ -107,6 +107,8 @@ var siteFiles = []string{
 	"src/content.config.mjs",
 	"src/requirements.mjs",
 	"src/requirements.css",
+	"src/dashboard.mjs",
+	"src/pages/dashboard.astro",
 	"scripts/check-site.mjs",
 }
 
