@@ -1,6 +1,6 @@
 # ページ
 
-[ダッシュボードの設計](index.md) の細部。`site/trace.json` を読み、ダッシュボードのページを作るまでを決める。ページの並びは、[要件のワイヤーフレーム](../../requirements/dashboard/index.md) のとおり、上から、読んだ時刻と絞り込み、集計、次に起票する要件、不整合、要件の木である。
+[ダッシュボードの設計](index.md) の細部。`site/trace.json` を読み、ダッシュボードのページを作るまでを決める。ページの並びは、[要件のワイヤーフレーム](../../requirements/dashboard/index.md) のとおり、上から、読んだ時刻と絞り込み、集計、次に起票する要件、不整合、要件の進捗である。
 
 ## ファイル
 
@@ -33,17 +33,21 @@
 - `requirements` の要素に、`id`、`status`、`file` の文字列、`requirement_issues` の配列のどれかがない
 - `tree()`、`summary()`、`fileNext()`、`discrepancies()` のどれかが例外を出す。`dashboard.astro` が4つの関数をまとめて `try` で呼ぶ。`children`、`implementation_issues`、`sub_issues` がない JSON でも、ビルドは失敗しない
 
-「読めない」のとき、ページは見出しのあとに、次の1文だけを表示する (`CTR-DASH-006`)。絞り込み、集計、一覧、要件の木は表示しない。
+「読めない」のとき、ページは見出しのあとに、次の1文だけを表示する (`CTR-DASH-006`)。絞り込み、集計、一覧、要件の進捗は表示しない。
 
 > GitHub を読めなかったため、進捗を表示できません。
 
-読めたときは、ページの先頭に `GitHub を読んだ時刻: <read_at>` を表示する。`read_at` は、`trace` が書いた UTC の文字のままで、時間帯を変えない。ビルドする手元の時間帯で表示が変わらないためである。
+読めたときは、ページの先頭に `GitHub を読んだ時刻: <時刻>` を表示する。`<時刻>` は、`trace` が書いた UTC の `read_at` を、ビルドのときに `dashboard.mjs` の `japanTime()` が日本時間 (`Asia/Tokyo`) に直したものである。形は `<年>-<月>-<日> <時>:<分>:<秒>` で、`T` と `Z` を持たない。月、日、時は先頭に 0 を付けず、分と秒は2桁にする。`2026-10-17T09:10:55Z` は `2026-10-17 18:10:55`、`2026-01-04T20:05:03Z` は `2026-1-5 5:05:03` になる。`<time>` の `datetime` 属性は、`read_at` のままである。
+
+- 直し方: `Intl.DateTimeFormat` に `timeZone: "Asia/Tokyo"` と `hourCycle: "h23"` を渡し、`formatToParts()` の部分から組み立てる。時間帯を名前で決めるので、ビルドする手元の時間帯で表示が変わらない。2026-10-20 に MDN の [Intl.DateTimeFormat() constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat) (`timeZone`、`hourCycle`、`numeric`) と [formatToParts()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatToParts) (部分の `type`) を読んだ。
+- `hourCycle: "h23"` の `hour: "numeric"` でも、Node.js の出力の時は2桁になった (2026-10-20 に `check.sh` で確かめた)。そのため、各部分を数として読み直してから書く。
+- `read_at` が時刻として読めなければ、`japanTime()` は例外を出し、ページは「読めない」ときと同じ表示になる。
 
 `trace.json` は、`docs_dir` の文書と同じ時点のものとは限らない。文書にない ID は、下の「リンク」の決まりで、リンクにしない。
 
-## 要件の木
+## 要件の進捗
 
-`tree(trace, settings)` が、行の配列を返す。表示は1つの表で、最初の列の字下げが深さを示す (`CTR-DASH-001`)。
+`tree(trace, settings)` が、行の配列を返す。表示は、見出し「要件の進捗」の下の1つの表で、最初の列の字下げが深さを示す (`CTR-DASH-001`)。ダッシュボードのページは目次を持たない (`StarlightPage` の `frontmatter` の `tableOfContents: false`)。
 
 - 廃止した要件 (`status` が `deprecated`) と、その子孫は出さない。
 - カテゴリ: `requirements` の順に、カテゴリが最初に現れたところで、1つの行を置く。`trace` は要件を設定の `areas` の順に並べるので、カテゴリもその順になる。要件のカテゴリは、ID の2つ目の部分 (`CTR-DASH-001` の `DASH`) である。設定の `areas` は読まない。古い `trace.json` のカテゴリも、行を失わない。
@@ -160,7 +164,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 |---|---|
 | `site/dist/dashboard/index.html` がある。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
 | `trace.json` が「読めない」とき、ページの本文が GitHub を読めなかった1文だけで、表がない | `CTR-DASH-006` |
-| 読めたとき、読んだ時刻が `read_at` と同じである | `CTR-DASH-006` |
+| 読めたとき、読んだ時刻の `<time>` の `datetime` が `read_at` と同じで、その文字が `japanTime()` の値と同じである | `CTR-DASH-006` |
 | 木の行が `tree()` と同じ順と値である。廃止した要件の行がない | `CTR-DASH-001` |
 | 集計の各行の数が、HTML の木の子を持たない要件の行から数えた数と同じである | `CTR-DASH-002` |
 | 次に起票する要件の行が、木の `未起票` の行と同じ ID の並びである | `CTR-DASH-003` |

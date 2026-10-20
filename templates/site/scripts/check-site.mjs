@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
 import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, dotPath, escape, firstHeading, hasTitle, headingIDs, idTable, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
-import { issueURL, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
+import { issueURL, japanTime, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -444,7 +444,8 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
 // CTR-DASH-001, CTR-DASH-005: the dashboard page is in the output, and the
 // first link of the sidebar of each page goes to it. CTR-DASH-006: without a
 // valid site/trace.json, the body of the page is only the sentence of the
-// failed read; with one, the page shows read_at. CTR-DASH-001: the rows of
+// failed read; with one, the <time> of the page has read_at as its datetime
+// and japanTime() of read_at as its text. CTR-DASH-001: the rows of
 // the requirement tree have the order and the values of tree(), and no row
 // of a deprecated requirement. CTR-DASH-005: each requirement link goes to
 // a page with its anchor, and each issue link is issueURL(). CTR-DASH-007:
@@ -452,6 +453,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
 {
   const html = page(dashboardURL);
   if (html === undefined) problems.push(`${dashboardURL}: no dashboard page`);
+  else if (html.includes('id="starlight__on-this-page')) problems.push(`${dashboardURL}: the page has a table of contents, want none`);
   for (const path of [...documentPages, dashboardFile]) {
     if (!existsSync(path)) continue;
     const first = sidebarItems(readFileSync(path, "utf8")).find((item) => !item.group);
@@ -470,8 +472,9 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       problems.push(`${dashboardURL}: with no valid site/trace.json, the body is not only the sentence of the failed read`);
     }
   } else {
-    const readAt = content.match(/<p class="dashboard-read-at">[\s\S]*?<time>([\s\S]*?)<\/time>/)?.[1];
-    if (readAt === undefined || rawText(readAt) !== trace.read_at) problems.push(`${dashboardURL}: the page shows the read time ${readAt}, want ${trace.read_at}`);
+    const time = content.match(/<p class="dashboard-read-at">[\s\S]*?<time datetime="([^"]*)">([\s\S]*?)<\/time>/);
+    if (time?.[1] !== trace.read_at) problems.push(`${dashboardURL}: the datetime of the read time is ${time?.[1]}, want ${trace.read_at}`);
+    if (time === null || rawText(time[2]) !== japanTime(trace.read_at).replace(/\s+/g, "")) problems.push(`${dashboardURL}: the page shows the read time ${time?.[2]}, want ${japanTime(trace.read_at)}`);
     const table = idTable(settings, root);
     const want = tree(trace);
     const rows = [...content.matchAll(/<tr data-kind="([^"]*)" data-id="([^"]*)"[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => ({ kind: m[1], id: m[2], cells: [...m[3].matchAll(/<td[^>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g)].map((c) => c[1] ?? "") }));

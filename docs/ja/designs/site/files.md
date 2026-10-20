@@ -102,8 +102,8 @@ base = "/cumin-trace/"
 | 各ページの `<html>` の `lang` が `ja` である。サイドバーの最上位の項目とグループに、`docs_dir` の部分 (`docs`、`ja` など) の名前のものがない (文書のディレクトリにその名前があるときを除く)。各ページの URL が `pageURL()` である。ただし、`dashboard/index.html` の1つだけは受け付ける | `CTR-SITE-012` |
 | 各ページのサイトの名前 (`.site-title` の文字) が、文書群ごとに決めた名前と同じである。このリポジトリでは `cumin-trace`、`testdata/site-cases/` では接頭辞である。期待する名前は、引数 `--site-name` があればその値、なければ設定の `[site]` の `name` である。どちらもなければ、この行は確かめない。`check.sh` は `--site-name` に接頭辞を渡す。`siteName()` の値とは比べない | `CTR-SITE-013` |
 | サーバの関数がない。`astro.config.mjs` に `adapter` がなく、`output` が `server` でない。`site/dist/` に `_worker.js` がない。`site/dist/` の `_functions/`、`functions/`、`server/` は、文書のページ (`docs_dir` の下の文書の `index.html`) だけを持つ。`server` や `functions` という名前の文書のディレクトリ (要件の領域など) のページはそこにできるので、受け付ける。空のディレクトリや、文書のページでないファイルを持つものは失敗する | `CTR-SITE-008` |
-| `site/dist/dashboard/index.html` がある。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
-| `trace.json` が読めないとき、ページの本文 (Starlight の `footer` の前まで) が、GitHub を読めなかった1文だけで、表がない。読めたとき、`<time>` の読んだ時刻が `read_at` と同じである | `CTR-DASH-006` |
+| `site/dist/dashboard/index.html` があり、目次を持たない。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
+| `trace.json` が読めないとき、ページの本文 (Starlight の `footer` の前まで) が、GitHub を読めなかった1文だけで、表がない。読めたとき、`<time>` の `datetime` が `read_at` と同じで、`<time>` の文字が `japanTime()` の日本時間と同じである | `CTR-DASH-006` |
 | 木の行 (`tr` の `data-id`) が `tree()` と同じ順である。各行の進捗、要求Issueのリンク、マイルストーン、実装Issueの数、`<details>` の実装Issueのリンクが、`tree()` と `issueURL()` の値と同じである。廃止した要件の行がない | `CTR-DASH-001`、`CTR-DASH-005` |
 | 要件のリンクが `requirementURL()` と同じで、行き先のページとその `id` が出力にある。表にない ID はリンクでない | `CTR-DASH-005` |
 | `site/dist/` に `trace.json` がない | `CTR-DASH-007` |

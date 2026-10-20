@@ -55,6 +55,23 @@ if [ "$got" != "$want" ]; then
   exit 1
 fi
 echo "the links of the dashboard go to the site and to GitHub, as wanted"
+# CTR-DASH-006: the read time is in Japan time, whatever the time zone of the
+# build machine, and the page keeps read_at in the datetime attribute.
+got=$(cd "$work/site" && TZ=America/Los_Angeles node --input-type=module -e '
+import { japanTime } from "./src/dashboard.mjs";
+console.log([japanTime("2026-10-17T09:10:55Z"), japanTime("2026-01-04T20:05:03Z")].join("|"));
+')
+want='2026-10-17 18:10:55|2026-1-5 5:05:03'
+if [ "$got" != "$want" ]; then
+  echo "the read times are $got"
+  echo "want $want"
+  exit 1
+fi
+if ! grep -q '<time datetime="2026-10-17T09:10:55Z">2026-10-17 18:10:55</time>' "$work/site/dist/dashboard/index.html"; then
+  echo "the dashboard does not show the read time 2026-10-17 18:10:55 with its datetime"
+  exit 1
+fi
+echo "the dashboard shows the read time in Japan time, as wanted"
 # CTR-DASH-006: a trace.json that is no JSON shows only the failed read.
 printf 'not json\n' > "$work/site/trace.json"
 npm --prefix "$work/site" run check-site -- --site-name "$prefix" > "$work/out.txt" 2>&1 || {

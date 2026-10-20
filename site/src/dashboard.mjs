@@ -28,6 +28,22 @@ export function readTrace(root) {
   return trace;
 }
 
+const japan = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Tokyo", hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+
+// japanTime returns read_at, a UTC time of the trace, in the time zone
+// Asia/Tokyo as "<year>-<month>-<day> <hour>:<minute>:<second>": no leading
+// zero in the month, the day, and the hour, and two digits for the minute and
+// the second (CTR-DASH-006). The time zone of the build machine does not
+// change it. It throws a RangeError for a value that is no time.
+export function japanTime(readAt) {
+  const parts = Object.fromEntries(japan.formatToParts(new Date(readAt)).map((part) => [part.type, part.value]));
+  // With hourCycle "h23", "numeric" still gives the hour in two digits, so
+  // each part is read as a number and written again.
+  const one = (value) => String(Number(value));
+  const two = (value) => one(value).padStart(2, "0");
+  return `${parts.year}-${one(parts.month)}-${one(parts.day)} ${one(parts.hour)}:${two(parts.minute)}:${two(parts.second)}`;
+}
+
 const progressLabels = { not_filed: "未起票", in_progress: "進行中", done: "完了" };
 
 // planned returns the requirement issues that are not closed as not planned.

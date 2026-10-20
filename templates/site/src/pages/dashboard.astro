@@ -9,7 +9,7 @@ import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 import { join } from "node:path";
 import { readSettings } from "../settings.mjs";
 import { idTable } from "../requirements.mjs";
-import { issueURL, readTrace, requirementURL, tree } from "../dashboard.mjs";
+import { issueURL, japanTime, readTrace, requirementURL, tree } from "../dashboard.mjs";
 
 // The build bundles this page under site/dist, so the root of settings.mjs
 // is wrong here. Astro builds in site/, its project root, so the top of the
@@ -19,25 +19,27 @@ const settings = readSettings(top);
 const table = idTable(settings, top);
 let trace = readTrace(top);
 let rows = [];
+let readAt = "";
 if (trace !== undefined) {
   try {
     rows = tree(trace);
+    readAt = japanTime(trace.read_at);
   } catch {
     trace = undefined;
   }
 }
 ---
 
-<StarlightPage frontmatter={{ title: "ダッシュボード" }}>
+<StarlightPage frontmatter={{ title: "ダッシュボード", tableOfContents: false }}>
   {
     trace === undefined ? (
       <p class="dashboard-failed">GitHub を読めなかったため、進捗を表示できません。</p>
     ) : (
       <>
         <p class="dashboard-read-at">
-          GitHub を読んだ時刻: <time>{trace.read_at}</time>
+          GitHub を読んだ時刻: <time datetime={trace.read_at}>{readAt}</time>
         </p>
-        <h2>要件の木</h2>
+        <h2>要件の進捗</h2>
         <table class="dashboard-tree">
           <thead>
             <tr>
