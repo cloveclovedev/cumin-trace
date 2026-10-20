@@ -10,7 +10,9 @@
 // the top left comes from siteName() (CTR-SITE-013). The one root locale
 // shows the UI in Japanese, and adds no language directory to the URLs
 // (CTR-SITE-012). The sidebar of sidebar() follows the links of the entry
-// document (CTR-SITE-011), in place of the default sidebar.
+// document (CTR-SITE-011), in place of the default sidebar. The first item of
+// the sidebar is the link to the dashboard page (CTR-DASH-005); Starlight adds
+// base to the link.
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import { satteri } from "@astrojs/markdown-satteri";
@@ -28,7 +30,7 @@ export default defineConfig({
     starlight({
       title: siteName(settings, root),
       locales: { root: { label: "日本語", lang: "ja" } },
-      sidebar: sidebar(settings, root),
+      sidebar: [{ label: "ダッシュボード", link: "/dashboard/" }, ...sidebar(settings, root)],
       customCss: ["./src/requirements.css"],
       head: [{ tag: "script", content: diagramScript }],
     }),

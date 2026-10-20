@@ -1,6 +1,6 @@
-// Reads .cumin-trace.toml at the top of the repository, the parent of site/,
-// and fills in the defaults (CTR-SITE-002). The format check of cumin-trace
-// checks the values; the site does not. It also decides the name of the site
+// Reads .cumin-trace.toml at the top of the repository, the parent of site/
+// or the given directory, and fills in the defaults (CTR-SITE-002). The
+// format check of cumin-trace checks the values; the site does not. It also decides the name of the site
 // (CTR-SITE-013).
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -10,8 +10,8 @@ import { parse } from "smol-toml";
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-export function readSettings() {
-  const file = join(root, ".cumin-trace.toml");
+export function readSettings(top = root) {
+  const file = join(top, ".cumin-trace.toml");
   const data = existsSync(file) ? parse(readFileSync(file, "utf8")) : {};
   const site = data.site ?? {};
   return {

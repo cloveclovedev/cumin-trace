@@ -7,7 +7,8 @@ import { basename, dirname, extname, join, relative, resolve, sep } from "node:p
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
-import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, dotPath, escape, firstHeading, hasTitle, headingIDs, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
+import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, dotPath, escape, firstHeading, hasTitle, headingIDs, idTable, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
+import { issueURL, japanTime, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -73,6 +74,8 @@ if (/\badapter\s*:/.test(config)) problems.push("site/astro.config.mjs: the conf
 if (/\boutput\s*:\s*["'`]server["'`]/.test(config)) problems.push('site/astro.config.mjs: the config has output "server", want static files only');
 if (existsSync(join(dist, "_worker.js"))) problems.push("site/dist/_worker.js: the output has a server function, want static files only");
 const documentPages = new Set();
+const dashboardURL = `${settings.base}dashboard/`;
+const dashboardFile = pageFile(dashboardURL);
 for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, withFileTypes: true }) : []) {
   const path = relative(docs, join(entry.parentPath, entry.name));
   if (entry.isFile() && entry.name.endsWith(".md") && !dotPath(path)) documentPages.add(pageFile(pageURL(settings.base, path)));
@@ -87,13 +90,14 @@ for (const name of ["_functions", "functions", "server"]) {
   }
 }
 
-// CTR-SITE-012: each page is the page of a document at pageURL(), with no
-// directory above docs_dir and no language directory. Each page of a document
+// CTR-SITE-012: each page is the page of a document at pageURL(), or the
+// dashboard page, with no directory above docs_dir and no language
+// directory. Each page of a document
 // has lang "ja", and shows the search, the table of contents, and the
 // pagination in Japanese.
 for (const file of readdirSync(dist, { recursive: true, withFileTypes: true })) {
   const path = join(file.parentPath, file.name);
-  if (file.isFile() && file.name === "index.html" && !documentPages.has(path)) {
+  if (file.isFile() && file.name === "index.html" && !documentPages.has(path) && path !== dashboardFile) {
     problems.push(`site/dist/${relative(dist, path)}: the page is at no URL of pageURL()`);
   }
 }
@@ -113,8 +117,9 @@ for (const path of documentPages) {
   }
 }
 
-// CTR-SITE-011: the sidebar of the page of the entry document lists the
-// pages of sidebar() in its order, and each page of a document once. The top
+// CTR-SITE-011: the sidebar of the page of the entry document starts with
+// the link to the dashboard page, then lists the pages of sidebar() in its
+// order, and each page of a document once. After the dashboard link, the top
 // level starts with the page of the entry document, then follows the order of
 // the links of the entry document. CTR-SITE-012: no item or group of the top
 // level is named after a part of docs_dir, unless a directory of the
@@ -123,7 +128,9 @@ for (const path of documentPages) {
   const entry = join(docs, "index.md");
   const html = page(settings.base) ?? "";
   const shown = sidebarItems(html);
-  const links = shown.filter((item) => !item.group);
+  const all = shown.filter((item) => !item.group);
+  if (all[0]?.url !== decoded(dashboardURL)) problems.push(`${settings.base}: the sidebar starts with ${all[0]?.url}, want the dashboard page ${dashboardURL}`);
+  const links = all.slice(1);
   const flat = (items) => items.flatMap((item) => (item.items ? flat(item.items) : [decoded(`${settings.base}${item.slug === "index" ? "" : `${item.slug}/`}`)]));
   const want = flat(sidebar(settings, root));
   if (links.map((item) => item.url).join("\n") !== want.join("\n")) {
@@ -142,6 +149,8 @@ for (const path of documentPages) {
     const first = shown[i].group ? shown.slice(i + 1).find((item) => !item.group) : shown[i];
     if (first !== undefined) firsts.push(first.url);
   }
+  // The first item of the top level is the dashboard link, checked above.
+  firsts.shift();
   if (existsSync(entry)) {
     if (firsts[0] !== decoded(settings.base)) problems.push(`${settings.base}: the sidebar starts with ${firsts[0]}, want the page of the entry document`);
     const linked = [];
@@ -158,7 +167,7 @@ for (const path of documentPages) {
     }
   }
   const names = new Set(readdirSync(docs, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name));
-  for (const item of shown.filter((item) => item.depth === 1)) {
+  for (const item of shown.filter((item) => item.depth === 1 && item.url !== decoded(dashboardURL))) {
     const part = settings.docsDir.split("/").find((part) => part !== "" && part === item.label && !names.has(part));
     if (part !== undefined) problems.push(`${settings.base}: the top level of the sidebar has ${JSON.stringify(item.label)}, a directory above the documents`);
   }
@@ -428,6 +437,85 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       }
     } else if (target.kind === "text" && hrefs.has(decoded(link.href))) {
       problems.push(`${name}: the link to ${link.href} is still a link, want only its text`);
+    }
+  }
+}
+
+// CTR-DASH-001, CTR-DASH-005: the dashboard page is in the output, and the
+// first link of the sidebar of each page goes to it. CTR-DASH-006: without a
+// valid site/trace.json, the body of the page is only the sentence of the
+// failed read; with one, the <time> of the page has read_at as its datetime
+// and japanTime() of read_at as its text. CTR-DASH-001: the rows of
+// the requirement tree have the order and the values of tree(), and no row
+// of a deprecated requirement. CTR-DASH-005: each requirement link goes to
+// a page with its anchor, and each issue link is issueURL(). CTR-DASH-007:
+// the output holds no trace.json.
+{
+  const html = page(dashboardURL);
+  if (html === undefined) problems.push(`${dashboardURL}: no dashboard page`);
+  else if (html.includes('id="starlight__on-this-page')) problems.push(`${dashboardURL}: the page has a table of contents, want none`);
+  for (const path of [...documentPages, dashboardFile]) {
+    if (!existsSync(path)) continue;
+    const first = sidebarItems(readFileSync(path, "utf8")).find((item) => !item.group);
+    if (first?.url !== decoded(dashboardURL)) problems.push(`site/dist/${relative(dist, path)}: the first link of the sidebar goes to ${first?.url}, want ${dashboardURL}`);
+  }
+  for (const file of readdirSync(dist, { recursive: true, withFileTypes: true })) {
+    if (file.name === "trace.json") problems.push(`site/dist/${relative(dist, join(file.parentPath, file.name))}: the output holds the trace`);
+  }
+  // The body ends before the footer of Starlight.
+  const content = body(html ?? "").split("<footer")[0];
+  const trace = readTrace(root);
+  if (html === undefined) {
+    // The problem is above.
+  } else if (trace === undefined) {
+    if (plainText(content) !== plainText("GitHub を読めなかったため、進捗を表示できません。") || content.includes("<table")) {
+      problems.push(`${dashboardURL}: with no valid site/trace.json, the body is not only the sentence of the failed read`);
+    }
+  } else {
+    const time = content.match(/<p class="dashboard-read-at">[\s\S]*?<time datetime="([^"]*)">([\s\S]*?)<\/time>/);
+    if (time?.[1] !== trace.read_at) problems.push(`${dashboardURL}: the datetime of the read time is ${time?.[1]}, want ${trace.read_at}`);
+    if (time === null || rawText(time[2]) !== japanTime(trace.read_at).replace(/\s+/g, "")) problems.push(`${dashboardURL}: the page shows the read time ${time?.[2]}, want ${japanTime(trace.read_at)}`);
+    const table = idTable(settings, root);
+    const want = tree(trace);
+    const rows = [...content.matchAll(/<tr data-kind="([^"]*)" data-id="([^"]*)"[^>]*>([\s\S]*?)<\/tr>/g)].map((m) => ({ kind: m[1], id: m[2], cells: [...m[3].matchAll(/<td[^>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g)].map((c) => c[1] ?? "") }));
+    if (rows.map((row) => row.id).join("\n") !== want.map((row) => row.id).join("\n")) {
+      problems.push(`${dashboardURL}: the tree has the rows ${JSON.stringify(rows.map((row) => row.id))}, want the rows of tree() ${JSON.stringify(want.map((row) => row.id))}`);
+    }
+    const hrefs = (html) => [...html.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => decoded(m[1]));
+    for (const [i, row] of rows.entries()) {
+      const wanted = want[i];
+      if (wanted === undefined || wanted.id !== row.id) break;
+      const [name, progress, issues, milestones, implementation] = row.cells;
+      const got = {
+        progress: plainText(progress ?? ""),
+        issues: hrefs(issues ?? "").join(" "),
+        milestones: plainText(milestones ?? ""),
+        implementation: plainText((implementation ?? "").split("<details")[0]),
+        subIssues: hrefs((implementation ?? "").split("<details")[1] ?? "").join(" "),
+      };
+      const expected = {
+        progress: wanted.progress.replace(/\s+/g, ""),
+        issues: (wanted.issues ?? []).map((number) => issueURL(trace.repository, number)).join(" "),
+        milestones: (wanted.milestones ?? []).join("、"),
+        implementation: (wanted.implementation ?? "").replace(/\s+/g, ""),
+        subIssues: (wanted.subIssues ?? []).map((sub) => issueURL(sub.repository, sub.number)).join(" "),
+      };
+      for (const key of Object.keys(expected)) {
+        if (got[key] !== expected[key]) problems.push(`${dashboardURL}: the row ${row.id} shows ${key} ${JSON.stringify(got[key])}, want ${JSON.stringify(expected[key])}`);
+      }
+      if (row.kind !== "requirement") continue;
+      const link = hrefs(name ?? "")[0];
+      const target = requirementURL(table, row.id);
+      if (link !== (target === undefined ? undefined : decoded(target))) {
+        problems.push(`${dashboardURL}: the requirement ${row.id} links to ${link}, want ${target}`);
+      } else if (link !== undefined) {
+        const [path, anchor] = link.split("#");
+        const html = path.startsWith(settings.base) ? page(path) : undefined;
+        if (html === undefined || !html.includes(` id="${anchor}"`)) problems.push(`${dashboardURL}: the link of ${row.id} goes to ${link}, which is no page with the anchor ${anchor}`);
+      }
+    }
+    for (const requirement of trace.requirements.filter((r) => r.status === "deprecated")) {
+      if (rows.some((row) => row.id === requirement.id)) problems.push(`${dashboardURL}: the tree shows the deprecated requirement ${requirement.id}`);
     }
   }
 }

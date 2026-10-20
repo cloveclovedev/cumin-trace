@@ -8,12 +8,12 @@
 
 | 要件 | 実装するファイル | 決まり |
 |---|---|---|
-| `CTR-DASH-001` 要件の木 | `site/src/dashboard.mjs` の `tree()`、`site/src/pages/dashboard.astro` | [ページ](page.md) の「要件の木」 |
+| `CTR-DASH-001` 要件の木 | `site/src/dashboard.mjs` の `tree()`、`site/src/pages/dashboard.astro` | [ページ](page.md) の「要件の進捗」 |
 | `CTR-DASH-002` マイルストーンごとの集計 | `site/src/dashboard.mjs` の `summary()` | [ページ](page.md) の「集計」 |
 | `CTR-DASH-003` 次に起票する要件 | `site/src/dashboard.mjs` の `fileNext()` | [ページ](page.md) の「次に起票する要件」 |
 | `CTR-DASH-004` 絞り込み | `site/src/pages/dashboard.astro` のインラインのスクリプト | [ページ](page.md) の「絞り込み」 |
 | `CTR-DASH-005` リンク | `site/src/dashboard.mjs` の `requirementURL()` と `issueURL()`、`site/astro.config.mjs` のサイドバーのリンク | [ページ](page.md) の「リンク」 |
-| `CTR-DASH-006` 読んだ時刻の表示 | `site/src/dashboard.mjs` の `readTrace()` | [ページ](page.md) の「入力」 |
+| `CTR-DASH-006` 読んだ時刻の表示 | `site/src/dashboard.mjs` の `readTrace()` と `japanTime()` | [ページ](page.md) の「入力」 |
 | `CTR-DASH-007` 静的なページ | `site/src/pages/dashboard.astro` (`astro build` の出力の HTML) | [ページ](page.md) の「確かめ方」 |
 | `CTR-DASH-008` 自動での更新 | `templates/workflows/cumin-trace-site.yml` (`init` が `.github/workflows/cumin-trace-site.yml` に書く) | [ページ](page.md) の「workflow の例」 |
 | `CTR-DASH-009` 不整合の表示 | `site/src/dashboard.mjs` の `discrepancies()` | [ページ](page.md) の「不整合」 |

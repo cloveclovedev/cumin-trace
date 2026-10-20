@@ -5,7 +5,9 @@
 # title and the first heading), CTR-SITE-003 (the links to requirements),
 # CTR-SITE-008 (static files only), CTR-SITE-010 (the links between
 # documents), CTR-SITE-011 (the sidebar), CTR-SITE-012 (the UI language and the URLs), and CTR-SITE-013 (the copy is no git repository, so the prefix
-# names the site).
+# names the site). With the trace of trace.json, they prove CTR-DASH-001
+# (the requirement tree), CTR-DASH-005 (the links), and CTR-DASH-006 (the
+# read time, or only the failed read).
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
@@ -17,8 +19,71 @@ mkdir "$work/site"
 for name in astro.config.mjs package.json node_modules scripts src; do
   cp -R "$here/../../site/$name" "$work/site/"
 done
+cp "$here/trace.json" "$work/site/trace.json"
 prefix=$(sed -n 's/^prefix = "\(.*\)"$/\1/p' "$work/.cumin-trace.toml")
 npm --prefix "$work/site" run check-site -- --site-name "$prefix"
+# CTR-DASH-001: the rows of the requirement tree, written by hand from the
+# rules of docs/ja/designs/dashboard/page.md: the categories in the order of
+# the trace, the children one level deeper, no deprecated requirement and no
+# child of one, no issue closed as not planned, the milestones in title
+# order with "なし" last, and each sub-issue once.
+want='[["DM",0,"完了 1 / 3"],["CTR-DM-001",1,"進行中",[10,11],["v0.1","v0.2"],"1 / 3",["example/other#5","example/product#20","example/product#21"]],["CTR-DM-002",1,"完了 1 / 2",[12],["v0.1"],"",[]],["CTR-DM-002.1",2,"未起票",[],[],"",[]],["CTR-DM-002.2",2,"完了",[14,15],["v0.1","なし"],"1 / 1",["example/product#31"]],["OLD",0,"完了 1 / 1"],["CTR-OLD-001",1,"完了",[17],["v0.1"],"1 / 1",["example/product#40"]]]'
+got=$(cd "$work/site" && node --input-type=module -e '
+
+import { readTrace, tree } from "./src/dashboard.mjs";
+const rows = tree(readTrace(".."));
+console.log(JSON.stringify(rows.map((r) => (r.kind === "category" ? [r.id, r.depth, r.progress] : [r.id, r.depth, r.progress, r.issues, r.milestones, r.implementation, r.subIssues.map((s) => `${s.repository}#${s.number}`)]))));
+')
+if [ "$got" != "$want" ]; then
+  echo "the tree is $got"
+  echo "want $want"
+  exit 1
+fi
+echo "the tree follows the rules of the design, as wanted"
+# CTR-DASH-005: the links of the dashboard.
+got=$(cd "$work/site" && node --input-type=module -e '
+import { readSettings, root } from "./src/settings.mjs";
+import { idTable } from "./src/requirements.mjs";
+import { issueURL, requirementURL } from "./src/dashboard.mjs";
+const table = idTable(readSettings(), root);
+console.log([requirementURL(table, "CTR-DM-002.1"), requirementURL(table, "CTR-OLD-001"), issueURL("example/other", 5)].map(String).join(" "));
+')
+want='/cases/requirements/data-model_v2/#CTR-DM-002.1 undefined https://github.com/example/other/issues/5'
+if [ "$got" != "$want" ]; then
+  echo "the links are $got"
+  echo "want $want"
+  exit 1
+fi
+echo "the links of the dashboard go to the site and to GitHub, as wanted"
+# CTR-DASH-006: the read time is in Japan time, whatever the time zone of the
+# build machine, and the page keeps read_at in the datetime attribute.
+got=$(cd "$work/site" && TZ=America/Los_Angeles node --input-type=module -e '
+import { japanTime } from "./src/dashboard.mjs";
+console.log([japanTime("2026-10-17T09:10:55Z"), japanTime("2026-01-04T20:05:03Z")].join("|"));
+')
+want='2026-10-17 18:10:55|2026-1-5 5:05:03'
+if [ "$got" != "$want" ]; then
+  echo "the read times are $got"
+  echo "want $want"
+  exit 1
+fi
+if ! grep -q '<time datetime="2026-10-17T09:10:55Z">2026-10-17 18:10:55</time>' "$work/site/dist/dashboard/index.html"; then
+  echo "the dashboard does not show the read time 2026-10-17 18:10:55 with its datetime"
+  exit 1
+fi
+echo "the dashboard shows the read time in Japan time, as wanted"
+# CTR-DASH-006: a trace.json that is no JSON shows only the failed read.
+printf 'not json\n' > "$work/site/trace.json"
+npm --prefix "$work/site" run check-site -- --site-name "$prefix" > "$work/out.txt" 2>&1 || {
+  cat "$work/out.txt"
+  exit 1
+}
+if ! grep -q '>GitHub を読めなかったため、進捗を表示できません。</p></div>' "$work/site/dist/dashboard/index.html"; then
+  echo "the dashboard does not show only the failed read with a trace.json that is no JSON"
+  exit 1
+fi
+echo "the dashboard shows only the failed read with a trace.json that is no JSON, as wanted"
+rm "$work/site/trace.json"
 # CTR-SITE-011: the sidebar follows the links of the entry document, and the
 # pages that the walk does not place go to the end of their deepest group, in
 # path order.

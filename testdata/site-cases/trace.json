@@ -1,0 +1,149 @@
+{
+  "repository": "example/product",
+  "read_at": "2026-10-17T09:10:55Z",
+  "requirements": [
+    {
+      "id": "CTR-DM-001",
+      "parent": null,
+      "title": "The model",
+      "status": "active",
+      "file": "docs/ja/requirements/Data Model_v2.md",
+      "line": 3,
+      "progress": "in_progress",
+      "children": null,
+      "requirement_issues": [
+        {
+          "number": 10,
+          "state": "open",
+          "state_reason": null,
+          "milestone": "v0.2",
+          "sub_issues": [
+            { "repository": "example/other", "number": 5, "state": "open", "milestone": null, "closed_by": null }
+          ]
+        },
+        {
+          "number": 11,
+          "state": "closed",
+          "state_reason": "completed",
+          "milestone": "v0.1",
+          "sub_issues": [
+            { "repository": "example/product", "number": 20, "state": "closed", "milestone": "v0.1", "closed_by": { "repository": "example/product", "number": 22 } },
+            { "repository": "example/product", "number": 21, "state": "open", "milestone": "v0.1", "closed_by": null }
+          ]
+        }
+      ],
+      "implementation_issues": { "closed": 1, "total": 3 }
+    },
+    {
+      "id": "CTR-DM-002",
+      "parent": null,
+      "title": "The parent",
+      "status": "active",
+      "file": "docs/ja/requirements/Data Model_v2.md",
+      "line": 11,
+      "progress": null,
+      "children": { "not_filed": 1, "in_progress": 0, "done": 1, "total": 2 },
+      "requirement_issues": [
+        { "number": 12, "state": "open", "state_reason": null, "milestone": "v0.1", "sub_issues": [] }
+      ],
+      "implementation_issues": { "closed": 0, "total": 0 }
+    },
+    {
+      "id": "CTR-DM-002.1",
+      "parent": "CTR-DM-002",
+      "title": "The first child",
+      "status": "active",
+      "file": "docs/ja/requirements/Data Model_v2.md",
+      "line": 19,
+      "progress": "not_filed",
+      "children": null,
+      "requirement_issues": [
+        { "number": 13, "state": "closed", "state_reason": "not_planned", "milestone": "v0.1", "sub_issues": [] }
+      ],
+      "implementation_issues": { "closed": 0, "total": 0 }
+    },
+    {
+      "id": "CTR-DM-002.2",
+      "parent": "CTR-DM-002",
+      "title": "The second child",
+      "status": "active",
+      "file": "docs/ja/requirements/Data Model_v2.md",
+      "line": 27,
+      "progress": "done",
+      "children": null,
+      "requirement_issues": [
+        {
+          "number": 14,
+          "state": "closed",
+          "state_reason": "completed",
+          "milestone": null,
+          "sub_issues": [
+            { "repository": "example/product", "number": 31, "state": "closed", "milestone": null, "closed_by": null }
+          ]
+        },
+        {
+          "number": 15,
+          "state": "closed",
+          "state_reason": "completed",
+          "milestone": "v0.1",
+          "sub_issues": [
+            { "repository": "example/product", "number": 31, "state": "closed", "milestone": null, "closed_by": null }
+          ]
+        }
+      ],
+      "implementation_issues": { "closed": 1, "total": 1 }
+    },
+    {
+      "id": "CTR-DM-003",
+      "parent": null,
+      "title": "The old requirement",
+      "status": "deprecated",
+      "file": "docs/ja/requirements/Data Model_v2.md",
+      "line": 35,
+      "progress": null,
+      "children": null,
+      "requirement_issues": [
+        { "number": 16, "state": "open", "state_reason": null, "milestone": "v0.1", "sub_issues": [] }
+      ],
+      "implementation_issues": { "closed": 0, "total": 0 }
+    },
+    {
+      "id": "CTR-DM-003.1",
+      "parent": "CTR-DM-003",
+      "title": "A child of the old requirement",
+      "status": "active",
+      "file": "docs/ja/requirements/Data Model_v2.md",
+      "line": 43,
+      "progress": "not_filed",
+      "children": null,
+      "requirement_issues": [],
+      "implementation_issues": { "closed": 0, "total": 0 }
+    },
+    {
+      "id": "CTR-OLD-001",
+      "parent": null,
+      "title": "A requirement that no document has now",
+      "status": "active",
+      "file": "docs/ja/requirements/old.md",
+      "line": 3,
+      "progress": "done",
+      "children": null,
+      "requirement_issues": [
+        {
+          "number": 17,
+          "state": "closed",
+          "state_reason": "completed",
+          "milestone": "v0.1",
+          "sub_issues": [
+            { "repository": "example/product", "number": 40, "state": "closed", "milestone": "v0.1", "closed_by": null }
+          ]
+        }
+      ],
+      "implementation_issues": { "closed": 1, "total": 1 }
+    }
+  ],
+  "discrepancies": [
+    { "kind": "open_issue_for_deprecated", "issue": 16, "id": "CTR-DM-003" },
+    { "kind": "unknown_id", "issue": 18, "id": "CTR-DM-099" }
+  ]
+}
