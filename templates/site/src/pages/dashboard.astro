@@ -116,9 +116,9 @@ const subText = (sub) => `${sub.repository}#${sub.number} ${sub.closed ? "閉じ
                   <small>{group.id}</small>
                 </h3>
                 <span class="dashboard-bar" aria-hidden="true">
-                  <span data-state="done" style={`width: ${percent(group.counts.done, group.total)}%`} />
-                  <span data-state="in_progress" style={`width: ${percent(group.counts.in_progress, group.total)}%`} />
-                  <span data-state="not_filed" style={`width: ${percent(group.counts.not_filed, group.total)}%`} />
+                  <span data-state="done" style={`width: ${percent(group.counts.done, group.leafCount)}%`} />
+                  <span data-state="in_progress" style={`width: ${percent(group.counts.in_progress, group.leafCount)}%`} />
+                  <span data-state="not_filed" style={`width: ${percent(group.counts.not_filed, group.leafCount)}%`} />
                 </span>
                 <span class="dashboard-count">{group.progress}</span>
               </div>

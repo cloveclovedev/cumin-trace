@@ -83,9 +83,10 @@ function subIssues(requirement) {
 // the trace, each child one level below its parent. A deprecated requirement
 // and its descendants have no row. A category row holds the file of its first
 // requirement, for areaTitle(), and the counts of its requirements with no
-// children by progress. A requirement row holds its ID without the prefix and
-// the category (short), its progress (state, or "parent" for a requirement
-// with children), and its implementation issues closed and in all.
+// children by progress, and their number (leafCount). A requirement row holds
+// its ID without the prefix and the category (short), its progress (state, or
+// "parent" for a requirement with children), and its implementation issues
+// closed and in all.
 export function tree(trace) {
   const byID = new Map(trace.requirements.map((r) => [r.id, r]));
   const hidden = (r) => {
@@ -106,14 +107,14 @@ export function tree(trace) {
   for (const r of shown) {
     const name = categoryOf(r);
     if (!categories.has(name)) {
-      const row = { kind: "category", id: name, depth: 0, progress: "", file: r.file, counts: { done: 0, in_progress: 0, not_filed: 0 }, total: 0 };
+      const row = { kind: "category", id: name, depth: 0, progress: "", file: r.file, counts: { done: 0, in_progress: 0, not_filed: 0 }, leafCount: 0 };
       categories.set(name, row);
       rows.push(row);
     }
     const category = categories.get(name);
     const children = r.children !== null && r.children !== undefined;
     if (!children) {
-      category.total++;
+      category.leafCount++;
       if (Object.hasOwn(category.counts, r.progress)) category.counts[r.progress]++;
     }
     const subs = subIssues(r);
@@ -134,7 +135,7 @@ export function tree(trace) {
       subIssues: subs,
     });
   }
-  for (const category of categories.values()) category.progress = `完了 ${category.counts.done} / ${category.total}`;
+  for (const category of categories.values()) category.progress = `完了 ${category.counts.done} / ${category.leafCount}`;
   return rows;
 }
 
