@@ -6,8 +6,8 @@
 # CTR-SITE-008 (static files only), CTR-SITE-010 (the links between
 # documents), CTR-SITE-011 (the sidebar), CTR-SITE-012 (the UI language and the URLs), and CTR-SITE-013 (the copy is no git repository, so the prefix
 # names the site). With the trace of trace.json, they prove CTR-DASH-001
-# (the requirement tree), CTR-DASH-005 (the links), and CTR-DASH-006 (the
-# read time, or only the failed read).
+# (the requirements by category), CTR-DASH-005 (the links), CTR-DASH-006 (the
+# read time, or only the failed read), and CTR-DASH-009 (the discrepancies).
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
@@ -77,6 +77,39 @@ if ! grep -q '<time datetime="2026-10-17T09:10:55Z">2026-10-17 18:10:55</time>' 
   exit 1
 fi
 echo "the dashboard shows the read time in Japan time, as wanted"
+# CTR-DASH-009: the discrepancies in the order of the trace, with the kind
+# texts of docs/ja/designs/dashboard/page.md, written by hand.
+got=$(cd "$work/site" && node --input-type=module -e '
+import { discrepancies, readTrace } from "./src/dashboard.mjs";
+console.log(JSON.stringify(discrepancies(readTrace(".."))));
+')
+want='[{"kind":"open_issue_for_deprecated","label":"廃止した要件の開いた要求Issue","issue":16,"id":"CTR-DM-003"},{"kind":"unknown_id","label":"要件文書にないID","issue":18,"id":"CTR-DM-099"}]'
+if [ "$got" != "$want" ]; then
+  echo "the discrepancies are $got"
+  echo "want $want"
+  exit 1
+fi
+if ! grep -q 'class="dashboard-discrepancy"' "$work/site/dist/dashboard/index.html"; then
+  echo "the dashboard shows no discrepancy with a trace that has two"
+  exit 1
+fi
+echo "the dashboard lists the discrepancies of the trace, as wanted"
+# CTR-DASH-009: a trace with no discrepancy shows no discrepancy section.
+node -e '
+const fs = require("node:fs");
+const trace = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+trace.discrepancies = [];
+fs.writeFileSync(process.argv[1], JSON.stringify(trace));
+' "$work/site/trace.json"
+npm --prefix "$work/site" run check-site -- --site-name "$prefix" > "$work/out.txt" 2>&1 || {
+  cat "$work/out.txt"
+  exit 1
+}
+if grep -q 'dashboard-discrepancy\|>不整合</h2>' "$work/site/dist/dashboard/index.html"; then
+  echo "the dashboard shows a discrepancy section with a trace that has none"
+  exit 1
+fi
+echo "the dashboard shows no discrepancy section with a trace that has none, as wanted"
 # CTR-DASH-006: a trace.json that is no JSON shows only the failed read.
 printf 'not json\n' > "$work/site/trace.json"
 npm --prefix "$work/site" run check-site -- --site-name "$prefix" > "$work/out.txt" 2>&1 || {

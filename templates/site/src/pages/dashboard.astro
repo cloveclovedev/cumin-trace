@@ -2,15 +2,15 @@
 // The dashboard page (docs/ja/designs/dashboard/page.md). It reads
 // site/trace.json at build time, and shows the time of the read and the
 // progress of the requirements (CTR-DASH-001, CTR-DASH-006) as static HTML
-// (CTR-DASH-007): a map of tiles, then one line for each requirement. Each
-// requirement links to its anchor in the site, and each issue to GitHub
-// (CTR-DASH-005). Without a valid trace, the page shows only that GitHub
+// (CTR-DASH-007): a map of tiles, then one line for each discrepancy
+// (CTR-DASH-009), then one line for each requirement. Each requirement links
+// to its anchor in the site, and each issue to GitHub (CTR-DASH-005). Without a valid trace, the page shows only that GitHub
 // could not be read.
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 import { join } from "node:path";
 import { readSettings } from "../settings.mjs";
 import { idTable } from "../requirements.mjs";
-import { areaTitle, issueURL, japanTime, readTrace, requirementURL, tree } from "../dashboard.mjs";
+import { areaTitle, discrepancies, issueURL, japanTime, readTrace, requirementURL, tree } from "../dashboard.mjs";
 
 // The build bundles this page under site/dist, so the root of settings.mjs
 // is wrong here. Astro builds in site/, its project root, so the top of the
@@ -20,6 +20,7 @@ const settings = readSettings(top);
 const table = idTable(settings, top);
 let trace = readTrace(top);
 let groups = [];
+let problems = [];
 let readAt = "";
 if (trace !== undefined) {
   try {
@@ -28,6 +29,7 @@ if (trace !== undefined) {
       if (row.kind === "category") groups.push({ ...row, title: areaTitle(settings, top, row), rows: [] });
       else groups.at(-1).rows.push({ ...row, url: requirementURL(table, row.id) });
     }
+    problems = discrepancies(trace).map((d) => ({ ...d, url: requirementURL(table, d.id) }));
     readAt = japanTime(trace.read_at);
   } catch {
     trace = undefined;
@@ -82,6 +84,22 @@ const subText = (sub) => `${sub.repository}#${sub.number} ${sub.closed ? "閉じ
             ))}
           </div>
         </div>
+        {problems.length > 0 && (
+          <>
+            <h2>不整合</h2>
+            <div class="dashboard not-content">
+              {problems.map((problem) => (
+                <div class="dashboard-discrepancy" data-kind={problem.kind} data-id={problem.id}>
+                  {problem.url === undefined ? <code class="dashboard-id">{problem.id}</code> : <a class="dashboard-id" href={problem.url}>{problem.id}</a>}
+                  <span class="dashboard-title" title={problem.label}>
+                    {problem.label}
+                  </span>
+                  <a class="dashboard-issue" href={issueURL(trace.repository, problem.issue)}>#{problem.issue}</a>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
         <h2>要件の一覧</h2>
         <div class="dashboard not-content">
           <p class="dashboard-legend">

@@ -9,8 +9,8 @@ package "product repository" {
     file "trace.json\nstdout of cumin-trace trace\n(git ignored)" as trace #LightYellow
     [package.json\ndev-trace script:\ntrace, then astro dev] as pkg #LightYellow
     [astro.config.mjs\nsidebar: one dashboard link first,\nthen the items of sidebar()] as config #LightYellow
-    [src/dashboard.mjs\nread trace.json, tree, summary,\nfile next, discrepancies, links] as dash #LightYellow
-    [src/pages/dashboard.astro\nStarlightPage at <base>dashboard/\nfilter script] as page #LightYellow
+    [src/dashboard.mjs\nread trace.json, requirement rows,\ndiscrepancies, links] as dash #LightYellow
+    [src/pages/dashboard.astro\nStarlightPage at <base>dashboard/\ntiles, discrepancies, list] as page #LightYellow
     [src/settings.mjs\nread .cumin-trace.toml] as settings
     [scripts/check-site.mjs\nchecks the dashboard page] as check #LightYellow
   }

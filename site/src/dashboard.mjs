@@ -164,3 +164,13 @@ export function requirementURL(table, id) {
 export function issueURL(repository, number) {
   return `https://github.com/${repository}/issues/${number}`;
 }
+
+const discrepancyLabels = { unknown_id: "要件文書にないID", open_issue_for_deprecated: "廃止した要件の開いた要求Issue" };
+
+// discrepancies returns the discrepancies of the trace in their order
+// (CTR-DASH-009): the kind, its text on the page (the kind itself for a kind
+// that the page does not know), the number of the requirement issue, and the
+// ID.
+export function discrepancies(trace) {
+  return trace.discrepancies.map((d) => ({ kind: d.kind, label: discrepancyLabels[d.kind] ?? String(d.kind), issue: d.issue, id: d.id }));
+}

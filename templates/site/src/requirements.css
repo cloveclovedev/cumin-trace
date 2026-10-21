@@ -325,8 +325,34 @@
   background: var(--sl-color-green);
 }
 
-/* On a narrow screen, the label of a map row stands above its tiles, and the
-   issues of a line move below its title. */
+/* The discrepancies: one line for each, in the columns of a line of the
+   list. */
+.dashboard-discrepancy {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-areas: ". id title issue .";
+  grid-template-columns: 0.8rem 6.5rem minmax(0, 1fr) 7rem 9rem;
+  line-height: 1.4;
+  padding: 0.12rem 0;
+}
+
+.dashboard-discrepancy:hover {
+  background: var(--sl-color-gray-6);
+}
+
+.dashboard-issue {
+  grid-area: issue;
+}
+
+.dashboard code.dashboard-id {
+  background: none;
+  padding: 0;
+}
+
+/* On a narrow screen, the label of a map row stands above its tiles, the
+   issues of a line move below its title, and the issue of a discrepancy moves
+   below its kind. */
 @media (max-width: 40rem) {
   .dashboard-map-row {
     grid-template-columns: minmax(0, 1fr);
@@ -347,5 +373,13 @@
 
   .dashboard-implementation {
     justify-content: flex-start;
+  }
+
+  .dashboard-discrepancy {
+    grid-template-areas:
+      ". id title"
+      ". issue issue";
+    grid-template-columns: 0.8rem 6.5rem minmax(0, 1fr);
+    padding: 0.25rem 0;
   }
 }
