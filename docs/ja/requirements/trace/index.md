@@ -194,7 +194,3 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 - 検証: `test` エラーを1つ含む文書で、偽の GitHub への呼び出しがなく、結果が出ず、エラーが報告され、終了コードが 0 以外になる
 
 ---
-
-## 未決事項
-
-- sub-issue とマイルストーンを、GitHub Actions の `GITHUB_TOKEN` で読めるか。GitHub の公式文書 (Permissions required for GitHub Apps) では、どちらも Issue の読み取りの権限で読める。実装のときに、実際に呼んで確かめる。

@@ -33,7 +33,3 @@ cumin-trace で使う技術と、それを選んだ理由を記述する。具�
 - 個別のライブラリ (Markdown のパーサ、TOML のパーサなど) は、このページでは決めない。設計文書で選び、Pull Request で確認する。
 - 外部の API やライブラリは、使う前に公式文書で確かめる。Astro と Starlight は、固定したバージョンの公式文書を読む。
 - サイトのテンプレートの Astro、Starlight、Node.js のバージョンの固定と更新は、[サイトの設計](../designs/site/index.md) で決めた。
-
-## 決めていないこと
-
-- GitHub Actions の `GITHUB_TOKEN` で、sub-issue とマイルストーンを読めるか ([GitHub との対応づけ](trace/index.md) の未決事項)。

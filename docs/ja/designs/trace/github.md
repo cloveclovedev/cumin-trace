@@ -126,7 +126,8 @@ query closers($ids: [ID!]!) {
 - <https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api>: 1回のノードは 500,000 まで。点数は、接続ごとの要求の数の合計を 100 で割って丸め、最小 1。上限は、ユーザで1時間 5,000 点、GitHub Actions の `GITHUB_TOKEN` でリポジトリごとに1時間 1,000 点。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/variables>: `GITHUB_REPOSITORY` (`octocat/Hello-World` の形)、`GITHUB_GRAPHQL_URL`。
 
+2026-10-21 に、このリポジトリの `site.yml` で、`issues: read` と `pull-requests: read` を与えた `GITHUB_TOKEN` で `trace` を動かし、sub-issue とマイルストーンを読めた。
+
 未確認:
 
-- GitHub Actions の `GITHUB_TOKEN` で、sub-issue とマイルストーンを読めるか ([GitHub との対応づけ](../../requirements/trace/index.md) の未決事項)。実装のあとに、実際に呼んで確かめる。
 - ほかのリポジトリの sub-issue を、そのリポジトリの権限のない token で読んだときの結果。
