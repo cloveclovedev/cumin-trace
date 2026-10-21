@@ -85,10 +85,10 @@ function subIssues(requirement) {
 // requirement, for areaTitle(), and the counts of its requirements with no
 // children by progress, and their number (leafCount). A requirement row holds
 // its ID without the prefix and the category (short), its progress (state, or
-// "parent" for a requirement with children and no progress, from an older
-// trace), the text of the progress (the count of the children for a
-// requirement with children), and its implementation issues closed and in
-// all.
+// "parent" for a requirement with children whose progress is null, from an
+// older trace, or not one of the three progresses), the text of the progress
+// (the count of the children for a requirement with children), and its
+// implementation issues closed and in all.
 export function tree(trace) {
   const byID = new Map(trace.requirements.map((r) => [r.id, r]));
   const hidden = (r) => {
