@@ -1,21 +1,34 @@
 name: site
 
 # Builds the site of the documents on pull requests, and publishes it on
-# GitHub Pages on every push to main that changes the site.
+# GitHub Pages on every push to main that changes the site, and once a day.
+# Before a publish, cumin-trace trace reads the issues on GitHub for the
+# dashboard. A failed trace fails the job, and the published site stays as
+# it was. Pull requests build the site without the trace.
 #
 # No path filter and no branch filter on pull_request. A workflow that is
 # skipped leaves a required check pending, and the pending check blocks the merge.
 # The job finds the changed files itself. When none of them changes the site,
 # it skips the build and reports success.
+#
+# GitHub can delay or drop a scheduled run when the load is high, mostly at
+# the start of an hour. The minute 42 avoids the start of the hour.
+# 19:42 UTC is 4:42 in Japan time, the time zone of the dashboard: the site
+# is fresh before the day starts.
 on:
   pull_request:
   push:
     branches:
       - main
+  schedule:
+    - cron: '42 19 * * *'
   workflow_dispatch:
 
+# The trace reads the issues and their sub-issues and milestones.
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   # A ruleset may require this job by its name. Do not rename it.
@@ -69,6 +82,17 @@ jobs:
       - name: npm ci
         if: steps.changes.outputs.changed == 'true'
         run: npm --prefix site ci
+      # Only a run that publishes reads GitHub. A failed trace fails the job,
+      # and the later steps do not run: no build, no deploy.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.changes.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          go-version-file: go.mod
+      - name: cumin-trace trace
+        if: steps.changes.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./cmd/cumin-trace trace > site/trace.json
       # check-site builds the site, then checks the pages.
       - name: Build and check the site
         if: steps.changes.outputs.changed == 'true'
