@@ -145,7 +145,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 - step: checkout、`cumin-trace-check.yml` と同じ cumin-trace のダウンロード、`cumin-trace trace > site/trace.json` (`GITHUB_TOKEN: ${{ github.token }}`)、`actions/setup-node` (`node-version-file: site/.node-version`)、`npm --prefix site ci`、`npm --prefix site run build`。
 - trace が失敗すると、step が失敗し、続く step は動かない (公式文書で確かめた。[リリースと workflow](../templates/release.md) の「プロダクトのサイトの workflow」)。ビルドしないので、公開している場所のサイトは前のまま残る。
 - `site/dist/` をどこに置くかは書かない。プロダクトが、最後に step を足す。
-- このリポジトリの `.github/workflows/` は変えない。
+- このリポジトリの `.github/workflows/site.yml` も、公開する実行 (`main` への `push` と毎日 0:17 UTC の `schedule`) で、`npm ci` のあとに `go run ./cmd/cumin-trace trace > site/trace.json` を動かす。権限は例と同じ3つである。trace が失敗すると、ビルドも公開もしない。Pull Request のビルドは trace を動かさない。
 
 ## 確かめ方
 
@@ -183,6 +183,6 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 - `unknown_id` と `open_issue_for_deprecated` の不整合
 - ほかのリポジトリの sub-issue
 
-`check.sh` は、fixture を `site/trace.json` に写して `check-site` を動かす。`check-site` が関数と同じ値を期待するだけでは、関数の決まりの誤りを見つけられない。そのため、`check.sh` は、サイドバーの確かめ方と同じく、`tree()` と `discrepancies()` の出力を、決まりから手で書いた固定の値と比べる。そのあと、`discrepancies` を空にした `trace.json` で、もう一度動かし、不整合の見出しがないことを確かめる。最後に、JSON でない `trace.json` を書いて、もう一度動かし、読めないときの行を確かめる。このリポジトリの `site.yml` は `trace.json` なしでビルドするので、ファイルがないときの行を確かめる。
+`check.sh` は、fixture を `site/trace.json` に写して `check-site` を動かす。`check-site` が関数と同じ値を期待するだけでは、関数の決まりの誤りを見つけられない。そのため、`check.sh` は、サイドバーの確かめ方と同じく、`tree()` と `discrepancies()` の出力を、決まりから手で書いた固定の値と比べる。そのあと、`discrepancies` を空にした `trace.json` で、もう一度動かし、不整合の見出しがないことを確かめる。最後に、JSON でない `trace.json` を書いて、もう一度動かし、読めないときの行を確かめる。このリポジトリの `site.yml` は、Pull Request では `trace.json` なしでビルドするので、ファイルがないときの行を確かめる。公開する実行では、trace の出力で、読めたときの行を確かめる。
 
 `CTR-DASH-005` のクリックの行き先は、Maintainer が `demo` で見る。
