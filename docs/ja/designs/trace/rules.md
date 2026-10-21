@@ -48,7 +48,16 @@
 | completed で閉じた要求Issueが1つ以上ある | `done` (`CTR-TRC-004.3`) |
 | それ以外 (要求Issueがない、または not planned で閉じたものだけ) | `not_filed` (`CTR-TRC-004.1`) |
 
-- 子を持つ要件は、`progress` が `null` で、`children` に子の進捗ごとの数を持つ (`CTR-TRC-005`)。廃止した子は数えない。`total` は、廃止していない子の数である。
+- 子を持つ要件は、`children` に子の進捗ごとの数を持つ (`CTR-TRC-005`)。廃止した子は数えない。`total` は、廃止していない子の数である。
+- 子を持つ要件の `progress` は、廃止していない子の進捗と、その要件の `requirement_issues` から上の表で決まる進捗を合わせて決める (`CTR-TRC-005`)。要求Issueから決まる進捗が `not_filed` なら、合わせない。上から順に、最初に合う行を使う。
+
+| 合わせる進捗 | 進捗 |
+|---|---|
+| 1つもない (子がすべて廃止で、要求Issueから決まる進捗が `not_filed`) | `not_filed` |
+| すべて `done` | `done` |
+| すべて `not_filed` | `not_filed` |
+| それ以外 | `in_progress` |
+
 - 廃止した要件は、`progress` と `children` が `null` である。廃止した親の子も、廃止していなければ、ほかの要件と同じに進捗を持つ。
 - 子を持つかどうかは、`ParentID` がその要件のIDである要件が、文書に1つでもあるかで決める。
 
@@ -71,7 +80,8 @@
 | `CTR-TRC-004.1` | 要求Issueのない要件と、not planned で閉じた要求Issueだけを持つ要件 |
 | `CTR-TRC-004.2` | 開いた要求Issueと、completed で閉じた要求Issueを持つ要件 |
 | `CTR-TRC-004.3` | completed で閉じた要求Issueだけを持つ要件 |
-| `CTR-TRC-005` | 3つの進捗の子と、廃止した子を持つ要件 |
+| `CTR-TRC-005` | 3つの進捗の子と、廃止した子を持つ要件。進捗は `in_progress` で、子の数は変わらない |
+| `CTR-TRC-005` | 子がすべて完了で、要求Issueのない要件 (`done`)、開いた要求Issueを持つ要件 (`in_progress`)、not planned で閉じた要求Issueだけを持つ要件 (`done`)。子がすべて未起票で、completed で閉じた要求Issueを持つ要件 (`in_progress`) と、要求Issueのない要件 (`not_filed`)。廃止した子だけを持ち、要求Issueのない要件 (`not_filed`) |
 | `CTR-TRC-006` | 文書にないIDを書いた要求Issueと、廃止した要件に対応する開いた要求Issue。廃止した要件に対応する閉じた要求Issueは、不整合にならない |
 | `CTR-TRC-006` | ページが2回返した同じ番号の要求Issue。`requirement_issues` と不整合に1回だけ出て、最初の本文を使う |
 | `CTR-TRC-008` | 上の状態をまとめた出力の全体を、決めた時刻で比べる。`discrepancies` に、2種類の不整合が1つずつ出る |
