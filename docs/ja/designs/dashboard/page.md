@@ -1,6 +1,6 @@
 # ページ
 
-[ダッシュボードの設計](index.md) の細部。`site/trace.json` を読み、ダッシュボードのページを作るまでを決める。ページの並びは、[要件のワイヤーフレーム](../../requirements/dashboard/index.md) のとおり、上から、読んだ時刻と絞り込み、集計、次に起票する要件、不整合、要件の進捗である。
+[ダッシュボードの設計](index.md) の細部。`site/trace.json` を読み、ダッシュボードのページを作るまでを決める。ページの並びは、[要件のワイヤーフレーム](../../requirements/dashboard/index.md) のとおり、上から、読んだ時刻、要件の進捗 (タイルの地図)、不整合、要件の一覧である。
 
 ## ファイル
 
@@ -8,15 +8,15 @@
 
 | 書く先 | 中身 | 要件 |
 |---|---|---|
-| `site/src/dashboard.mjs` | `trace.json` を読む `readTrace()`、木、カテゴリの名前 (`areaTitle()`)、集計、一覧、リンクを作る関数 | `CTR-DASH-001` から `CTR-DASH-006`、`CTR-DASH-009` |
-| `site/src/pages/dashboard.astro` | `StarlightPage` で包んだページと、絞り込みのインラインのスクリプト | `CTR-DASH-001` から `CTR-DASH-007`、`CTR-DASH-009` |
+| `site/src/dashboard.mjs` | `trace.json` を読む `readTrace()`、要件の行、カテゴリの名前 (`areaTitle()`)、不整合、リンクを作る関数 | `CTR-DASH-001`、`CTR-DASH-005`、`CTR-DASH-006`、`CTR-DASH-009` |
+| `site/src/pages/dashboard.astro` | `StarlightPage` で包んだページ | `CTR-DASH-001`、`CTR-DASH-005` から `CTR-DASH-007`、`CTR-DASH-009` |
 
 ほかに、次のファイルを変える。
 
 - `site/astro.config.mjs`: `sidebar()` の項目の前に、最初の項目として、ダッシュボードへのリンクを1つ置く。
 - `site/package.json`: スクリプト `dev-trace` を足す (下の「コマンド」)。
 - `site/.gitignore` (`templates/site/gitignore`): `trace.json` を足す。
-- `site/src/requirements.css`: タイルの地図と要件の一覧の見た目を足す (上の「要件の進捗」)。
+- `site/src/requirements.css`: タイルの地図、不整合、要件の一覧の見た目を足す (下の「要件の進捗」と「不整合」)。
 - `site/scripts/check-site.mjs`: 下の「確かめ方」の行を足す。
 - `templates/workflows/cumin-trace-site.yml` (新しい): 下の「workflow の例」。
 
@@ -32,9 +32,9 @@
 - JSON として読めない
 - `repository` と `read_at` が文字列でない、または `requirements` と `discrepancies` が配列でない
 - `requirements` の要素に、`id`、`status`、`file` の文字列、`requirement_issues` の配列のどれかがない
-- `tree()`、`summary()`、`fileNext()`、`discrepancies()` のどれかが例外を出す。`dashboard.astro` が4つの関数をまとめて `try` で呼ぶ。`children`、`implementation_issues`、`sub_issues` がない JSON でも、ビルドは失敗しない
+- `tree()`、`discrepancies()`、`japanTime()` のどれかが例外を出す。`dashboard.astro` がこれらの関数をまとめて `try` で呼ぶ。`children`、`implementation_issues`、`sub_issues` がない JSON でも、ビルドは失敗しない
 
-「読めない」のとき、ページは見出しのあとに、次の1文だけを表示する (`CTR-DASH-006`)。絞り込み、集計、一覧、要件の進捗は表示しない。
+「読めない」のとき、ページは見出しのあとに、次の1文だけを表示する (`CTR-DASH-006`)。要件の進捗、不整合、要件の一覧は表示しない。
 
 > GitHub を読めなかったため、進捗を表示できません。
 
@@ -48,7 +48,7 @@
 
 ## 要件の進捗
 
-`tree(trace)` が、行の配列を返す。見出し「要件の進捗」の下に、2つの見せ方で同じ行を並べる (`CTR-DASH-001`)。上は製品の全体を1画面で見るタイルの地図、下は要件ごとに1行の一覧 (見出し「要件の一覧」) である。表と `<details>` は使わない。ダッシュボードのページは目次を持たない (`StarlightPage` の `frontmatter` の `tableOfContents: false`)。
+`tree(trace)` が、行の配列を返す。2つの見せ方で同じ行を並べる (`CTR-DASH-001`)。見出し「要件の進捗」の下は、製品の全体を1画面で見るタイルの地図である。見出し「要件の一覧」の下は、要件ごとに1行の一覧である。2つの間に、下の「不整合」を置く。表と `<details>` は使わない。ダッシュボードのページは目次を持たない (`StarlightPage` の `frontmatter` の `tableOfContents: false`)。
 
 - 廃止した要件 (`status` が `deprecated`) と、その子孫は出さない。
 - カテゴリ: `requirements` の順に、カテゴリが最初に現れたところで、1つの行を置く。`trace` は要件を設定の `areas` の順に並べるので、カテゴリもその順になる。要件のカテゴリは、ID の2つ目の部分 (`CTR-DASH-001` の `DASH`) である。設定の `areas` は読まない。古い `trace.json` のカテゴリも、行を失わない。
@@ -68,7 +68,7 @@
 ### タイルの地図
 
 - カテゴリごとに1行。左に、カテゴリの名前、カテゴリの ID、`完了 <n> / <m>` を置く。
-- 右に、要件ごとに1つのタイルを、木の順 (子も含む) に並べる。タイルは、接頭辞とカテゴリを除いた ID (`001`、`004.1`) を示し、進捗の色を持つ。
+- 右に、要件ごとに1つのタイルを、一覧と同じ順 (子も含む) に並べる。タイルは、接頭辞とカテゴリを除いた ID (`001`、`004.1`) を示し、進捗の色を持つ。
 - 実装Issueを持つ要件のタイルは、下に細い線を持ち、閉じた割合だけ塗る。
 - タイルは要件へのリンク (`requirementURL()`) である。表にない ID のタイルはリンクでない。
 - タイルの `title` と `aria-label` は、ID、タイトル、進捗 (子を持つ要件は子の数)、実装Issueの `<closed> / <total>` である。
@@ -84,27 +84,19 @@
 - 幅が `40rem` 以下の画面では、要求Issueと実装Issueをタイトルの下の段に移し、地図のカテゴリの名前をタイルの上に置く。横にはみ出さない。
 - 本文の幅は、ほかのページと同じ `60rem` のままである。
 
-マイルストーンの並びは、下の「集計」と同じである。
+マイルストーンの並びは、タイトルの文字コードの順である。マイルストーンのない要求Issueがあれば、最後に `なし` を置く。
 
 子を持つ要件も、自分の要求Issueを持ちうる。親のIDを書いた要求Issueは、親の `requirement_issues` に入る ([進捗と不整合](../trace/rules.md))。そのため、子を持つ要件の行も、要求Issue、マイルストーン、実装Issueを、子を持たない要件と同じ決まりで示す。要求Issueがなければ出さない。
 
-## 集計
-
-`summary(trace)` が、集計の表を返す (`CTR-DASH-002`)。数えるのは、廃止していない、子を持たない要件だけである。子を持つ要件は進捗を持たないので、その要求Issueのマイルストーンは集計に使わない。
-
-- 行: 子を持たない要件の要求Issue (not planned で閉じたものを除く) のマイルストーンごとに1行。マイルストーンのない要求Issueは `(マイルストーンなし)` の1行にまとめる。
-- 1つの要件は、その要求Issueの異なるマイルストーンごとに1回数える。v0.1 と v0.2 の要求Issueを持つ要件は、両方の行に出る。同じマイルストーンの2つの要求Issueでは1回である。
-- 列: 進行中の数と完了の数。要件の `progress` で数える。
-- 並び: マイルストーンのタイトルの文字コードの順。`(マイルストーンなし)` は最後である。
-- 最後の行: `未起票 (要求Issueなし): <数>`。`progress` が `not_filed` の要件の数である。
-
-## 次に起票する要件
-
-`fileNext(trace)` が、`progress` が `not_filed` の要件を、`requirements` の順に返す。列は ID とタイトルである (`CTR-DASH-003`)。空なら、`未起票の要件はありません。` の1文を表示する。
-
 ## 不整合
 
-`discrepancies(trace)` が、`discrepancies` を同じ順に返す。列は、種類、要求Issue、ID である (`CTR-DASH-009`)。空なら、見出しも表も表示しない。
+`discrepancies(trace)` が、`discrepancies` を同じ順に返す (`CTR-DASH-009`)。タイルの地図のあと、見出し「要件の一覧」の前に、見出し「不整合」を置き、不整合ごとに1行を並べる。空なら、見出しも行も表示しない。
+
+- 行は、要件の一覧の行 (`.dashboard-line`) と同じ列、高さ、文字の大きさ、間隔である。点の列は空ける。
+- 行の中身は、ID、種類、要求Issue の順である。ID は要件へのリンク (`requirementURL()`) で、表にない ID はリンクでない `<code>` である。要求Issueは `issueURL()` へのリンクである。
+- 種類は、下の表の文字である。表にない `kind` は、`kind` のまま表示する。
+- 表と `<details>` は使わない。
+- 幅が `40rem` 以下の画面では、要求Issueを種類の下の段に移す。横にはみ出さない。
 
 | `kind` | 表示する種類 |
 |---|---|
@@ -117,25 +109,12 @@
 
 | 対象 | 行き先 |
 |---|---|
-| 要件の ID (タイル、一覧、次に起票する要件、不整合) | `requirementURL()`: `requirements.mjs` が参照のリンクのために作る ID からページの URL への表で、ID のページを引き、`#<ID>` を足す。表にない ID は、リンクにしない |
+| 要件の ID (タイル、一覧、不整合) | `requirementURL()`: `requirements.mjs` が参照のリンクのために作る ID からページの URL への表で、ID のページを引き、`#<ID>` を足す。表にない ID は、リンクにしない |
 | 要求Issue (一覧、不整合) | `issueURL()`: `https://github.com/<repository>/issues/<number>`。`repository` は最上位のもの |
 | 実装Issue (一覧の四角) | `issueURL()`: `https://github.com/<repository>/issues/<number>`。`repository` は sub-issue のもの |
 
 - リンクには `trace.json` の `file` を使わない。`trace.json` が文書より古くても、移した要件は今のページに行く。不整合の行は `file` を持たないが、同じ表で引ける。`file` を読むのは、カテゴリの名前 (`areaTitle()`) だけである。
 - 実装Issueは、一覧の行で数と四角で示し、四角をリンクにする。`<details>` を開かずに、どの実装Issueが閉じたかが見える。
-
-## 絞り込み
-
-`dashboard.astro` の上部に、2つの `<select>` を置く (`CTR-DASH-004`)。
-
-- マイルストーン: `すべて`、集計と同じ並びの各マイルストーン、`なし`
-- 進捗: `すべて`、`未起票`、`進行中`、`完了`
-
-タイルと一覧の各行は、`data-milestones` (マイルストーンのタイトルの JSON の配列。`なし` を含みうる) と `data-progress` を持つ。インラインのスクリプトは、選んだ値に合わない子を持たない要件の行に `hidden` を付ける。子を持つ要件の行は、残った子孫が1つもなく、自分の要求Issueのマイルストーンも選んだ値に合わなければ隠す。進捗は子を持たない要件だけが持つので、進捗を選んだときは、子を持つ要件の行は子孫だけで決める。カテゴリの行は、残った子孫が1つもなければ隠す。未起票の要件はマイルストーンを持たないので、`すべて` のときだけ残る。
-
-- 絞り込むのはタイルと要件の一覧だけである。集計と、次に起票する要件と不整合の一覧は変えない。
-- JavaScript が動かないときは、すべての行が見える。
-- 推測: `StarlightPage` の中に置いた `<script is:inline>` は、そのまま HTML に出る。
 
 ## コマンド
 
@@ -191,11 +170,8 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 | `trace.json` が「読めない」とき、ページの本文が GitHub を読めなかった1文だけで、表がない | `CTR-DASH-006` |
 | 読めたとき、読んだ時刻の `<time>` の `datetime` が `read_at` と同じで、その文字が `japanTime()` の値と同じである | `CTR-DASH-006` |
 | 地図と一覧のカテゴリが `tree()` のカテゴリと `areaTitle()` の名前と同じである。タイルと一覧の行が `tree()` の要件の行と同じ順と値である。廃止した要件がない。表と `<details>` がない | `CTR-DASH-001` |
-| 集計の各行の数が、HTML の一覧の子を持たない要件の行から数えた数と同じである | `CTR-DASH-002` |
-| 次に起票する要件の行が、一覧の `未起票` の行と同じ ID の並びである | `CTR-DASH-003` |
-| 各行が `data-milestones` と `data-progress` を持ち、絞り込みのスクリプトがある | `CTR-DASH-004` |
 | 要件のリンクの行き先のページと `id` が出力にある。要求Issueと実装Issueのリンクが `issueURL()` と同じである | `CTR-DASH-005` |
-| 不整合の行が `discrepancies` と同じである。空なら不整合の見出しがない | `CTR-DASH-009` |
+| 不整合の見出しが地図と一覧の間にある。各行の種類、要求Issueのリンク、ID とそのリンクが、`discrepancies()` と同じ順と値である。空なら不整合の見出しも行もない | `CTR-DASH-009` |
 | `site/dist/` に `trace.json` がない。サーバの関数がない (今の `CTR-SITE-008` の行) | `CTR-DASH-007` |
 
 `testdata/site-cases/trace.json` は、`testdata/site-cases/docs/` の要件の ID を使う fixture である。次を含む。
@@ -207,6 +183,6 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 - `unknown_id` と `open_issue_for_deprecated` の不整合
 - ほかのリポジトリの sub-issue
 
-`check.sh` は、fixture を `site/trace.json` に写して `check-site` を動かす。`check-site` が関数と同じ値を期待するだけでは、関数の決まりの誤りを見つけられない。そのため、`check.sh` は、サイドバーの確かめ方と同じく、`tree()`、`summary()`、`fileNext()` の出力を、決まりから手で書いた固定の値と比べる。そのあと、JSON でない `trace.json` を書いて、もう一度動かし、読めないときの行を確かめる。このリポジトリの `site.yml` は `trace.json` なしでビルドするので、ファイルがないときの行を確かめる。
+`check.sh` は、fixture を `site/trace.json` に写して `check-site` を動かす。`check-site` が関数と同じ値を期待するだけでは、関数の決まりの誤りを見つけられない。そのため、`check.sh` は、サイドバーの確かめ方と同じく、`tree()` と `discrepancies()` の出力を、決まりから手で書いた固定の値と比べる。そのあと、`discrepancies` を空にした `trace.json` で、もう一度動かし、不整合の見出しがないことを確かめる。最後に、JSON でない `trace.json` を書いて、もう一度動かし、読めないときの行を確かめる。このリポジトリの `site.yml` は `trace.json` なしでビルドするので、ファイルがないときの行を確かめる。
 
-`CTR-DASH-004` の絞り込みの動きと、`CTR-DASH-005` のクリックの行き先は、Maintainer が `demo` で見る。
+`CTR-DASH-005` のクリックの行き先は、Maintainer が `demo` で見る。

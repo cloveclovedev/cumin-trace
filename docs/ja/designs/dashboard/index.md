@@ -1,6 +1,6 @@
 # ダッシュボードの設計
 
-要件の木、集計、次に起票する要件、不整合を1ページに表示するダッシュボードの仕組みを決める。入力は、`cumin-trace trace` の標準出力を書いた `site/trace.json` である。ページは Starlight のサイトの1ページとして、ビルドのときに作る。
+要件の一覧と進捗、不整合を1ページに表示するダッシュボードの仕組みを決める。入力は、`cumin-trace trace` の標準出力を書いた `site/trace.json` である。ページは Starlight のサイトの1ページとして、ビルドのときに作る。
 
 ## 要件
 
@@ -8,15 +8,12 @@
 
 | 要件 | 実装するファイル | 決まり |
 |---|---|---|
-| `CTR-DASH-001` 要件の木 | `site/src/dashboard.mjs` の `tree()` と `areaTitle()`、`site/src/pages/dashboard.astro`、`site/src/requirements.css` | [ページ](page.md) の「要件の進捗」 |
-| `CTR-DASH-002` マイルストーンごとの集計 | `site/src/dashboard.mjs` の `summary()` | [ページ](page.md) の「集計」 |
-| `CTR-DASH-003` 次に起票する要件 | `site/src/dashboard.mjs` の `fileNext()` | [ページ](page.md) の「次に起票する要件」 |
-| `CTR-DASH-004` 絞り込み | `site/src/pages/dashboard.astro` のインラインのスクリプト | [ページ](page.md) の「絞り込み」 |
+| `CTR-DASH-001` 要件の一覧と進捗 | `site/src/dashboard.mjs` の `tree()` と `areaTitle()`、`site/src/pages/dashboard.astro`、`site/src/requirements.css` | [ページ](page.md) の「要件の進捗」 |
 | `CTR-DASH-005` リンク | `site/src/dashboard.mjs` の `requirementURL()` と `issueURL()`、`site/astro.config.mjs` のサイドバーのリンク | [ページ](page.md) の「リンク」 |
 | `CTR-DASH-006` 読んだ時刻の表示 | `site/src/dashboard.mjs` の `readTrace()` と `japanTime()` | [ページ](page.md) の「入力」 |
 | `CTR-DASH-007` 静的なページ | `site/src/pages/dashboard.astro` (`astro build` の出力の HTML) | [ページ](page.md) の「確かめ方」 |
 | `CTR-DASH-008` 自動での更新 | `templates/workflows/cumin-trace-site.yml` (`init` が `.github/workflows/cumin-trace-site.yml` に書く) | [ページ](page.md) の「workflow の例」 |
-| `CTR-DASH-009` 不整合の表示 | `site/src/dashboard.mjs` の `discrepancies()` | [ページ](page.md) の「不整合」 |
+| `CTR-DASH-009` 不整合の表示 | `site/src/dashboard.mjs` の `discrepancies()`、`site/src/pages/dashboard.astro`、`site/src/requirements.css` | [ページ](page.md) の「不整合」 |
 
 関わる要件: `CTR-SITE-009` (文書のページは文書だけから作る)、`CTR-SITE-005` (手元でのプレビュー)、`CTR-TRC-008` (対応づけの結果の JSON)。
 
@@ -67,20 +64,13 @@
 - 採らなかった案: `docs_dir` にダッシュボードの文書を置かせる。文書が GitHub の状態を持つことになる。
 - 細部: [ページ](page.md)
 
-### 木、集計、一覧、リンクは、ビルドのときに `dashboard.mjs` で決める
+### 要件の一覧、不整合、リンクは、ビルドのときに `dashboard.mjs` で決める
 
-表示のための値は、すべて `site/src/dashboard.mjs` の純粋な関数で、ビルドのときに作る。ブラウザで動くのは、絞り込みのインラインのスクリプトだけである (`CTR-DASH-007`)。
+表示のための値は、すべて `site/src/dashboard.mjs` の純粋な関数で、ビルドのときに作る。ページはブラウザでスクリプトを動かさない (`CTR-DASH-007`)。
 
 - 理由: 値を関数にすると、`check.sh` が関数の出力を固定の値と比べられ、`check-site` が HTML をその出力と比べられる。
 - 採らなかった案: ブラウザで `trace.json` を読んで描く。表示に JavaScript が要り、`check-site` が HTML で確かめられない。
 - 細部: [ページ](page.md)
-
-### 集計は、子を持たない要件を、要求Issueのマイルストーンごとに1回数える
-
-集計の行は、子を持たない要件を、その要求Issue (not planned で閉じたものを除く) の異なるマイルストーンごとに1回数える。2つのマイルストーンの要求Issueを持つ要件は、2つの行に出る。
-
-- 理由: マイルストーンは要求Issueに付く。1つの行にだけ数えると、どの行に入れるかの決まりが要る。
-- 細部: [ページ](page.md) の「集計」
 
 ### テストは `check-site` の行と、`testdata/site-cases/` の trace の fixture
 
