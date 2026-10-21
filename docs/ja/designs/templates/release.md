@@ -129,13 +129,14 @@ name: cumin-trace site
 # also needs its own write permissions.
 #
 # GitHub can delay or drop a scheduled run when the load is high, mostly at
-# the start of an hour. The minute 17 avoids the start of the hour.
+# the start of an hour. The minute 42 avoids the start of the hour.
+# 19:42 UTC is 4:42 in Japan time: the site is fresh before the day starts.
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: '17 0 * * *'
+    - cron: '42 19 * * *'
 
 permissions:
   contents: read
@@ -181,7 +182,7 @@ jobs:
         run: npm --prefix site run build
 ```
 
-- きっかけは、`main` への `push` と、毎日 0:17 (UTC) の `schedule` である。文書の変更と、GitHub の Issue の変化の両方を、ふつうは1日以内にサイトに出す。GitHub は、負荷が高いときに schedule の実行を遅らせるか落とすことがあり、毎時0分に多い。そのため0分を避ける。公開リポジトリで60日間活動がないと、GitHub は schedule を止める。
+- きっかけは、`main` への `push` と、毎日 19:42 (UTC) の `schedule` である。19:42 (UTC) は日本時間の 4:42 であり、1日が始まる前にサイトが新しくなる。文書の変更と、GitHub の Issue の変化の両方を、ふつうは1日以内にサイトに出す。GitHub は、負荷が高いときに schedule の実行を遅らせるか落とすことがあり、毎時0分に多い。そのため0分を避ける。公開リポジトリで60日間活動がないと、GitHub は schedule を止める。
 - 権限は `contents: read`、`issues: read`、`pull-requests: read` だけである。`trace` に渡す token は、Issue と pull request を読むだけで足りる (`CTR-TRC-007`)。
 - cumin-trace のダウンロードは、check の workflow と同じ step である。
 - `trace` の step には `shell` を書かない。GitHub は `bash -e {0}` を実行するので、`trace` が 0 以外の終了コードで終わると、step が失敗する。続く step は既定の `if: success()` で動かないので、サイトはビルドされない。公開している場所のサイトは前のまま残る。

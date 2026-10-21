@@ -6,13 +6,14 @@ name: cumin-trace site
 # also needs its own write permissions.
 #
 # GitHub can delay or drop a scheduled run when the load is high, mostly at
-# the start of an hour. The minute 17 avoids the start of the hour.
+# the start of an hour. The minute 42 avoids the start of the hour.
+# 19:42 UTC is 4:42 in Japan time: the site is fresh before the day starts.
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: '17 0 * * *'
+    - cron: '42 19 * * *'
 
 permissions:
   contents: read
