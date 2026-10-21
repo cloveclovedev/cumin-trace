@@ -525,7 +525,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       if (tile.state !== wanted.state) problems.push(`${dashboardURL}: the tile of ${tile.id} has the progress ${tile.state}, want ${wanted.state}`);
       // The label is the ID, the title, the progress, and the implementation
       // issues closed / total.
-      const label = `${wanted.id} ${wanted.title} ・ ${wanted.label}${wanted.total > 0 ? ` ・ 実装Issue ${wanted.closed} / ${wanted.total}` : ""}`.replace(/\s+/g, "");
+      const label = `${wanted.id} ${wanted.title} ・ ${wanted.progress}${wanted.total > 0 ? ` ・ 実装Issue ${wanted.closed} / ${wanted.total}` : ""}`.replace(/\s+/g, "");
       if (tile.label !== label) problems.push(`${dashboardURL}: the tile of ${tile.id} reads ${JSON.stringify(tile.label)}, want ${JSON.stringify(label)}`);
     }
     for (const [i, line] of lines.entries()) {
@@ -533,7 +533,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       if (wanted === undefined || wanted.id !== line.id) break;
       const expected = {
         state: wanted.state,
-        progress: wanted.label.replace(/\s+/g, ""),
+        progress: wanted.progress.replace(/\s+/g, ""),
         issues: wanted.issues.map((number) => issueURL(trace.repository, number)).join(" "),
         milestones: wanted.milestones.join("、"),
         implementation: wanted.implementation.replace(/\s+/g, ""),
