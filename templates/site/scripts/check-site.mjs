@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readSettings, root } from "../src/settings.mjs";
 import { atxHeadings, body as markdownBody, bodyLines, diagramScript, documentTitle, dotPath, escape, firstHeading, hasTitle, headingIDs, idTable, linkTarget, pageURL, sidebar, sourceLinks } from "../src/requirements.mjs";
-import { areaTitle, issueURL, japanTime, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
+import { areaTitle, discrepancies, issueURL, japanTime, readTrace, requirementURL, tree } from "../src/dashboard.mjs";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(site, "dist");
@@ -450,8 +450,10 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
 // one tile and one line for each requirement row of tree(), in its order and
 // with its values, and no deprecated requirement; the section has no table
 // and no details element. CTR-DASH-005: each requirement link goes to a page
-// with its anchor, and each issue link is issueURL(). CTR-DASH-007:
-// the output holds no trace.json.
+// with its anchor, and each issue link is issueURL(). CTR-DASH-009: between
+// the map and the list, one line for each discrepancy of discrepancies(), in
+// its order, with its kind, its issue link, and its ID; no heading when there
+// is none. CTR-DASH-007: the output holds no trace.json.
 {
   const html = page(dashboardURL);
   if (html === undefined) problems.push(`${dashboardURL}: no dashboard page`);
@@ -556,6 +558,37 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
     }
     for (const requirement of trace.requirements.filter((r) => r.status === "deprecated")) {
       if ([...tiles, ...lines].some((item) => item.id === requirement.id)) problems.push(`${dashboardURL}: the page shows the deprecated requirement ${requirement.id}`);
+    }
+    // The discrepancies: a heading after the map and before the list, then
+    // one line for each, or no heading and no line when there is none.
+    const wantProblems = discrepancies(trace);
+    const heading = content.search(/<h2[^>]*>\s*不整合\s*<\/h2>/);
+    const map = content.indexOf('<div class="dashboard-map"');
+    const list = content.indexOf('<section class="dashboard-group"');
+    const problemLines = [...content.matchAll(/<div class="dashboard-discrepancy"([^>]*)>([\s\S]*?)<\/div>/g)].map((m) => {
+      const a = attrs(m[1]);
+      const inner = m[2];
+      const id = inner.match(/<(a|code) class="dashboard-id"(?: href="([^"]*)")?>([\s\S]*?)<\/(?:a|code)>/);
+      return {
+        kind: a["data-kind"],
+        label: plainText(inner.match(/<span class="dashboard-title"[^>]*>([\s\S]*?)<\/span>/)?.[1] ?? ""),
+        issue: hrefs(inner.match(/<a class="dashboard-issue"[^>]*>/)?.[0] ?? "").join(" "),
+        id: id === null ? undefined : plainText(id[3]),
+        link: id?.[2] === undefined ? undefined : decoded(id[2]),
+        at: m.index,
+      };
+    });
+    if (wantProblems.length === 0) {
+      if (heading !== -1 || problemLines.length > 0) problems.push(`${dashboardURL}: the trace has no discrepancy, but the page shows the discrepancies`);
+    } else {
+      if (heading === -1 || !(map < heading && (list === -1 || heading < list))) problems.push(`${dashboardURL}: the heading of the discrepancies is not between the map and the list`);
+      if (problemLines.some((line) => line.at < heading || (list !== -1 && line.at > list))) problems.push(`${dashboardURL}: a discrepancy is not between its heading and the list`);
+      const show = (items) => JSON.stringify(items.map((item) => [item.kind, item.label, item.issue, item.id, item.link]));
+      const want = wantProblems.map((d) => {
+        const target = requirementURL(table, d.id);
+        return { kind: d.kind, label: plainText(d.label), issue: decoded(issueURL(trace.repository, d.issue)), id: d.id, link: target === undefined ? undefined : decoded(target) };
+      });
+      if (show(problemLines) !== show(want)) problems.push(`${dashboardURL}: the discrepancies are ${show(problemLines)}, want ${show(want)}`);
     }
   }
 }
