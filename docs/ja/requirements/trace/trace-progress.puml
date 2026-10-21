@@ -6,7 +6,11 @@ if (an open requirement issue\nnames the ID?) then (yes)
   #FFF3E0:in progress;
 else (no)
   if (a requirement issue that names the ID\nis closed as completed?) then (yes)
-    #E8F5E9:done;
+    if (the requirement changed after the last\ncompleted requirement issue closed?) then (yes)
+      #FFEBEE:not filed (changed);
+    else (no)
+      #E8F5E9:done;
+    endif
   else (no)
     #FFEBEE:not filed;
   endif
