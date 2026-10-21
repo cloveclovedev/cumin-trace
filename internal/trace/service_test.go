@@ -788,9 +788,11 @@ func TestAParentCombinesItsChildrenWithItsRequirementIssues(t *testing.T) {
 		"### `PC-TASK-005` Only deprecated children, no issue\n\n- 検証: `test` It works\n\n" +
 		"#### `PC-TASK-005.1` Deprecated\n\n- 状態: 廃止\n- 検証: `test` It works\n\n---\n\n" +
 		"### `PC-TASK-006` Done children, not planned issue\n\n- 検証: `test` It works\n\n" +
-		"#### `PC-TASK-006.1` Done\n\n- 検証: `test` It works\n"
+		"#### `PC-TASK-006.1` Done\n\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-007` Only deprecated children, completed issue\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-007.1` Deprecated\n\n- 状態: 廃止\n- 検証: `test` It works\n"
 	github := &fakeGitHub{t: t, issues: []fakeIssue{
-		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001.1", "PC-TASK-002.1", "PC-TASK-003", "PC-TASK-006.1"),
+		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001.1", "PC-TASK-002.1", "PC-TASK-003", "PC-TASK-006.1", "PC-TASK-007"),
 		requirementIssue(2, "OPEN", "", "PC-TASK-002"),
 		requirementIssue(3, "CLOSED", "NOT_PLANNED", "PC-TASK-006"),
 	}}
@@ -809,6 +811,7 @@ func TestAParentCombinesItsChildrenWithItsRequirementIssues(t *testing.T) {
 		"PC-TASK-004": `not_filed {"not_filed":1,"in_progress":0,"done":0,"total":1}`,
 		"PC-TASK-005": `not_filed {"not_filed":0,"in_progress":0,"done":0,"total":0}`,
 		"PC-TASK-006": `done {"not_filed":0,"in_progress":0,"done":1,"total":1}`,
+		"PC-TASK-007": `done {"not_filed":0,"in_progress":0,"done":0,"total":0}`,
 	}
 	for id, w := range want {
 		if got[id] != w {
