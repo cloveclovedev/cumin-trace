@@ -85,9 +85,9 @@ GitHub は、cumin-trace が API を直接呼んで読む。GitHub App は使わ
 
 ### `CTR-TRC-005` 子を持つ要件の進捗
 
-子を持つ要件の進捗は、子の進捗を数えて表す (例: 完了 3 / 5)。子を持つ要件そのものには、3つの進捗を付けない。
+子を持つ要件にも、3つの進捗のうちの1つを付ける。廃止していない子の進捗と、その要件の要求Issueから `CTR-TRC-004` で決まる進捗を合わせて見る。要求Issueから決まる進捗が未起票なら、合わせない。すべて完了なら完了、すべて未起票なら未起票、それ以外は進行中とする。あわせて、子の進捗を数えて表す (例: 完了 3 / 5)。
 
-- 検証: `test` 進捗の違う子を持つ要件で、数が正しい
+- 検証: `test` 進捗の違う子を持つ要件で、進捗と数が正しい。子がすべて完了で、開いた要求Issueを持つ要件が、進行中になる
 
 ---
 
@@ -133,7 +133,7 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
       "replaced_by": null,
       "file": "docs/ja/requirements/trace/index.md",
       "line": 58,
-      "progress": null,
+      "progress": "done",
       "children": {"not_filed": 0, "in_progress": 0, "done": 3, "total": 3},
       "requirement_issues": [],
       "implementation_issues": {"closed": 0, "total": 0}
@@ -179,7 +179,7 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 }
 ```
 
-- `progress` は `not_filed`、`in_progress`、`done` のどれかである。子を持つ要件と廃止した要件では `null` になる。
+- `progress` は `not_filed`、`in_progress`、`done` のどれかである。廃止した要件では `null` になる。
 - `children` は、子を持つ要件だけが持つ。子を持たない要件では `null` になる。
 - 1つの要求Issueが複数の要件を挙げているときは、その要件ごとに、同じ要求Issueを sub-issue まで含めて繰り返す。
 
