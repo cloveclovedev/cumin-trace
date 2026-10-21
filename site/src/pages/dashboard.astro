@@ -37,7 +37,7 @@ if (trace !== undefined) {
 }
 const percent = (n, total) => (total === 0 ? 0 : (100 * n) / total);
 // The text of a tile, for its title and for screen readers.
-const tileText = (row) => `${row.id} ${row.title} ・ ${row.progress}${row.total > 0 ? ` ・ 実装Issue ${row.closed} / ${row.total}` : ""}`;
+const tileText = (row) => `${row.id} ${row.title} ・ ${row.label}${row.total > 0 ? ` ・ 実装Issue ${row.closed} / ${row.total}` : ""}`;
 const subText = (sub) => `${sub.repository}#${sub.number} ${sub.closed ? "閉じた" : "開いている"}`;
 ---
 
@@ -125,7 +125,7 @@ const subText = (sub) => `${sub.repository}#${sub.number} ${sub.closed ? "閉じ
               {group.rows.map((row) => (
                 <div class="dashboard-line" data-kind="requirement" data-id={row.id} data-depth={row.depth} data-state={row.state}>
                   <span class="dashboard-dot" data-state={row.state}>
-                    <span class="sr-only">{row.progress}</span>
+                    <span class="sr-only">{row.label}</span>
                   </span>
                   {row.url === undefined ? <span class="dashboard-id">{row.id}</span> : <a class="dashboard-id" href={row.url}>{row.id}</a>}
                   <span class="dashboard-title" title={row.title} style={row.depth > 1 ? `padding-inline-start: ${row.depth - 1}rem` : undefined}>

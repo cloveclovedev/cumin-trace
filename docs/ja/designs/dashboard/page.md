@@ -60,10 +60,10 @@
 | 行 | 進捗 | 要求Issue | マイルストーン | 実装Issue |
 |---|---|---|---|---|
 | カテゴリ | `完了 <n> / <m>`。`m` はカテゴリの中の子を持たない要件の数、`n` はそのうち完了の数。進捗ごとの数 (`counts`) も持つ | なし | なし | なし |
-| 子を持つ要件 | `完了 <children.done> / <children.total>`。`state` は `parent` | 子を持たない要件と同じ | 子を持たない要件と同じ | 子を持たない要件と同じ |
+| 子を持つ要件 | `完了 <children.done> / <children.total>`。`state` は自分の `progress` (`not_filed`、`in_progress`、`done`)。古い cumin-trace の `trace.json` で `progress` が `null` なら、`state` は `parent` | 子を持たない要件と同じ | 子を持たない要件と同じ | 子を持たない要件と同じ |
 | 子を持たない要件 | `未起票`、`進行中`、`完了` (`progress`)。`state` は `not_filed`、`in_progress`、`done` | not planned で閉じたものを除く要求Issueの番号 (`#<n>`) | その要求Issueの異なるマイルストーン。マイルストーンのない要求Issueがあれば `なし` を足す | `<closed> / <total>` (`implementation_issues`) と、各 sub-issue (開いているか閉じたか)。`total` が 0 なら出さない |
 
-進捗の色は、完了が `--sl-color-green`、進行中が `--sl-color-orange`、未起票が `--sl-color-gray-5` の輪、子を持つ要件が色のない枠である。色だけに頼らず、進捗は読み上げ用の文字 (`sr-only` か `aria-label`) でも持つ。色はすべて Starlight の変数で、ダークとライトのどちらのテーマでも同じ決まりで決める (`requirements.css`)。
+進捗の色は、完了が `--sl-color-green`、進行中が `--sl-color-orange`、未起票が `--sl-color-gray-5` の輪である。子を持つ要件も、自分の進捗の色を持つ。`state` が `parent` の要件 (古い `trace.json`) だけが、色のない枠である。色だけに頼らず、進捗は読み上げ用の文字 (`sr-only` か `aria-label`) でも持つ。この文字は行の `label` で、子を持つ要件では進捗と子の数 (`進行中 ・ 完了 1 / 2`) である。`progress` が `null` なら、子の数だけである。色はすべて Starlight の変数で、ダークとライトのどちらのテーマでも同じ決まりで決める (`requirements.css`)。
 
 ### タイルの地図
 
@@ -71,7 +71,7 @@
 - 右に、要件ごとに1つのタイルを、一覧と同じ順 (子も含む) に並べる。タイルは、接頭辞とカテゴリを除いた ID (`001`、`004.1`) を示し、進捗の色を持つ。
 - 実装Issueを持つ要件のタイルは、下に細い線を持ち、閉じた割合だけ塗る。
 - タイルは要件へのリンク (`requirementURL()`) である。表にない ID のタイルはリンクでない。
-- タイルの `title` と `aria-label` は、ID、タイトル、進捗 (子を持つ要件は子の数)、実装Issueの `<closed> / <total>` である。
+- タイルの `title` と `aria-label` は、ID、タイトル、進捗の文字 (`label`。子を持つ要件は進捗と子の数)、実装Issueの `<closed> / <total>` である。
 - 凡例は、完了、進行中、未起票と、タイルの下の線の意味である。
 
 ### 要件の一覧

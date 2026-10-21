@@ -85,8 +85,10 @@ function subIssues(requirement) {
 // requirement, for areaTitle(), and the counts of its requirements with no
 // children by progress, and their number (leafCount). A requirement row holds
 // its ID without the prefix and the category (short), its progress (state, or
-// "parent" for a requirement with children), and its implementation issues
-// closed and in all.
+// "parent" for a requirement with children and no progress, from an older
+// trace), the text of the progress (label, with the count of the children for
+// a requirement with children), and its implementation issues closed and in
+// all.
 export function tree(trace) {
   const byID = new Map(trace.requirements.map((r) => [r.id, r]));
   const hidden = (r) => {
@@ -118,6 +120,8 @@ export function tree(trace) {
       if (Object.hasOwn(category.counts, r.progress)) category.counts[r.progress]++;
     }
     const subs = subIssues(r);
+    const known = Object.hasOwn(progressLabels, r.progress);
+    const count = children ? `完了 ${r.children.done} / ${r.children.total}` : "";
     rows.push({
       kind: "requirement",
       id: r.id,
@@ -125,8 +129,9 @@ export function tree(trace) {
       title: r.title ?? "",
       depth: depth(r) + 1,
       leaf: !children,
-      state: children ? "parent" : r.progress,
-      progress: children ? `完了 ${r.children.done} / ${r.children.total}` : (progressLabels[r.progress] ?? ""),
+      state: children && !known ? "parent" : r.progress,
+      progress: children ? count : (progressLabels[r.progress] ?? ""),
+      label: children ? [known ? progressLabels[r.progress] : "", count].filter((text) => text !== "").join(" ・ ") : (progressLabels[r.progress] ?? ""),
       issues: planned(r).map((issue) => issue.number),
       milestones: milestones(r),
       implementation: r.implementation_issues.total === 0 ? "" : `${r.implementation_issues.closed} / ${r.implementation_issues.total}`,

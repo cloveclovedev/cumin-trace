@@ -41,7 +41,7 @@
       "status": "active",
       "file": "docs/ja/requirements/Data Model_v2.md",
       "line": 11,
-      "progress": null,
+      "progress": "in_progress",
       "children": { "not_filed": 1, "in_progress": 0, "done": 1, "total": 2 },
       "requirement_issues": [
         { "number": 12, "state": "open", "state_reason": null, "milestone": "v0.1", "sub_issues": [] }

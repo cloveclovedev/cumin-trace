@@ -29,15 +29,16 @@ npm --prefix "$work/site" run check-site -- --site-name "$prefix"
 # order with "なし" last, and each sub-issue once with its state. A category
 # takes the title of the document of its first requirement, or its ID when
 # no document has it; a requirement has its ID without the prefix and the
-# category, and its progress, or "parent" when it has children.
-want='[["DM",0,"完了 1 / 3","Data model"],["CTR-DM-001",1,"進行中",[10,11],["v0.1","v0.2"],"1 / 3",["example/other#5 open","example/product#20 closed","example/product#21 open"],"001","in_progress"],["CTR-DM-002",1,"完了 1 / 2",[12],["v0.1"],"",[],"002","parent"],["CTR-DM-002.1",2,"未起票",[],[],"",[],"002.1","not_filed"],["CTR-DM-002.2",2,"完了",[14,15],["v0.1","なし"],"1 / 1",["example/product#31 closed"],"002.2","done"],["OLD",0,"完了 1 / 1","OLD"],["CTR-OLD-001",1,"完了",[17],["v0.1"],"1 / 1",["example/product#40 closed"],"001","done"]]'
+# category, and its progress. A requirement with children also has the count
+# of its children, and keeps "parent" only with no progress (an older trace).
+want='[["DM",0,"完了 1 / 3","Data model"],["CTR-DM-001",1,"進行中",[10,11],["v0.1","v0.2"],"1 / 3",["example/other#5 open","example/product#20 closed","example/product#21 open"],"001","in_progress","進行中"],["CTR-DM-002",1,"完了 1 / 2",[12],["v0.1"],"",[],"002","in_progress","進行中 ・ 完了 1 / 2"],["CTR-DM-002.1",2,"未起票",[],[],"",[],"002.1","not_filed","未起票"],["CTR-DM-002.2",2,"完了",[14,15],["v0.1","なし"],"1 / 1",["example/product#31 closed"],"002.2","done","完了"],["OLD",0,"完了 1 / 1","OLD"],["CTR-OLD-001",1,"完了",[17],["v0.1"],"1 / 1",["example/product#40 closed"],"001","done","完了"]]'
 got=$(cd "$work/site" && node --input-type=module -e '
 
 import { readSettings, root } from "./src/settings.mjs";
 import { areaTitle, readTrace, tree } from "./src/dashboard.mjs";
 const rows = tree(readTrace(".."));
 const settings = readSettings();
-console.log(JSON.stringify(rows.map((r) => (r.kind === "category" ? [r.id, r.depth, r.progress, areaTitle(settings, root, r)] : [r.id, r.depth, r.progress, r.issues, r.milestones, r.implementation, r.subIssues.map((s) => `${s.repository}#${s.number} ${s.closed ? "closed" : "open"}`), r.short, r.state]))));
+console.log(JSON.stringify(rows.map((r) => (r.kind === "category" ? [r.id, r.depth, r.progress, areaTitle(settings, root, r)] : [r.id, r.depth, r.progress, r.issues, r.milestones, r.implementation, r.subIssues.map((s) => `${s.repository}#${s.number} ${s.closed ? "closed" : "open"}`), r.short, r.state, r.label]))));
 ')
 if [ "$got" != "$want" ]; then
   echo "the tree is $got"
@@ -45,6 +46,22 @@ if [ "$got" != "$want" ]; then
   exit 1
 fi
 echo "the tree follows the rules of the design, as wanted"
+# CTR-DASH-001: a requirement with children in a trace from an older
+# cumin-trace has no progress, and keeps the neutral "parent" look.
+got=$(cd "$work/site" && node --input-type=module -e '
+import { readTrace, tree } from "./src/dashboard.mjs";
+const trace = readTrace("..");
+trace.requirements.find((r) => r.id === "CTR-DM-002").progress = null;
+const row = tree(trace).find((r) => r.id === "CTR-DM-002");
+console.log(JSON.stringify([row.state, row.progress, row.label]));
+')
+want='["parent","完了 1 / 2","完了 1 / 2"]'
+if [ "$got" != "$want" ]; then
+  echo "the row of a parent with no progress is $got"
+  echo "want $want"
+  exit 1
+fi
+echo "a parent with no progress keeps the parent look, as wanted"
 # CTR-DASH-005: the links of the dashboard.
 got=$(cd "$work/site" && node --input-type=module -e '
 import { readSettings, root } from "./src/settings.mjs";
