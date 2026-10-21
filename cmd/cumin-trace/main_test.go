@@ -118,8 +118,8 @@ func TestInitThenCheckExitWithZero(t *testing.T) {
 	}
 }
 
-// CTR-TPL-001: init exits with 2 and writes no file when the arguments are
-// wrong.
+// CTR-TPL-001, CTR-CMD-003: init exits with 2 and writes no file when the
+// arguments are wrong.
 func TestInitExitsWithTwoOnWrongArguments(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -181,6 +181,15 @@ func TestVersionPrintsOneLineWithoutAVersion(t *testing.T) {
 	line, rest, found := strings.Cut(stdout.String(), "\n")
 	if code != 0 || line == "" || !found || rest != "" || stderr.String() != "" {
 		t.Errorf("got exit code %d, stdout %q, stderr %q; want 0 and one line", code, stdout.String(), stderr.String())
+	}
+}
+
+// CTR-CMD-001: the usage line names every command of the table.
+func TestTheUsageLineNamesEveryCommand(t *testing.T) {
+	for _, command := range []string{"check", "export", "init <prefix> [<area>]", "trace", "version"} {
+		if !strings.Contains(usage, "cumin-trace "+command) {
+			t.Errorf("usage %q does not name %q", usage, "cumin-trace "+command)
+		}
 	}
 }
 
