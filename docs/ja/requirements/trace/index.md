@@ -10,7 +10,7 @@
 
 図の元ファイル: [trace-links.puml](trace-links.puml)
 
-進捗は、要件ごとに次の順で決める。使うのは、要求Issueが開いているかと、閉じた理由だけである。
+進捗は、要件ごとに次の順で決める。使うのは、要求Issueが開いているか、閉じた理由と日時、要件が最後に変わった日時である。
 
 ![進捗の決め方](trace-progress.svg)
 
@@ -23,6 +23,7 @@
 | not filed | 未起票 | 要求Issueがまだない |
 | in progress | 進行中 | 開いた要求Issueがある |
 | done | 完了 | 要求Issueが受け入れられて閉じた |
+| not filed (changed) | 変更後の未起票 | 完了した要求Issueが閉じたあとに、要件が変わった |
 
 要求Issueがあれば、あとは cumin-works の流れか、Maintainer の作業で進む。そこで、起票したあとの状態は細かく分けない。`cumin/status/*` のラベルは読まない。
 
@@ -112,7 +113,7 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 
 ### `CTR-TRC-008` 結果の出力
 
-対応づけの結果を、読んだリポジトリと GitHub を読んだ時刻とともに JSON で出力する。要件ごとに、構造化データの出力 (`CTR-EXP-001`) と同じキーをすべて同じ順に持ち、その後ろに対応づけのキーを足す。対応づけのキーは、進捗、子の進捗の数 (`CTR-TRC-005`)、対応する要求Issue (状態、マイルストーン、実装Issue)、実装Issueの数 (閉じた数と全体の数) である。不整合 (`CTR-TRC-006`) の一覧も持つ。不整合ごとに、種類、要求Issueの番号、IDを持つ。
+対応づけの結果を、読んだリポジトリと GitHub を読んだ時刻とともに JSON で出力する。要件ごとに、構造化データの出力 (`CTR-EXP-001`) と同じキーをすべて同じ順に持ち、その後ろに対応づけのキーを足す。対応づけのキーは、進捗、変更後の未起票か (`CTR-TRC-010`)、子の進捗の数 (`CTR-TRC-005`)、対応する要求Issue (状態、マイルストーン、実装Issue)、実装Issueの数 (閉じた数と全体の数) である。不整合 (`CTR-TRC-006`) の一覧も持つ。不整合ごとに、種類、要求Issueの番号、IDを持つ。
 
 この出力だけで、要件の構造と進捗が分かる。
 
@@ -134,6 +135,7 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
       "file": "docs/ja/requirements/trace/index.md",
       "line": 58,
       "progress": "done",
+      "changed_after_done": false,
       "children": {"not_filed": 0, "in_progress": 0, "done": 3, "total": 3},
       "requirement_issues": [],
       "implementation_issues": {"closed": 0, "total": 0}
@@ -151,6 +153,7 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
       "file": "docs/ja/requirements/trace/index.md",
       "line": 62,
       "progress": "done",
+      "changed_after_done": false,
       "children": null,
       "requirement_issues": [
         {
@@ -180,6 +183,7 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 ```
 
 - `progress` は `not_filed`、`in_progress`、`done` のどれかである。廃止した要件では `null` になる。
+- `changed_after_done` は、`CTR-TRC-010` で未起票になった要件で `true` になる。ほかの要件では `false` になる。
 - `children` は、子を持つ要件だけが持つ。子を持たない要件では `null` になる。
 - 1つの要求Issueが複数の要件を挙げているときは、その要件ごとに、同じ要求Issueを sub-issue まで含めて繰り返す。
 
@@ -192,5 +196,14 @@ cumin-trace は GitHub を読むだけで、Issue、ラベル、コメントの�
 書式検査 (`CTR-CHK-001`) でエラーになる文書では、対応づけをしない。GitHub を読まず、結果も出力しない。書式検査と同じエラーを報告し、0 以外の終了コードで終わる。誤ったIDのまま要求Issueと突き合わせると、進捗と不整合が誤って出るためである。
 
 - 検証: `test` エラーを1つ含む文書で、偽の GitHub への呼び出しがなく、結果が出ず、エラーが報告され、終了コードが 0 以外になる
+
+---
+
+### `CTR-TRC-010` 変更後の未起票
+
+要件のタイトル、本文、検証のどれかが、completed で閉じた要求Issueのうち最後に閉じたものより後に変わっていて、開いた要求Issueがなければ、その要件は未起票とする。`CTR-TRC-004.3` で完了になる要件にも当てはめる。変わった日時は、git の履歴で、その変更を含む commit の日時とする。commit のメッセージに `Requirement-Unchanged: <ID>` の行があれば、その commit でのそのIDの変更は数えない。git の履歴が足りないときは、エラーで終わる。
+
+- 検証: `test` 要求Issueが閉じたあとに本文を変えた要件が、未起票になる。開いた要求Issueがあれば、進行中になる。`Requirement-Unchanged` の行を持つ commit の変更は数えない
+- 検証: `test` ファイルや行の位置だけが変わった commit は、変更として数えない
 
 ---
