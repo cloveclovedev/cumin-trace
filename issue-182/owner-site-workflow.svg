@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="560" viewBox="0 0 380 560" font-family="Helvetica, Arial, sans-serif" font-size="12">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#555"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="190" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#222">cumin-trace trace: not filed after a change</text>
+<line x1="97.5" y1="92" x2="190.0" y2="118" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<line x1="282.5" y1="92" x2="190.0" y2="118" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<line x1="190.0" y1="160" x2="190.0" y2="188" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<line x1="190.0" y1="242" x2="190.0" y2="270" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<line x1="190.0" y1="312" x2="190.0" y2="340" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<line x1="190.0" y1="382" x2="190.0" y2="410" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<line x1="190.0" y1="452" x2="190.0" y2="480" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<rect x="10" y="40" width="175" height="52" rx="6" fill="#FDECEC" stroke="#D62728" stroke-width="3"/>
+<text x="97.5" y="56.0" text-anchor="middle" fill="#D62728" font-weight="bold">checkout in</text>
+<text x="97.5" y="70.0" text-anchor="middle" fill="#D62728" font-weight="bold">site.yml</text>
+<text x="97.5" y="84.0" text-anchor="middle" fill="#D62728" font-weight="bold">fetch-depth: 0</text>
+<rect x="195" y="40" width="175" height="52" rx="6" fill="#F4F6F8" stroke="#888" stroke-width="1"/>
+<text x="282.5" y="56.0" text-anchor="middle" fill="#222">checkout in</text>
+<text x="282.5" y="70.0" text-anchor="middle" fill="#222">cumin-trace-site.yml</text>
+<text x="282.5" y="84.0" text-anchor="middle" fill="#222">fetch-depth: 0</text>
+<rect x="60" y="120" width="260" height="40" rx="6" fill="#F4F6F8" stroke="#888" stroke-width="1"/>
+<text x="190.0" y="137.0" text-anchor="middle" fill="#222">read the requirement documents</text>
+<text x="190.0" y="151.0" text-anchor="middle" fill="#222">and run the format check</text>
+<rect x="60" y="190" width="260" height="52" rx="6" fill="#F4F6F8" stroke="#888" stroke-width="1"/>
+<text x="190.0" y="206.0" text-anchor="middle" fill="#222">read the git history:</text>
+<text x="190.0" y="220.0" text-anchor="middle" fill="#222">last change time of each ID</text>
+<text x="190.0" y="234.0" text-anchor="middle" fill="#222">error on shallow history</text>
+<rect x="60" y="272" width="260" height="40" rx="6" fill="#F4F6F8" stroke="#888" stroke-width="1"/>
+<text x="190.0" y="289.0" text-anchor="middle" fill="#222">GitHub query requirementIssues</text>
+<text x="190.0" y="303.0" text-anchor="middle" fill="#222">+ closedAt</text>
+<rect x="60" y="342" width="260" height="40" rx="6" fill="#F4F6F8" stroke="#888" stroke-width="1"/>
+<text x="190.0" y="359.0" text-anchor="middle" fill="#222">progress + CTR-TRC-010</text>
+<text x="190.0" y="373.0" text-anchor="middle" fill="#222">(not filed after a change)</text>
+<rect x="60" y="412" width="260" height="40" rx="6" fill="#F4F6F8" stroke="#888" stroke-width="1"/>
+<text x="190.0" y="429.0" text-anchor="middle" fill="#222">trace.json</text>
+<text x="190.0" y="443.0" text-anchor="middle" fill="#222">+ changed_after_done</text>
+<rect x="60" y="482" width="260" height="40" rx="6" fill="#F4F6F8" stroke="#888" stroke-width="1"/>
+<text x="190.0" y="499.0" text-anchor="middle" fill="#222">dashboard: mark the requirement</text>
+<text x="190.0" y="513.0" text-anchor="middle" fill="#222">site/ and templates/site/</text>
+<text x="190" y="548" text-anchor="middle" fill="#D62728">A Maintainer edits .github/workflows/site.yml</text>
+</svg>
