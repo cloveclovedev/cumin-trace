@@ -2,23 +2,11 @@
 salt
 {+
   <b>Requirements dashboard | read from GitHub at 2026-10-20 09:00
-  ..
-  { Milestone: | ^v0.1^ | Progress: | ^all^ }
   ==
-  <b>Summary
+  <b>Progress of the requirements
   {#
-    milestone of the requirement issue | in progress | done
-    v0.1 | 25 | 12
-    v0.2 | 3 | 0
-    (no milestone) | 1 | 0
-    <b>not filed (no requirement issue): 10 | . | .
-  }
-  ==
-  <b>File next: no requirement issue exists
-  {#
-    ID | title
-    PC-TASK-005 | (title)
-    PC-PAY-002 | (title)
+    TASK | done 2 / 4 | [003.1] | [003.2] | [004] | [005]
+    PAY | done 1 / 2 | [001] | [002] | . | .
   }
   ==
   <b>Discrepancies
@@ -27,7 +15,7 @@ salt
     unknown ID | ~#31 | PC-TASK-099
   }
   ==
-  <b>Requirement tree
+  <b>List of requirements
   {T
     + <b>requirement | <b>progress | <b>requirement issues | <b>milestone | <b>implementation issues
     + TASK | done 2 / 4 | . | . | .
