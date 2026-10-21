@@ -8,10 +8,10 @@ participant "GitHub API" as gh
 participant "Starlight build" as build
 database "static site" as site
 
-actions -> ct : export and trace
+actions -> ct : trace
 ct -> gh : read the requirement issues,\nsub-issues, pull requests (read only)
 gh --> ct
-ct --> actions : requirements and trace result,\nwith the time of the read
+ct --> actions : trace result,\nwith the time of the read
 actions -> build : build
 build -> site : documents + dashboard
 Maintainer -> site : open the dashboard
