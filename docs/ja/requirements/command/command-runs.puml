@@ -1,0 +1,29 @@
+@startuml command-runs
+skinparam shadowing false
+left to right direction
+
+actor Maintainer
+
+node "Own machine" as local {
+  rectangle "init\n(once, when the product starts)" as init
+  rectangle "check\n(while writing documents)" as check1
+  rectangle "trace\n(preview of the dashboard)" as trace1
+  rectangle "export\n(when a tool or an agent needs JSON)" as export
+}
+
+node "GitHub Actions" as actions {
+  rectangle "check\n(every pull request)" as check2
+  rectangle "trace\n(push to main, once a day)" as trace2
+}
+
+cloud "GitHub" as gh {
+  rectangle "requirement issues,\nsub-issues, pull requests" as issues
+}
+
+Maintainer --> init
+Maintainer --> check1
+Maintainer --> trace1
+Maintainer --> export
+trace1 --> issues : read only
+trace2 --> issues : read only
+@enduml
