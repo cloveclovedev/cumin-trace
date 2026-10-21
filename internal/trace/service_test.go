@@ -724,10 +724,10 @@ func TestARequirementWithOnlyClosedIssuesAndOneCompletedIsDone(t *testing.T) {
 	}
 }
 
-// CTR-TRC-005: a parent has no progress of its own and counts its children
-// by progress, without the deprecated children. A deprecated requirement has
-// no progress and no counts, and a child of a deprecated parent still has its
-// own progress.
+// CTR-TRC-005: a parent with children of mixed progress is in progress and
+// counts its children by progress, without the deprecated children. A
+// deprecated requirement has no progress and no counts, and a child of a
+// deprecated parent still has its own progress.
 func TestAParentCountsItsChildrenByProgress(t *testing.T) {
 	document := "# Tasks\n\n" +
 		"### `PC-TASK-001` Parent\n\n- 検証: `test` It works\n\n" +
@@ -750,21 +750,9 @@ func TestAParentCountsItsChildrenByProgress(t *testing.T) {
 	if count != 0 || err != nil || stderr != "" {
 		t.Fatalf("got count %d, error %v, stderr %q; want 0, no error, and no stderr", count, err, stderr)
 	}
-	output := decode(t, stdout)
-	got := map[string]string{}
-	for _, req := range output.Requirements {
-		progress, children := "null", "null"
-		if req.Progress != nil {
-			progress = string(*req.Progress)
-		}
-		if req.Children != nil {
-			encoded, _ := json.Marshal(req.Children)
-			children = string(encoded)
-		}
-		got[req.ID] = progress + " " + children
-	}
+	got := progressAndChildren(decode(t, stdout))
 	want := map[string]string{
-		"PC-TASK-001":   `null {"not_filed":1,"in_progress":1,"done":2,"total":4}`,
+		"PC-TASK-001":   `in_progress {"not_filed":1,"in_progress":1,"done":2,"total":4}`,
 		"PC-TASK-001.1": "not_filed null",
 		"PC-TASK-001.2": "in_progress null",
 		"PC-TASK-001.3": "done null",
@@ -781,6 +769,70 @@ func TestAParentCountsItsChildrenByProgress(t *testing.T) {
 			t.Errorf("got %s for %s; want %s", got[id], id, w)
 		}
 	}
+}
+
+// CTR-TRC-005: a parent combines the progress of its children with the
+// progress of its requirement issues, unless that progress is not filed. All
+// done gives done, all not filed gives not filed, and anything else gives in
+// progress. A parent with nothing to combine is not filed.
+func TestAParentCombinesItsChildrenWithItsRequirementIssues(t *testing.T) {
+	document := "# Tasks\n\n" +
+		"### `PC-TASK-001` Done children, no issue\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-001.1` Done\n\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-002` Done children, open issue\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-002.1` Done\n\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-003` Not filed children, completed issue\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-003.1` Not filed\n\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-004` Not filed children, no issue\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-004.1` Not filed\n\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-005` Only deprecated children, no issue\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-005.1` Deprecated\n\n- 状態: 廃止\n- 検証: `test` It works\n\n---\n\n" +
+		"### `PC-TASK-006` Done children, not planned issue\n\n- 検証: `test` It works\n\n" +
+		"#### `PC-TASK-006.1` Done\n\n- 検証: `test` It works\n"
+	github := &fakeGitHub{t: t, issues: []fakeIssue{
+		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001.1", "PC-TASK-002.1", "PC-TASK-003", "PC-TASK-006.1"),
+		requirementIssue(2, "OPEN", "", "PC-TASK-002"),
+		requirementIssue(3, "CLOSED", "NOT_PLANNED", "PC-TASK-006"),
+	}}
+	root := writeRepository(t, settingsOfTest, document)
+
+	count, err, stdout, stderr := runTrace(t, root, github)
+
+	if count != 0 || err != nil || stderr != "" {
+		t.Fatalf("got count %d, error %v, stderr %q; want 0, no error, and no stderr", count, err, stderr)
+	}
+	got := progressAndChildren(decode(t, stdout))
+	want := map[string]string{
+		"PC-TASK-001": `done {"not_filed":0,"in_progress":0,"done":1,"total":1}`,
+		"PC-TASK-002": `in_progress {"not_filed":0,"in_progress":0,"done":1,"total":1}`,
+		"PC-TASK-003": `in_progress {"not_filed":1,"in_progress":0,"done":0,"total":1}`,
+		"PC-TASK-004": `not_filed {"not_filed":1,"in_progress":0,"done":0,"total":1}`,
+		"PC-TASK-005": `not_filed {"not_filed":0,"in_progress":0,"done":0,"total":0}`,
+		"PC-TASK-006": `done {"not_filed":0,"in_progress":0,"done":1,"total":1}`,
+	}
+	for id, w := range want {
+		if got[id] != w {
+			t.Errorf("got %s for %s; want %s", got[id], id, w)
+		}
+	}
+}
+
+// progressAndChildren returns the progress and the counts of the children of
+// each requirement, as text, with "null" for nil.
+func progressAndChildren(output Output) map[string]string {
+	got := map[string]string{}
+	for _, req := range output.Requirements {
+		progress, children := "null", "null"
+		if req.Progress != nil {
+			progress = string(*req.Progress)
+		}
+		if req.Children != nil {
+			encoded, _ := json.Marshal(req.Children)
+			children = string(encoded)
+		}
+		got[req.ID] = progress + " " + children
+	}
+	return got
 }
 
 // CTR-TRC-007: the token goes only into the Authorization header. Every

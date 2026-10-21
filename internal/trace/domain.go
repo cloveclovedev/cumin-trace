@@ -81,7 +81,7 @@ const (
 // (CTR-TRC-008).
 type RequirementOutput struct {
 	export.Requirement
-	// Progress is nil for a parent and for a deprecated requirement.
+	// Progress is nil only for a deprecated requirement.
 	Progress *Progress `json:"progress"`
 	// Children is nil for a requirement without children and for a
 	// deprecated requirement.
@@ -142,8 +142,9 @@ type SubIssueOutput struct {
 // numbers. Of two issues with one number, only the first counts. An ID that no
 // requirement has links to nothing and is a discrepancy, and so is an open
 // issue for a deprecated requirement (CTR-TRC-006). Each requirement gets its
-// progress, or the counts of its children (CTR-TRC-004, CTR-TRC-005), and the
-// counts of its implementation issues (CTR-TRC-008).
+// progress (CTR-TRC-004, CTR-TRC-005), each parent also the counts of its
+// children (CTR-TRC-005), and each requirement the counts of its
+// implementation issues (CTR-TRC-008).
 func Link(requirements []requirement.Requirement, areas []string, issues []Issue, form requirement.IDForm, readAt, repository string) Output {
 	requirements = export.Sort(requirements, areas)
 	byID := map[string]int{}
@@ -247,9 +248,12 @@ func CountImplementation(issues []Issue) ImplementationOutput {
 	return counts
 }
 
-// setProgress sets the progress of each requirement that is not deprecated
-// and has no children. It sets the counts of the children of each parent that
-// is not deprecated, and leaves out the deprecated children (CTR-TRC-005).
+// setProgress sets the progress of each requirement that is not deprecated.
+// A requirement without children takes the progress of its requirement issues
+// (CTR-TRC-004). A parent combines the progress of its children that are not
+// deprecated with the progress of its requirement issues, unless that is not
+// filed (CTR-TRC-005). It also sets the counts of the children of each parent
+// that is not deprecated, and leaves out the deprecated children.
 func setProgress(requirements []requirement.Requirement, linked [][]Issue, outputs []RequirementOutput) {
 	children := map[string][]int{}
 	for i, req := range requirements {
@@ -272,6 +276,7 @@ func setProgress(requirements []requirement.Requirement, linked [][]Issue, outpu
 			continue
 		}
 		counts := &ChildrenOutput{}
+		var progresses []Progress
 		for _, child := range indexes {
 			if outputs[child].Progress == nil {
 				continue
@@ -285,9 +290,31 @@ func setProgress(requirements []requirement.Requirement, linked [][]Issue, outpu
 				counts.Done++
 			}
 			counts.Total++
+			progresses = append(progresses, *outputs[child].Progress)
 		}
+		if own := ProgressOf(linked[i]); own != NotFiled {
+			progresses = append(progresses, own)
+		}
+		progress := combine(progresses)
+		outputs[i].Progress = &progress
 		outputs[i].Children = counts
 	}
+}
+
+// combine returns the progress of a parent from the progresses that it
+// combines (CTR-TRC-005). All done gives done, and all not filed gives not
+// filed. Anything else gives in progress. No progress gives not filed.
+func combine(progresses []Progress) Progress {
+	if len(progresses) == 0 {
+		return NotFiled
+	}
+	all := progresses[0]
+	for _, progress := range progresses[1:] {
+		if progress != all {
+			return InProgress
+		}
+	}
+	return all
 }
 
 // issueOutput returns the JSON form of an issue.
