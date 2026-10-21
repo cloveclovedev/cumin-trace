@@ -12,14 +12,16 @@ name: site
 # it skips the build and reports success.
 #
 # GitHub can delay or drop a scheduled run when the load is high, mostly at
-# the start of an hour. The minute 17 avoids the start of the hour.
+# the start of an hour. The minute 42 avoids the start of the hour.
+# 19:42 UTC is 4:42 in Japan time, the time zone of the dashboard: the site
+# is fresh before the day starts.
 on:
   pull_request:
   push:
     branches:
       - main
   schedule:
-    - cron: '17 0 * * *'
+    - cron: '42 19 * * *'
   workflow_dispatch:
 
 # The trace reads the issues and their sub-issues and milestones.
