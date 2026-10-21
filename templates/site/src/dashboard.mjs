@@ -79,9 +79,9 @@ function subIssues(requirement) {
 }
 
 // tree returns the rows of the requirement tree (CTR-DASH-001): one row for
-// each category where it first shows, then its requirements in the order of the
-// trace, each child one level below its parent. A deprecated requirement and
-// its descendants have no row. A category row holds the file of its first
+// each category where it first shows, then its requirements in the order of
+// the trace, each child one level below its parent. A deprecated requirement
+// and its descendants have no row. A category row holds the file of its first
 // requirement, for areaTitle(), and the counts of its requirements with no
 // children by progress, and their number (leafCount). A requirement row holds
 // its ID without the prefix and the category (short), its progress (state, or
