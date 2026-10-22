@@ -14,7 +14,7 @@
   - `CTR-TRC-007` GitHub には書き込まない
   - `CTR-TRC-008` 結果の出力
   - `CTR-TRC-009` 書式の誤りがあるとき
-  - `CTR-TRC-010` 変更後の未起票 (いまは、変わった日時を読むところまで)
+  - `CTR-TRC-010` 変更後の未起票
 - [コマンド](../../requirements/command/index.md)
   - `CTR-CMD-001` コマンドの一覧
   - `CTR-CMD-003` 引数の誤り
@@ -26,19 +26,19 @@
 
 ## 実装の状況
 
-いまのコードは、`CTR-TRC-010` の規則と `changed_after_done` のほかは、この設計のすべてを持つ。
+いまのコードは、この設計のすべてを持つ。
 
 | 部分 | 状況 |
 |---|---|
 | コマンド、設定の `requirement_label`、環境変数、リポジトリの決め方 | 実装した |
 | 問い合わせ 1 `requirementIssues`、2 `moreSubIssues`、3 `closers`、IDの見つけ方 (`ListedIDs`) | 実装した |
-| JSON の `repository`、`read_at`、`requirements` の出力のキー (`export.Of`)、`progress`、`children`、`requirement_issues` (`sub_issues` を含む)、`implementation_issues` | 実装した |
+| JSON の `repository`、`read_at`、`requirements` の出力のキー (`export.Of`)、`progress`、`changed_after_done`、`children`、`requirement_issues` (`sub_issues` を含む)、`implementation_issues` | 実装した |
 | 書式のエラーでの停止 (`CTR-TRC-009`) | 実装した |
 | 進捗 (`CTR-TRC-004`) と子の進捗の数 (`CTR-TRC-005`)。`ProgressOf` と `setProgress` (`internal/trace/domain.go`) | 実装した |
 | sub-issue と Pull Request (`CTR-TRC-003`)、実装Issueの数 (`CountImplementation`) | 実装した |
 | 不整合 (`CTR-TRC-006`) と JSON の `discrepancies`。`Link` と `sortDiscrepancies` (`internal/trace/domain.go`) | 実装した |
 | git の履歴から、IDごとに最後に変わった日時を読む (`CTR-TRC-010`)。`lastChangesOf` (`internal/trace/history.go`) と `LastChanges` (`internal/trace/domain.go`)。履歴が足りないときのエラー | 実装した |
-| 変わった日時と要求Issueの閉じた日時を比べる規則 (`CTR-TRC-010`) と、JSON の `changed_after_done` | まだない。読んだ日時は、まだ出力に使わない |
+| 変わった日時と要求Issueの閉じた日時を比べる規則 (`CTR-TRC-010`) と、JSON の `changed_after_done`。`ChangedAfterDone` と `setProgress` (`internal/trace/domain.go`) | 実装した |
 
 ## 全体像
 

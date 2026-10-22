@@ -28,7 +28,7 @@ const requirementIssuesQuery = `query requirementIssues($owner: String!, $name: 
            orderBy: {field: CREATED_AT, direction: ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        id number state stateReason body
+        id number state stateReason closedAt body
         milestone { title }
         subIssues(first: 100) {
           pageInfo { hasNextPage endCursor }
@@ -83,7 +83,10 @@ type Issue struct {
 	Number      int
 	State       string
 	StateReason string
-	Body        string
+	// ClosedAt is the time when the issue was closed. It is the zero time
+	// for an open issue.
+	ClosedAt time.Time
+	Body     string
 	// Milestone is the title of the milestone. It is empty for no milestone.
 	Milestone string
 	SubIssues []SubIssue
@@ -192,11 +195,12 @@ func (c *GitHubClient) IssuesWithLabel(owner, name, label string) ([]Issue, erro
 				Issues struct {
 					PageInfo pageInfo `json:"pageInfo"`
 					Nodes    []struct {
-						ID          string  `json:"id"`
-						Number      int     `json:"number"`
-						State       string  `json:"state"`
-						StateReason *string `json:"stateReason"`
-						Body        string  `json:"body"`
+						ID          string     `json:"id"`
+						Number      int        `json:"number"`
+						State       string     `json:"state"`
+						StateReason *string    `json:"stateReason"`
+						ClosedAt    *time.Time `json:"closedAt"`
+						Body        string     `json:"body"`
 						Milestone   *struct {
 							Title string `json:"title"`
 						} `json:"milestone"`
@@ -216,6 +220,9 @@ func (c *GitHubClient) IssuesWithLabel(owner, name, label string) ([]Issue, erro
 			issue := Issue{ID: node.ID, Number: node.Number, State: node.State, Body: node.Body, SubIssues: node.SubIssues.subIssues()}
 			if node.StateReason != nil {
 				issue.StateReason = *node.StateReason
+			}
+			if node.ClosedAt != nil {
+				issue.ClosedAt = *node.ClosedAt
 			}
 			if node.Milestone != nil {
 				issue.Milestone = node.Milestone.Title

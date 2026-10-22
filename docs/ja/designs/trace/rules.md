@@ -61,6 +61,21 @@
 - 廃止した要件は、`progress` と `children` が `null` である。廃止した親の子も、廃止していなければ、ほかの要件と同じに進捗を持つ。
 - 子を持つかどうかは、`ParentID` がその要件のIDである要件が、文書に1つでもあるかで決める。
 
+## 変更後の未起票
+
+廃止していない要件ごとに、その要件の `requirement_issues` と、git の履歴から読んだ最後に変わった日時 ([変わった日時](index.md#変わった日時はgit-のコマンドで履歴を読んで決める)) から決める (`CTR-TRC-010`)。次のすべてに合えば、上の表で決めた進捗に代えて `not_filed` にし、`changed_after_done` を `true` にする (`ChangedAfterDone`)。
+
+| 条件 | 内容 |
+|---|---|
+| 開いた要求Issueがない | 1つでも開いていれば、当てはめない |
+| completed で閉じた要求Issueが1つ以上ある | not planned で閉じたものは数えない |
+| 最後に変わった日時が、completed で閉じた要求Issueの `closedAt` のうち最も遅いものより後 | 同じ日時は、後ではない |
+
+- 子を持たない要件では、子を持つ要件の進捗を決める前に当てはめる。親の `children` は、当てはめたあとの子の進捗を数える。
+- 子を持つ要件では、その要件自身の要求Issueだけで当てはめる。子の進捗がどうであっても、合えば `not_filed` である。自身の completed で閉じた要求Issueがなければ当てはめず、上の表の進捗のままである。
+- 子の変更は、親の変わった日時にならない。変わった日時は、IDごとに決まる。
+- ほかの要件の `changed_after_done` は `false` である。廃止した要件も `false` である。
+
 ## 実装Issueの数
 
 要件の `implementation_issues` は、その要件の `requirement_issues` のすべての `sub_issues` を、リポジトリと番号で重ねずに数える。`closed` は閉じたもの (閉じた理由を問わない)、`total` はすべてである。not planned で閉じた要求Issueの sub-issue も数える。
@@ -82,6 +97,7 @@
 | `CTR-TRC-004.3` | completed で閉じた要求Issueだけを持つ要件 |
 | `CTR-TRC-005` | 3つの進捗の子と、廃止した子を持つ要件。進捗は `in_progress` で、子の数は変わらない |
 | `CTR-TRC-005` | 子がすべて完了で、要求Issueのない要件 (`done`)、開いた要求Issueを持つ要件 (`in_progress`)、not planned で閉じた要求Issueだけを持つ要件 (`done`)。子がすべて未起票で、completed で閉じた要求Issueを持つ要件 (`in_progress`) と、要求Issueのない要件 (`not_filed`)。廃止した子だけを持ち、要求Issueのない要件 (`not_filed`) |
+| `CTR-TRC-010` | 要求Issueが閉じたあとに本文を変えた要件 (`not_filed`、`true`)。開いた要求Issueを持つ要件 (`in_progress`、`false`)。変更のあとに、もう1つの要求Issueが閉じた要件 (`done`)。not planned で閉じた要求Issueだけを持つ要件 (`not_filed`、`false`)。変えていない要件 (`done`)。自身の閉じた要求Issueを持ち、子がすべて完了の親 (`not_filed`、`true`)。自身の要求Issueがないか not planned だけで、子がすべて完了の親 (`done`、`false`)。廃止した要件 (`null`、`false`) |
 | `CTR-TRC-006` | 文書にないIDを書いた要求Issueと、廃止した要件に対応する開いた要求Issue。廃止した要件に対応する閉じた要求Issueは、不整合にならない |
 | `CTR-TRC-006` | ページが2回返した同じ番号の要求Issue。`requirement_issues` と不整合に1回だけ出て、最初の本文を使う |
 | `CTR-TRC-008` | 上の状態をまとめた出力の全体を、決めた時刻で比べる。`discrepancies` に、2種類の不整合が1つずつ出る |

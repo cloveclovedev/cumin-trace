@@ -22,6 +22,9 @@ type Issue struct {
 	// NotPlanned is true for an issue that was closed as not planned or as
 	// a duplicate. It is false for an open issue.
 	NotPlanned bool
+	// ClosedAt is the time when the issue was closed. It is the zero time
+	// for an open issue.
+	ClosedAt time.Time
 	// Milestone is the title of the milestone. It is empty for no milestone.
 	Milestone string
 	Body      string
@@ -85,6 +88,9 @@ type RequirementOutput struct {
 	export.Requirement
 	// Progress is nil only for a deprecated requirement.
 	Progress *Progress `json:"progress"`
+	// ChangedAfterDone is true only for a requirement that is not filed
+	// because it changed after its requirement issues closed (CTR-TRC-010).
+	ChangedAfterDone bool `json:"changed_after_done"`
 	// Children is nil for a requirement without children and for a
 	// deprecated requirement.
 	Children             *ChildrenOutput      `json:"children"`
@@ -146,8 +152,10 @@ type SubIssueOutput struct {
 // issue for a deprecated requirement (CTR-TRC-006). Each requirement gets its
 // progress (CTR-TRC-004, CTR-TRC-005), each parent also the counts of its
 // children (CTR-TRC-005), and each requirement the counts of its
-// implementation issues (CTR-TRC-008).
-func Link(requirements []requirement.Requirement, areas []string, issues []Issue, form requirement.IDForm, readAt, repository string) Output {
+// implementation issues (CTR-TRC-008). A requirement that changed after its
+// requirement issues closed is not filed (CTR-TRC-010). The changes hold the
+// time of the last change of each ID.
+func Link(requirements []requirement.Requirement, areas []string, issues []Issue, changes map[string]time.Time, form requirement.IDForm, readAt, repository string) Output {
 	requirements = export.Sort(requirements, areas)
 	byID := map[string]int{}
 	linked := make([][]Issue, len(requirements))
@@ -171,7 +179,7 @@ func Link(requirements []requirement.Requirement, areas []string, issues []Issue
 		}
 	}
 	sortDiscrepancies(output.Discrepancies)
-	setProgress(requirements, linked, output.Requirements)
+	setProgress(requirements, linked, changes, output.Requirements)
 	for i := range output.Requirements {
 		output.Requirements[i].ImplementationIssues = CountImplementation(linked[i])
 	}
@@ -224,6 +232,27 @@ func ProgressOf(issues []Issue) Progress {
 	return progress
 }
 
+// ChangedAfterDone reports whether a requirement changed after its
+// requirement issues closed (CTR-TRC-010): no issue is open, one issue is
+// closed as completed, and the last change is after the latest time when an
+// issue closed as completed. A zero time of the last change is no change.
+func ChangedAfterDone(issues []Issue, lastChange time.Time) bool {
+	var closed time.Time
+	completed := false
+	for _, issue := range issues {
+		switch {
+		case issue.Open:
+			return false
+		case !issue.NotPlanned:
+			completed = true
+			if issue.ClosedAt.After(closed) {
+				closed = issue.ClosedAt
+			}
+		}
+	}
+	return completed && lastChange.After(closed)
+}
+
 // CountImplementation counts the sub-issues of the requirement issues: the
 // closed ones, for any reason, and all. A sub-issue of two requirement issues
 // counts once, by its repository and number.
@@ -254,9 +283,11 @@ func CountImplementation(issues []Issue) ImplementationOutput {
 // A requirement without children takes the progress of its requirement issues
 // (CTR-TRC-004). A parent combines the progress of its children that are not
 // deprecated with the progress of its requirement issues, unless that is not
-// filed (CTR-TRC-005). It also sets the counts of the children of each parent
+// filed (CTR-TRC-005). A requirement that changed after its requirement
+// issues closed is not filed, also a parent, whatever its children are
+// (CTR-TRC-010). It also sets the counts of the children of each parent
 // that is not deprecated, and leaves out the deprecated children.
-func setProgress(requirements []requirement.Requirement, linked [][]Issue, outputs []RequirementOutput) {
+func setProgress(requirements []requirement.Requirement, linked [][]Issue, changes map[string]time.Time, outputs []RequirementOutput) {
 	children := map[string][]int{}
 	for i, req := range requirements {
 		if req.ParentID != "" {
@@ -270,6 +301,7 @@ func setProgress(requirements []requirement.Requirement, linked [][]Issue, outpu
 		if _, ok := children[req.ID]; !ok {
 			progress := ProgressOf(linked[i])
 			outputs[i].Progress = &progress
+			setChangedAfterDone(linked[i], changes[req.ID], &outputs[i])
 		}
 	}
 	for i, req := range requirements {
@@ -300,6 +332,17 @@ func setProgress(requirements []requirement.Requirement, linked [][]Issue, outpu
 		progress := combine(progresses)
 		outputs[i].Progress = &progress
 		outputs[i].Children = counts
+		setChangedAfterDone(linked[i], changes[req.ID], &outputs[i])
+	}
+}
+
+// setChangedAfterDone makes a requirement not filed when it changed after its
+// requirement issues closed (CTR-TRC-010).
+func setChangedAfterDone(issues []Issue, lastChange time.Time, output *RequirementOutput) {
+	if ChangedAfterDone(issues, lastChange) {
+		progress := NotFiled
+		output.Progress = &progress
+		output.ChangedAfterDone = true
 	}
 }
 

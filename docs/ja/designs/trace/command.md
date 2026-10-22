@@ -113,6 +113,7 @@ token の扱い (`CTR-TRC-007`):
       "file": "docs/ja/requirements/trace/index.md",
       "line": 58,
       "progress": "done",
+      "changed_after_done": false,
       "children": {
         "not_filed": 0,
         "in_progress": 0,
@@ -141,6 +142,7 @@ token の扱い (`CTR-TRC-007`):
       "file": "docs/ja/requirements/trace/index.md",
       "line": 62,
       "progress": "done",
+      "changed_after_done": false,
       "children": null,
       "requirement_issues": [
         {
@@ -201,6 +203,7 @@ token の扱い (`CTR-TRC-007`):
 |---|---|---|
 | `id` から `line` まで | | 構造化データの出力の要件と同じキー、同じ値、同じ順 ([JSON の全体の例](../export/index.md#json-の全体の例))。`export.Of` で作る。廃止した要件は `status` が `deprecated` になる |
 | `progress` | 文字列か `null` | `not_filed`、`in_progress`、`done` (`CTR-TRC-004`、`CTR-TRC-005`)。廃止していない要件は、子を持つ要件も文字列である。廃止した要件だけが `null` |
+| `changed_after_done` | 真偽値 | 要求Issueが閉じたあとに変わって、未起票になった要件 (`CTR-TRC-010`) だけが `true` である。ほかの要件は、廃止した要件も `false` ([変更後の未起票](rules.md#変更後の未起票)) |
 | `children` | オブジェクトか `null` | 子を持つ要件では、廃止していない子の進捗ごとの数と、その合計 (`total`) (`CTR-TRC-005`)。子を持たない要件と、廃止した要件は `null` |
 | `requirement_issues` | 配列 | `## Requirements` の節の項目の先頭にこのIDを書いた要求Issue ([IDの見つけ方](rules.md#idの見つけ方))。番号の順 |
 | `implementation_issues` | オブジェクト | `requirement_issues` のすべての sub-issue の、閉じた数 (`closed`) と全体の数 (`total`)。同じ sub-issue は1回だけ数える |

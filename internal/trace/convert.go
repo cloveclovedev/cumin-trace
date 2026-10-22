@@ -5,7 +5,7 @@ import "github.com/cloveclovedev/cumin-trace/internal/platform"
 // fromPlatform turns the issues of GitHub into the model. A closed issue is
 // not planned when GitHub says NOT_PLANNED or DUPLICATE. Any other closed
 // issue, also one with no reason, is completed. A sub-issue keeps the pull
-// request that closed it.
+// request that closed it. An issue keeps the time when it was closed.
 func fromPlatform(issues []platform.Issue) []Issue {
 	model := make([]Issue, 0, len(issues))
 	for _, issue := range issues {
@@ -13,6 +13,7 @@ func fromPlatform(issues []platform.Issue) []Issue {
 			Number:     issue.Number,
 			Open:       issue.State == "OPEN",
 			NotPlanned: issue.State != "OPEN" && (issue.StateReason == "NOT_PLANNED" || issue.StateReason == "DUPLICATE"),
+			ClosedAt:   issue.ClosedAt,
 			Milestone:  issue.Milestone,
 			Body:       issue.Body,
 			SubIssues:  subIssuesFromPlatform(issue.SubIssues),

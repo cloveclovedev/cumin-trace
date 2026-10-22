@@ -65,7 +65,8 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	owner, name, _ := strings.Cut(repository, "/")
 	// A history that is not deep enough stops the trace before any GitHub
 	// call (CTR-TRC-010). The rule of changed_after_done uses the times.
-	if _, err := lastChangesOf(root, settings.RequirementsDir, settings.Prefix); err != nil {
+	changes, err := lastChangesOf(root, settings.RequirementsDir, settings.Prefix)
+	if err != nil {
 		return 0, err
 	}
 
@@ -74,7 +75,7 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	output := Link(docs.Requirements, settings.Areas, fromPlatform(issues), form, readAt, repository)
+	output := Link(docs.Requirements, settings.Areas, fromPlatform(issues), changes, form, readAt, repository)
 
 	encoded, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
