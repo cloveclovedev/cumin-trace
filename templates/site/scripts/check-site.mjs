@@ -489,7 +489,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
     if (content.includes("<table") || content.includes("<details")) problems.push(`${dashboardURL}: the progress of the requirements has a table or a details element, want the tiles and the lines`);
     // The map: one row for each category, then one tile for each requirement.
     const mapRows = [...content.matchAll(/<div class="dashboard-map-row"([^>]*)>[\s\S]*?<b>([\s\S]*?)<\/b>[\s\S]*?<span class="dashboard-count">([\s\S]*?)<\/span>/g)].map((m) => ({ id: attrs(m[1])["data-id"], title: plainText(m[2]), count: plainText(m[3]) }));
-    const tiles = [...content.matchAll(/<(?:a|span) class="dashboard-tile"([^>]*)>/g)].map((m) => { const a = attrs(m[1]); return { id: a["data-id"], state: a["data-state"], link: a.href === undefined ? undefined : decoded(a.href), label: rawText(a["aria-label"] ?? "") }; });
+    const tiles = [...content.matchAll(/<(?:a|span) class="dashboard-tile"([^>]*)>/g)].map((m) => { const a = attrs(m[1]); return { id: a["data-id"], state: a["data-state"], changed: a["data-changed"] === "true", link: a.href === undefined ? undefined : decoded(a.href), label: rawText(a["aria-label"] ?? "") }; });
     // The list: a header for each category, then one line for each requirement.
     const groups = [...content.matchAll(/<section class="dashboard-group"([^>]*)>[\s\S]*?<h3>([\s\S]*?)<small>[\s\S]*?<span class="dashboard-count">([\s\S]*?)<\/span>/g)].map((m) => ({ id: attrs(m[1])["data-id"], title: plainText(m[2]), count: plainText(m[3]) }));
     const lines = [...content.matchAll(/<div class="dashboard-line"([^>]*)>([\s\S]*?)<\/div>/g)].map((m) => {
@@ -498,6 +498,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       return {
         id: attrs(m[1])["data-id"],
         state: attrs(m[1])["data-state"],
+        changed: attrs(m[1])["data-changed"] === "true" && /<span class="dashboard-dot"[^>]*data-changed="true"/.test(inner),
         progress: plainText(inner.match(/<span class="sr-only">([\s\S]*?)<\/span>/)?.[1] ?? ""),
         link: inner.match(/<a class="dashboard-id" href="([^"]*)"/)?.[1],
         issues: hrefs(issues.split('<span class="dashboard-milestone"')[0]).join(" "),
@@ -523,6 +524,8 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       const wanted = requirements[i];
       if (wanted === undefined || wanted.id !== tile.id) break;
       if (tile.state !== wanted.state) problems.push(`${dashboardURL}: the tile of ${tile.id} has the progress ${tile.state}, want ${wanted.state}`);
+      // A requirement that changed after it was done has its own mark.
+      if (tile.changed !== wanted.changed) problems.push(`${dashboardURL}: the tile of ${tile.id} has the mark of a change after done ${tile.changed}, want ${wanted.changed}`);
       // The label is the ID, the title, the progress, and the implementation
       // issues closed / total.
       const label = `${wanted.id} ${wanted.title} ・ ${wanted.progress}${wanted.total > 0 ? ` ・ 実装Issue ${wanted.closed} / ${wanted.total}` : ""}`.replace(/\s+/g, "");
@@ -533,6 +536,7 @@ for (const entry of existsSync(docs) ? readdirSync(docs, { recursive: true, with
       if (wanted === undefined || wanted.id !== line.id) break;
       const expected = {
         state: wanted.state,
+        changed: wanted.changed,
         progress: wanted.progress.replace(/\s+/g, ""),
         issues: wanted.issues.map((number) => issueURL(trace.repository, number)).join(" "),
         milestones: wanted.milestones.join("、"),

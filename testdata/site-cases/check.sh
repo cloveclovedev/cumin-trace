@@ -31,15 +31,17 @@ npm --prefix "$work/site" run check-site -- --site-name "$prefix"
 # no document has it; a requirement has its ID without the prefix and the
 # category, and its progress: the count of its children for a requirement
 # with children, whose state is its progress, or "parent" with no progress
-# (an older trace).
-want='[["DM",0,"完了 1 / 3","Data model"],["CTR-DM-001",1,"進行中",[10,11],["v0.1","v0.2"],"1 / 3",["example/other#5 open","example/product#20 closed","example/product#21 open"],"001","in_progress"],["CTR-DM-002",1,"完了 1 / 2",[12],["v0.1"],"",[],"002","in_progress"],["CTR-DM-002.1",2,"未起票",[],[],"",[],"002.1","not_filed"],["CTR-DM-002.2",2,"完了",[14,15],["v0.1","なし"],"1 / 1",["example/product#31 closed"],"002.2","done"],["OLD",0,"完了 1 / 1","OLD"],["CTR-OLD-001",1,"完了",[17],["v0.1"],"1 / 1",["example/product#40 closed"],"001","done"]]'
+# (an older trace). A not filed requirement with changed_after_done true has
+# the text "変更後の未起票" and the mark of a change; a trace with no
+# changed_after_done, as the other requirements of the fixture, marks none.
+want='[["DM",0,"完了 1 / 3","Data model"],["CTR-DM-001",1,"進行中",[10,11],["v0.1","v0.2"],"1 / 3",["example/other#5 open","example/product#20 closed","example/product#21 open"],"001","in_progress",false],["CTR-DM-002",1,"完了 1 / 2",[12],["v0.1"],"",[],"002","in_progress",false],["CTR-DM-002.1",2,"未起票",[],[],"",[],"002.1","not_filed",false],["CTR-DM-002.2",2,"完了",[14,15],["v0.1","なし"],"1 / 1",["example/product#31 closed"],"002.2","done",false],["OLD",0,"完了 1 / 2","OLD"],["CTR-OLD-001",1,"完了",[17],["v0.1"],"1 / 1",["example/product#40 closed"],"001","done",false],["CTR-OLD-002",1,"変更後の未起票",[19],["v0.1"],"",[],"002","not_filed",true]]'
 got=$(cd "$work/site" && node --input-type=module -e '
 
 import { readSettings, root } from "./src/settings.mjs";
 import { areaTitle, readTrace, tree } from "./src/dashboard.mjs";
 const rows = tree(readTrace(".."));
 const settings = readSettings();
-console.log(JSON.stringify(rows.map((r) => (r.kind === "category" ? [r.id, r.depth, r.progress, areaTitle(settings, root, r)] : [r.id, r.depth, r.progress, r.issues, r.milestones, r.implementation, r.subIssues.map((s) => `${s.repository}#${s.number} ${s.closed ? "closed" : "open"}`), r.short, r.state]))));
+console.log(JSON.stringify(rows.map((r) => (r.kind === "category" ? [r.id, r.depth, r.progress, areaTitle(settings, root, r)] : [r.id, r.depth, r.progress, r.issues, r.milestones, r.implementation, r.subIssues.map((s) => `${s.repository}#${s.number} ${s.closed ? "closed" : "open"}`), r.short, r.state, r.changed]))));
 ')
 if [ "$got" != "$want" ]; then
   echo "the tree is $got"
@@ -47,6 +49,18 @@ if [ "$got" != "$want" ]; then
   exit 1
 fi
 echo "the tree follows the rules of the design, as wanted"
+# CTR-DASH-001: the tile and the line of the requirement that changed after
+# it was done carry the mark, and no other tile or line does.
+html="$work/site/dist/dashboard/index.html"
+for class in dashboard-tile dashboard-line; do
+  marked=$(grep -o "class=\"$class\"[^>]*data-changed=\"true\"" "$html" | sed -n 's/.*data-id="\([^"]*\)".*/\1/p' | tr '\n' ' ')
+  if [ "$marked" != "CTR-OLD-002 " ]; then
+    echo "the $class elements with the mark of a change are: $marked"
+    echo "want CTR-OLD-002"
+    exit 1
+  fi
+done
+echo "the map and the list mark the requirement that changed after it was done, as wanted"
 # CTR-DASH-001: a requirement with children in a trace from an older
 # cumin-trace has no progress, and keeps the neutral "parent" look.
 got=$(cd "$work/site" && node --input-type=module -e '
