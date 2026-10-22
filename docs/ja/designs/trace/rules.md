@@ -97,7 +97,7 @@
 | `CTR-TRC-004.3` | completed で閉じた要求Issueだけを持つ要件 |
 | `CTR-TRC-005` | 3つの進捗の子と、廃止した子を持つ要件。進捗は `in_progress` で、子の数は変わらない |
 | `CTR-TRC-005` | 子がすべて完了で、要求Issueのない要件 (`done`)、開いた要求Issueを持つ要件 (`in_progress`)、not planned で閉じた要求Issueだけを持つ要件 (`done`)。子がすべて未起票で、completed で閉じた要求Issueを持つ要件 (`in_progress`) と、要求Issueのない要件 (`not_filed`)。廃止した子だけを持ち、要求Issueのない要件 (`not_filed`) |
-| `CTR-TRC-010` | 要求Issueが閉じたあとに本文を変えた要件 (`not_filed`、`true`)。開いた要求Issueを持つ要件 (`in_progress`、`false`)。変更のあとに、もう1つの要求Issueが閉じた要件 (`done`)。not planned で閉じた要求Issueだけを持つ要件 (`not_filed`、`false`)。変えていない要件 (`done`)。自身の閉じた要求Issueを持ち、子がすべて完了の親 (`not_filed`、`true`)。自身の要求Issueがないか not planned だけで、子がすべて完了の親 (`done`、`false`)。廃止した要件 (`null`、`false`) |
+| `CTR-TRC-010` | 要求Issueが閉じたあとに本文を変えた要件 (`not_filed`、`true`)。開いた要求Issueを持つ要件 (`in_progress`、`false`)。変更のあとに、もう1つの要求Issueが閉じた要件 (`done`)。not planned で閉じた要求Issueだけを持つ要件 (`not_filed`、`false`)。変えていない要件 (`done`)。自身の閉じた要求Issueを持ち、子がすべて完了の親 (`not_filed`、`true`)。自身の閉じた要求Issueを持ち、子がすべては完了していない親 (`not_filed`、`true`)。自身の要求Issueがないか not planned だけで、子がすべて完了の親 (`done`、`false`)。廃止した要件 (`null`、`false`) |
 | `CTR-TRC-006` | 文書にないIDを書いた要求Issueと、廃止した要件に対応する開いた要求Issue。廃止した要件に対応する閉じた要求Issueは、不整合にならない |
 | `CTR-TRC-006` | ページが2回返した同じ番号の要求Issue。`requirement_issues` と不整合に1回だけ出て、最初の本文を使う |
 | `CTR-TRC-008` | 上の状態をまとめた出力の全体を、決めた時刻で比べる。`discrepancies` に、2種類の不整合が1つずつ出る |

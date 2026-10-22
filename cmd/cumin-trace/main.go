@@ -28,7 +28,9 @@ func main() {
 }
 
 // traceEnv reads the environment of the trace. Only this function reads the
-// environment variables and runs git. A failure of git leaves Remote empty.
+// environment variables and runs git remote. The trace runs git too, to read
+// the history (internal/trace/history.go). A failure of git leaves Remote
+// empty.
 func traceEnv(root string) trace.Env {
 	env := trace.Env{
 		Token:      os.Getenv("GITHUB_TOKEN"),
