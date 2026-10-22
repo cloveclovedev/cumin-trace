@@ -1,12 +1,14 @@
 // Package trace links the requirements to the requirement issues on GitHub
-// and writes the result as JSON (CTR-TRC-001 to CTR-TRC-009).
+// and writes the result as JSON (CTR-TRC-001 to CTR-TRC-010).
 package trace
 
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/cloveclovedev/cumin-trace/internal/export"
 	"github.com/cloveclovedev/cumin-trace/internal/requirement"
@@ -399,4 +401,75 @@ func Repository(env, remote string) (string, error) {
 		return repository, nil
 	}
 	return "", fmt.Errorf("no repository: set GITHUB_REPOSITORY to <owner>/<name>")
+}
+
+// Commit is one commit that touches the requirement documents, with the
+// requirements of the commit and of its parent (CTR-TRC-010).
+type Commit struct {
+	// Time is the commit time.
+	Time time.Time
+	// Message is the whole commit message.
+	Message string
+	// Before holds the requirements of the parent. It is empty for a commit
+	// without a parent.
+	Before []requirement.Requirement
+	// After holds the requirements of the commit.
+	After []requirement.Requirement
+}
+
+// LastChanges returns the time of the last change of each ID in the commits,
+// which come oldest first (CTR-TRC-010). An ID changes in a commit when its
+// title, text, or verifications differ from the parent, or when the parent
+// has no such ID. A move to another file or line is no change. A line
+// `Requirement-Unchanged: <ID>` in the message says that the commit does not
+// change that ID.
+func LastChanges(commits []Commit) map[string]time.Time {
+	changes := map[string]time.Time{}
+	for _, commit := range commits {
+		unchanged := UnchangedIDs(commit.Message)
+		before := map[string]requirement.Requirement{}
+		for _, req := range commit.Before {
+			if _, ok := before[req.ID]; !ok {
+				before[req.ID] = req
+			}
+		}
+		seen := map[string]bool{}
+		for _, req := range commit.After {
+			if seen[req.ID] || slices.Contains(unchanged, req.ID) {
+				continue
+			}
+			seen[req.ID] = true
+			if old, ok := before[req.ID]; !ok || !sameContent(old, req) {
+				changes[req.ID] = commit.Time
+			}
+		}
+	}
+	return changes
+}
+
+// sameContent reports whether two requirements have the same title, text,
+// and verifications. The lines of the verifications do not count.
+func sameContent(a, b requirement.Requirement) bool {
+	if a.Title != b.Title || a.Text != b.Text || len(a.Verifications) != len(b.Verifications) {
+		return false
+	}
+	for i := range a.Verifications {
+		if a.Verifications[i].Method != b.Verifications[i].Method || a.Verifications[i].Description != b.Verifications[i].Description {
+			return false
+		}
+	}
+	return true
+}
+
+// UnchangedIDs returns the IDs of the lines `Requirement-Unchanged: <ID>` of a
+// commit message, in the order of the message (CTR-TRC-010).
+func UnchangedIDs(message string) []string {
+	var ids []string
+	for _, line := range strings.Split(message, "\n") {
+		value, ok := strings.CutPrefix(strings.TrimSpace(line), "Requirement-Unchanged:")
+		if id := strings.TrimSpace(value); ok && id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }

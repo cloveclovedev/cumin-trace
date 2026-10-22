@@ -204,7 +204,7 @@ func (f *fakeGitHub) serveClosers(w http.ResponseWriter, variables map[string]an
 }
 
 // writeRepository writes the settings and one requirement document into a new
-// temporary directory and returns it.
+// git repository in a temporary directory, commits them, and returns it.
 func writeRepository(t *testing.T, settings, document string) string {
 	t.Helper()
 	root := t.TempDir()
@@ -218,6 +218,8 @@ func writeRepository(t *testing.T, settings, document string) string {
 	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte(document), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	gitOfTest(t, root, "", "init", "--quiet")
+	commitOfTest(t, root, "2026-10-01T09:00:00Z", "docs: write the requirements")
 	return root
 }
 

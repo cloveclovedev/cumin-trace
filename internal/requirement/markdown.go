@@ -36,6 +36,26 @@ func Read(root, dir, prefix string) (Documents, error) {
 	return docs, nil
 }
 
+// File is one Markdown file of the requirement documents.
+type File struct {
+	// Path is the path from the top of the repository, with "/" as the
+	// separator.
+	Path   string
+	Source []byte
+}
+
+// Parse finds the requirement headings of the product with the prefix in the
+// files, in the order of the files, as Read does with the files on the disk.
+// The trace uses it on the files of a commit (CTR-TRC-010).
+func Parse(files []File, prefix string) Documents {
+	form := NewIDForm(prefix)
+	var docs Documents
+	for _, file := range files {
+		readDocument(&docs, file.Path, file.Source, prefix, form)
+	}
+	return docs
+}
+
 // markdownFiles returns the files below dir whose name ends with ".md", at
 // any depth, as paths from root in byte order. It follows no symbolic link.
 func markdownFiles(root, dir string) ([]string, error) {
