@@ -63,9 +63,9 @@
 | 子を持つ要件 | `完了 <children.done> / <children.total>`。`state` は自分の `progress` (`not_filed`、`in_progress`、`done`)。`progress` が `null` (古い cumin-trace の `trace.json`) か、3 つの進捗のどれでもない値なら、`state` は `parent` | 子を持たない要件と同じ | 子を持たない要件と同じ | 子を持たない要件と同じ |
 | 子を持たない要件 | `未起票`、`進行中`、`完了` (`progress`)。`progress` が `not_filed` で `changed_after_done` が `true` なら `変更後の未起票`。`state` は `not_filed`、`in_progress`、`done` | not planned で閉じたものを除く要求Issueの番号 (`#<n>`) | その要求Issueの異なるマイルストーン。マイルストーンのない要求Issueがあれば `なし` を足す | `<closed> / <total>` (`implementation_issues`) と、各 sub-issue (開いているか閉じたか)。`total` が 0 なら出さない |
 
-進捗の色は、完了が `--sl-color-green`、進行中が `--sl-color-orange`、未起票が `--sl-color-gray-5` の輪である。子を持つ要件も、自分の進捗の色を持つ。`state` が `parent` の要件 (`progress` が `null` の古い `trace.json` か、3 つの進捗のどれでもない値) だけが、色のない枠である。
+進捗の色は、完了が `--sl-color-green`、進行中が `--sl-color-orange`、未起票が `--sl-color-gray-5` の輪である。子を持つ要件も、自分の進捗の色を持つ。`state` が `parent` の要件 (`progress` が `null` の古い `trace.json` か、3 つの進捗のどれでもない値) だけが、色のない枠である。色だけに頼らず、進捗は読み上げ用の文字 (`sr-only` か `aria-label`) でも持つ。子を持つ要件の読み上げ用の文字は、子の数 (`完了 <done> / <total>`) だけで、進捗の文字を重ねない。進捗は点とタイルの色が示す。色はすべて Starlight の変数で、ダークとライトのどちらのテーマでも同じ決まりで決める (`requirements.css`)。
 
-変更後の未起票 (`CTR-TRC-010`) は、ほかの未起票と見分けられるように示す。`tree()` は、`progress` が `not_filed` で `changed_after_done` が `true` の要件の行に `changed: true` を置く。ほかの行は `false` である。`changed_after_done` を持たない古い `trace.json` では、どの行も `false` で、ビルドは失敗しない。`changed` の行のタイル、一覧の行、その点は `data-changed="true"` を持ち、`--sl-color-red` の太い輪になる。タイルの文字も同じ色である。読み上げ用の文字と進捗の文字は `変更後の未起票` である。色だけに頼らず、進捗は読み上げ用の文字 (`sr-only` か `aria-label`) でも持つ。子を持つ要件の読み上げ用の文字は、子の数 (`完了 <done> / <total>`) だけで、進捗の文字を重ねない。進捗は点とタイルの色が示す。色はすべて Starlight の変数で、ダークとライトのどちらのテーマでも同じ決まりで決める (`requirements.css`)。
+変更後の未起票 (`CTR-TRC-010`) は、ほかの未起票と見分けられるように示す。`tree()` は、`progress` が `not_filed` で `changed_after_done` が `true` の要件の行に `changed: true` を置く。ほかの行は `false` である。`changed_after_done` を持たない古い `trace.json` では、どの行も `false` で、ビルドは失敗しない。`changed` の行のタイル、一覧の行、その点は `data-changed="true"` を持ち、`--sl-color-red` の輪になる。輪の太さはほかの未起票の輪と同じで、色だけが違う。タイルの文字も同じ色である。読み上げ用の文字と進捗の文字は `変更後の未起票` である。
 
 ### タイルの地図
 

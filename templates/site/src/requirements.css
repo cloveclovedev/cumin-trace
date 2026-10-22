@@ -95,10 +95,10 @@
 }
 
 /* A requirement that is not filed because it changed after it was done
-   (changed_after_done) has a thicker red ring. */
+   (changed_after_done) has a red ring, as wide as the other not filed rings. */
 .dashboard-dot[data-state="not_filed"][data-changed="true"],
 .dashboard-tile[data-state="not_filed"][data-changed="true"] {
-  box-shadow: inset 0 0 0 2px var(--sl-color-red);
+  box-shadow: inset 0 0 0 1.5px var(--sl-color-red);
 }
 
 .dashboard-dot[data-state="parent"],
