@@ -153,6 +153,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The trace reads the git history of the documents. Fetch all of it.
+          fetch-depth: 0
       - name: Download cumin-trace
         shell: bash
         env:
@@ -184,6 +186,8 @@ jobs:
 
 - きっかけは、`main` への `push` と、毎日 19:42 (UTC) の `schedule` である。19:42 (UTC) は日本時間の 4:42 であり、1日が始まる前にサイトが新しくなる。文書の変更と、GitHub の Issue の変化の両方を、ふつうは1日以内にサイトに出す。GitHub は、負荷が高いときに schedule の実行を遅らせるか落とすことがあり、毎時0分に多い。そのため0分を避ける。公開リポジトリで60日間活動がないと、GitHub は schedule を止める。
 - 権限は `contents: read`、`issues: read`、`pull-requests: read` だけである。`trace` に渡す token は、Issue と pull request を読むだけで足りる (`CTR-TRC-007`)。
+- checkout は `persist-credentials: false` にする。どの step も git の認証情報を使わない。
+- checkout は `fetch-depth: 0` で、すべての履歴を取る。`trace` は、変更後の未起票 (`CTR-TRC-010`) を git の履歴で決め、履歴が足りないとエラーで終わる。既定の `1` では、1つの commit だけを取る。
 - cumin-trace のダウンロードは、check の workflow と同じ step である。
 - `trace` の step には `shell` を書かない。GitHub は `bash -e {0}` を実行するので、`trace` が 0 以外の終了コードで終わると、step が失敗する。続く step は既定の `if: success()` で動かないので、サイトはビルドされない。公開している場所のサイトは前のまま残る。
 - `GITHUB_REPOSITORY` は、GitHub Actions が設定する。`trace` は、そこから読むリポジトリを決める ([対応づけのコマンド](../trace/command.md))。
@@ -201,6 +205,7 @@ jobs:
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax>: `on.push.tags` は `refs/tags` に対するパターンである。フィルタのパターンで、`+` は直前の文字の1回以上、`[]` は括弧の中の1文字に合う (例 `v[12].[0-9]+.[0-9]+`)。`shell` を書かないと `bash -e {0}`、`shell: bash` では `bash --noprofile --norc -eo pipefail {0}` を実行する。「By default, fail-fast behavior is enforced using `set -e` for both `sh` and `bash`.」`continue-on-error` は「Prevents a job from failing when a step fails」で、サイトの workflow には書かない。`contents: write` で、リリースを作れる。権限を1つでも書くと、書かない権限は `none` になる。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/expressions> (2026-10-20 に読んだ): `success()` は「Returns `true` when all previous steps have succeeded」。「A default status check of `success()` is applied unless you include one of these functions.」このため、失敗した step のあとの step は動かない。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows> (2026-10-20 に読んだ): `schedule` は「can be delayed during periods of high loads」、「High load times include the start of every hour」、「some queued jobs may be dropped」。「In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred in 60 days.」
+- <https://github.com/actions/checkout/blob/main/README.md> (2026-10-22 に読んだ): `fetch-depth` は「Number of commits to fetch. 0 indicates all history for all branches and tags.」で、既定は `1` である。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/contexts>: `github.ref_name` は、実行のきっかけのブランチかタグの短い名前である。
 - `actions/checkout` と `actions/setup-go` のコミットは、このリポジトリの `.github/workflows/ci.yml` と同じである。
 

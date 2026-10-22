@@ -30,6 +30,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The trace reads the git history of the documents. Fetch all of it.
+          fetch-depth: 0
       - name: Download cumin-trace
         shell: bash
         env:
