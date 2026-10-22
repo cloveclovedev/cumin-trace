@@ -2,6 +2,7 @@ package trace
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -26,10 +27,17 @@ type fakeIssue struct {
 	labels      []string
 	state       string
 	stateReason string
-	milestone   string
-	body        string
-	subIssues   []fakeSubIssue
+	// closedAt is the time when a closed issue was closed. Empty means
+	// closedAtOfTest.
+	closedAt  string
+	milestone string
+	body      string
+	subIssues []fakeSubIssue
 }
+
+// closedAtOfTest is the default time when a closed issue was closed: after
+// the commit of writeRepository.
+const closedAtOfTest = "2026-10-05T09:00:00Z"
 
 // fakeSubIssue is one sub-issue on the fake GitHub.
 type fakeSubIssue struct {
@@ -104,8 +112,11 @@ func (f *fakeGitHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, issue := range matched[start:end] {
 		node := map[string]any{
 			"id": "I_" + strconv.Itoa(issue.number), "number": issue.number, "state": issue.state,
-			"stateReason": nil, "body": issue.body, "milestone": nil,
+			"stateReason": nil, "closedAt": nil, "body": issue.body, "milestone": nil,
 			"subIssues": subIssuesPage(issue.subIssues, 0),
+		}
+		if issue.state == "CLOSED" {
+			node["closedAt"] = cmp.Or(issue.closedAt, closedAtOfTest)
 		}
 		if issue.stateReason != "" {
 			node["stateReason"] = issue.stateReason
@@ -342,8 +353,9 @@ func TestAnIssueLinksToEachIDThatItsRequirementsSectionLists(t *testing.T) {
 }
 
 // CTR-TRC-008: the JSON holds the repository, the time of the read, and each
-// requirement with the keys of the export, its progress, and its requirement
-// issues: number, state, reason, and milestone. It lists each discrepancy with its kind, issue, and ID. The same
+// requirement with the keys of the export, its progress, whether it changed
+// after done, and its requirement issues: number, state, reason, and
+// milestone. It lists each discrepancy with its kind, issue, and ID. The same
 // input gives the same JSON.
 func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
 	github := &fakeGitHub{t: t, issues: []fakeIssue{
@@ -379,6 +391,7 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
       "file": "docs/ja/requirements/index.md",
       "line": 3,
       "progress": "in_progress",
+      "changed_after_done": false,
       "children": null,
       "requirement_issues": [
         {
@@ -417,6 +430,7 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
       "file": "docs/ja/requirements/index.md",
       "line": 9,
       "progress": "done",
+      "changed_after_done": false,
       "children": null,
       "requirement_issues": [
         {
@@ -448,6 +462,7 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
       "file": "docs/ja/requirements/index.md",
       "line": 15,
       "progress": "not_filed",
+      "changed_after_done": false,
       "children": null,
       "requirement_issues": [],
       "implementation_issues": {
@@ -471,6 +486,7 @@ func TestTheJSONHoldsTheTimeOfTheReadAndTheMilestones(t *testing.T) {
       "file": "docs/ja/requirements/index.md",
       "line": 21,
       "progress": null,
+      "changed_after_done": false,
       "children": null,
       "requirement_issues": [
         {
@@ -838,6 +854,79 @@ func progressAndChildren(output Output) map[string]string {
 		got[req.ID] = progress + " " + children
 	}
 	return got
+}
+
+// changedDocumentOfTest has the requirements of the test of CTR-TRC-010. The
+// text "old" of each requirement changes to "new" in a later commit.
+const changedDocumentOfTest = "# Tasks\n\n" +
+	"### `PC-TASK-001` Changed, closed issue\n\nold\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-002` Changed, open issue\n\nold\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-003` Changed, a later issue closed after the change\n\nold\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-004` Changed, only a not planned issue\n\nold\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-005` Unchanged, closed issue\n\nsame\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-006` Changed parent, closed issue, done children\n\nold\n\n- 検証: `test` It works\n\n" +
+	"#### `PC-TASK-006.1` Done child\n\nsame\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-007` Changed parent, no issue, done children\n\nold\n\n- 検証: `test` It works\n\n" +
+	"#### `PC-TASK-007.1` Done child\n\nsame\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-008` Changed parent, not planned issue, done children\n\nold\n\n- 検証: `test` It works\n\n" +
+	"#### `PC-TASK-008.1` Done child\n\nsame\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-009` Changed and deprecated\n\nold\n\n- 状態: 廃止\n- 検証: `test` It works\n"
+
+// CTR-TRC-010: a requirement that changed after its last requirement issue
+// closed as completed is not filed and changed after done, unless an issue is
+// open. A parent follows the same rule on its own requirement issues,
+// whatever its children are. A parent without a completed issue of its own
+// keeps the progress of CTR-TRC-005 (CTR-TRC-008: changed_after_done is
+// false for every other requirement).
+func TestARequirementThatChangedAfterItsIssuesClosedIsNotFiled(t *testing.T) {
+	root := writeRepository(t, settingsOfTest, changedDocumentOfTest)
+	writeDocument(t, root, "index.md", strings.ReplaceAll(changedDocumentOfTest, "old", "new"))
+	commitOfTest(t, root, "2026-10-10T09:00:00Z", "docs: change the requirements")
+	github := &fakeGitHub{t: t, issues: []fakeIssue{
+		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001", "PC-TASK-002", "PC-TASK-003", "PC-TASK-005", "PC-TASK-006", "PC-TASK-009"),
+		requirementIssue(2, "CLOSED", "COMPLETED", "PC-TASK-006.1", "PC-TASK-007.1", "PC-TASK-008.1"),
+		requirementIssue(3, "OPEN", "", "PC-TASK-002"),
+		requirementIssue(4, "CLOSED", "NOT_PLANNED", "PC-TASK-004", "PC-TASK-008"),
+	}}
+	later := requirementIssue(5, "CLOSED", "COMPLETED", "PC-TASK-003")
+	later.closedAt = "2026-10-15T09:00:00Z"
+	github.issues = append(github.issues, later)
+
+	count, err, stdout, stderr := runTrace(t, root, github)
+
+	if count != 0 || err != nil || stderr != "" {
+		t.Fatalf("got count %d, error %v, stderr %q; want 0, no error, and no stderr", count, err, stderr)
+	}
+	got := map[string]string{}
+	for _, req := range decode(t, stdout).Requirements {
+		progress := "null"
+		if req.Progress != nil {
+			progress = string(*req.Progress)
+		}
+		got[req.ID] = progress + " " + strconv.FormatBool(req.ChangedAfterDone)
+	}
+	want := map[string]string{
+		"PC-TASK-001":   "not_filed true",
+		"PC-TASK-002":   "in_progress false",
+		"PC-TASK-003":   "done false",
+		"PC-TASK-004":   "not_filed false",
+		"PC-TASK-005":   "done false",
+		"PC-TASK-006":   "not_filed true",
+		"PC-TASK-006.1": "done false",
+		"PC-TASK-007":   "done false",
+		"PC-TASK-007.1": "done false",
+		"PC-TASK-008":   "done false",
+		"PC-TASK-008.1": "done false",
+		"PC-TASK-009":   "null false",
+	}
+	if len(got) != len(want) {
+		t.Errorf("got %d requirements; want %d", len(got), len(want))
+	}
+	for id, w := range want {
+		if got[id] != w {
+			t.Errorf("got %s for %s; want %s", got[id], id, w)
+		}
+	}
 }
 
 // CTR-TRC-007: the token goes only into the Authorization header. Every

@@ -23,7 +23,7 @@ query requirementIssues($owner: String!, $name: String!, $label: String!, $after
            orderBy: {field: CREATED_AT, direction: ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        id number state stateReason body
+        id number state stateReason closedAt body
         milestone { title }
         subIssues(first: 100) {
           pageInfo { hasNextPage endCursor }
@@ -94,6 +94,7 @@ query closers($ids: [ID!]!) {
 | `state` が `OPEN` | 開いている |
 | `state` が `CLOSED`、`stateReason` が `NOT_PLANNED` か `DUPLICATE` | not planned で閉じた |
 | `state` が `CLOSED`、`stateReason` がそれ以外 (`COMPLETED`、`null`) | completed で閉じた |
+| `closedAt` | 閉じた日時。開いたIssueでは `null` で、モデルではゼロの時刻にする (`CTR-TRC-010`) |
 | `milestone` が `null` | マイルストーンなし |
 | `body` | そのまま |
 
@@ -125,6 +126,8 @@ query closers($ids: [ID!]!) {
 - <https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api>: `first` は 1 から 100。`pageInfo` の `hasNextPage` と `endCursor` を `after` に渡す。
 - <https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api>: 1回のノードは 500,000 まで。点数は、接続ごとの要求の数の合計を 100 で割って丸め、最小 1。上限は、ユーザで1時間 5,000 点、GitHub Actions の `GITHUB_TOKEN` でリポジトリごとに1時間 1,000 点。
 - <https://docs.github.com/en/actions/reference/workflows-and-actions/variables>: `GITHUB_REPOSITORY` (`octocat/Hello-World` の形)、`GITHUB_GRAPHQL_URL`。
+
+2026-10-22 に、<https://docs.github.com/en/graphql/reference/issues> で、`Issue.closedAt` (`DateTime`)「Identifies the date and time when the object was closed.」を読んだ。
 
 2026-10-21 に、このリポジトリの `site.yml` で、`issues: read` と `pull-requests: read` を与えた `GITHUB_TOKEN` で `trace` を動かし、sub-issue とマイルストーンを読めた。
 

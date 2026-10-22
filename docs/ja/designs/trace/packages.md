@@ -8,7 +8,7 @@
 |---|---|
 | `cmd/cumin-trace/main.go` | `trace` を選び、環境変数と `origin` の URL を `trace.Env` に入れ、結果を終了コードにする |
 | `internal/trace/service.go` | 設定と要件文書を読み、書式検査を適用し、GitHub を読み、JSON を書く |
-| `internal/trace/domain.go` | Issueのモデル (要求Issue、実装Issue、閉じた Pull Request)。`origin` の URL からリポジトリを決める規則、進捗、不整合、実装Issueの数、JSON の構造と並べ方、commit ごとに要件を比べて最後に変わった日時を決める規則 (`LastChanges`、`UnchangedIDs`)。要件のオブジェクトは `export.Requirement` を埋め込む。純粋な関数で、I/O を持たない |
+| `internal/trace/domain.go` | Issueのモデル (要求Issue、実装Issue、閉じた Pull Request)。`origin` の URL からリポジトリを決める規則、進捗、変更後の未起票 (`ChangedAfterDone`)、不整合、実装Issueの数、JSON の構造と並べ方、commit ごとに要件を比べて最後に変わった日時を決める規則 (`LastChanges`、`UnchangedIDs`)。要件のオブジェクトは `export.Requirement` を埋め込む。純粋な関数で、I/O を持たない |
 | `internal/trace/history.go` | `git` を実行して、要件文書のディレクトリに触れた commit と、その commit と親の要件文書を読み、IDごとに最後に変わった日時を返す (`lastChangesOf`、`CTR-TRC-010`)。shallow なリポジトリと、git のリポジトリでないときはエラーにする |
 | `internal/trace/convert.go` | `internal/platform` の型を、`domain.go` のモデルに変える ([GitHub の値の変換](github.md#github-の値の変換)) |
 | `internal/requirement/markdown.go` | 要求Issueの本文の `## Requirements` の節から、項目の先頭のIDを読む関数 (`ListedIDs`) を足す。commit のファイルの中身から要件を読む関数 (`Parse`) を足す |
