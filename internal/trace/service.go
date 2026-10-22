@@ -14,7 +14,8 @@ import (
 )
 
 // Env is what the command takes from its environment. Only main.go reads the
-// environment variables and runs git.
+// environment variables. The trace runs git only to read the history of the
+// requirement documents (CTR-TRC-010).
 type Env struct {
 	Token      string           // GITHUB_TOKEN
 	Repository string           // GITHUB_REPOSITORY
@@ -27,8 +28,9 @@ type Env struct {
 // requirement issues on GitHub, links them, and writes the JSON to stdout
 // (CTR-TRC-008). It writes the JSON at once, only after every read. On a
 // format error, it writes the error lines to stderr and reads no GitHub
-// (CTR-TRC-009). The returned number is the number of the format errors. The returned error says
-// that the trace cannot run.
+// (CTR-TRC-009). It reads the git history of the requirement documents
+// before GitHub (CTR-TRC-010). The returned number is the number of the
+// format errors. The returned error says that the trace cannot run.
 func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 	settings, err := core.LoadSettings(root)
 	if err != nil {
@@ -61,6 +63,11 @@ func Run(root string, env Env, stdout, stderr io.Writer) (int, error) {
 		url = platform.DefaultGraphQLURL
 	}
 	owner, name, _ := strings.Cut(repository, "/")
+	// A history that is not deep enough stops the trace before any GitHub
+	// call (CTR-TRC-010). The rule of changed_after_done uses the times.
+	if _, err := lastChangesOf(root, settings.RequirementsDir, settings.Prefix); err != nil {
+		return 0, err
+	}
 
 	readAt := env.Now().UTC().Format(time.RFC3339)
 	issues, err := platform.NewGitHubClient(url, env.Token).IssuesWithLabel(owner, name, settings.RequirementLabel)
