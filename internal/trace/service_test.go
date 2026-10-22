@@ -870,6 +870,9 @@ const changedDocumentOfTest = "# Tasks\n\n" +
 	"#### `PC-TASK-007.1` Done child\n\nsame\n\n- 検証: `test` It works\n\n---\n\n" +
 	"### `PC-TASK-008` Changed parent, not planned issue, done children\n\nold\n\n- 検証: `test` It works\n\n" +
 	"#### `PC-TASK-008.1` Done child\n\nsame\n\n- 検証: `test` It works\n\n---\n\n" +
+	"### `PC-TASK-010` Changed parent, closed issue, children not all done\n\nold\n\n- 検証: `test` It works\n\n" +
+	"#### `PC-TASK-010.1` Done child\n\nsame\n\n- 検証: `test` It works\n\n" +
+	"#### `PC-TASK-010.2` Not filed child\n\nsame\n\n- 検証: `test` It works\n\n---\n\n" +
 	"### `PC-TASK-009` Changed and deprecated\n\nold\n\n- 状態: 廃止\n- 検証: `test` It works\n"
 
 // CTR-TRC-010: a requirement that changed after its last requirement issue
@@ -883,8 +886,8 @@ func TestARequirementThatChangedAfterItsIssuesClosedIsNotFiled(t *testing.T) {
 	writeDocument(t, root, "index.md", strings.ReplaceAll(changedDocumentOfTest, "old", "new"))
 	commitOfTest(t, root, "2026-10-10T09:00:00Z", "docs: change the requirements")
 	github := &fakeGitHub{t: t, issues: []fakeIssue{
-		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001", "PC-TASK-002", "PC-TASK-003", "PC-TASK-005", "PC-TASK-006", "PC-TASK-009"),
-		requirementIssue(2, "CLOSED", "COMPLETED", "PC-TASK-006.1", "PC-TASK-007.1", "PC-TASK-008.1"),
+		requirementIssue(1, "CLOSED", "COMPLETED", "PC-TASK-001", "PC-TASK-002", "PC-TASK-003", "PC-TASK-005", "PC-TASK-006", "PC-TASK-009", "PC-TASK-010"),
+		requirementIssue(2, "CLOSED", "COMPLETED", "PC-TASK-006.1", "PC-TASK-007.1", "PC-TASK-008.1", "PC-TASK-010.1"),
 		requirementIssue(3, "OPEN", "", "PC-TASK-002"),
 		requirementIssue(4, "CLOSED", "NOT_PLANNED", "PC-TASK-004", "PC-TASK-008"),
 	}}
@@ -918,6 +921,9 @@ func TestARequirementThatChangedAfterItsIssuesClosedIsNotFiled(t *testing.T) {
 		"PC-TASK-008":   "done false",
 		"PC-TASK-008.1": "done false",
 		"PC-TASK-009":   "null false",
+		"PC-TASK-010":   "not_filed true",
+		"PC-TASK-010.1": "done false",
+		"PC-TASK-010.2": "not_filed false",
 	}
 	if len(got) != len(want) {
 		t.Errorf("got %d requirements; want %d", len(got), len(want))

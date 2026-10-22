@@ -31,10 +31,10 @@
 
 /* The progress of the requirements on the dashboard (CTR-DASH-001): a map of
    tiles, then one line for each requirement. The progress has a color: done
-   green, in progress orange, not filed a gray outline. A requirement with
-   children has the color of its own progress, and a neutral outline only in
-   an older trace with no progress for it. The page gives each progress as
-   text too. */
+   green, in progress orange, not filed a gray outline. A requirement that
+   changed after it was done has a red outline. A requirement with children
+   has the color of its own progress, and a neutral outline only in an older
+   trace with no progress for it. The page gives each progress as text too. */
 .dashboard {
   font-size: var(--sl-text-sm);
 }
