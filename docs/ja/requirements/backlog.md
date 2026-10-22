@@ -227,3 +227,12 @@ Go の `html/template`、htmx、Tailwind を使い、サーバを持つダッシ
 
 ---
 
+### merge commit で取り込む履歴での変更後の未起票
+
+merge commit で変更を取り込むリポジトリでも、`CTR-TRC-010` の変わった日時と `Requirement-Unchanged` の行が正しく効くようにする。
+
+- 後回しにした理由: このリポジトリは squash merge だけを許している
+- 見直すきっかけ: merge commit で取り込むプロダクトに cumin-trace を入れるとき
+
+---
+
