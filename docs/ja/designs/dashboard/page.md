@@ -142,7 +142,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 
 - きっかけ: `main` への `push` と `schedule`。
 - 権限: `contents: read`、`issues: read`、`pull-requests: read`。
-- step: checkout、`cumin-trace-check.yml` と同じ cumin-trace のダウンロード、`cumin-trace trace > site/trace.json` (`GITHUB_TOKEN: ${{ github.token }}`)、`actions/setup-node` (`node-version-file: site/.node-version`)、`npm --prefix site ci`、`npm --prefix site run build`。
+- step: checkout (`fetch-depth: 0` ですべての履歴を取る。`CTR-TRC-010` の変更後の未起票は git の履歴で決める)、`cumin-trace-check.yml` と同じ cumin-trace のダウンロード、`cumin-trace trace > site/trace.json` (`GITHUB_TOKEN: ${{ github.token }}`)、`actions/setup-node` (`node-version-file: site/.node-version`)、`npm --prefix site ci`、`npm --prefix site run build`。
 - trace が失敗すると、step が失敗し、続く step は動かない (公式文書で確かめた。[リリースと workflow](../templates/release.md) の「プロダクトのサイトの workflow」)。ビルドしないので、公開している場所のサイトは前のまま残る。
 - `site/dist/` をどこに置くかは書かない。プロダクトが、最後に step を足す。
 - このリポジトリの `.github/workflows/site.yml` も、公開する実行 (`main` への `push` と毎日 19:42 UTC (日本時間 4:42) の `schedule`) で、`npm ci` のあとに `go run ./cmd/cumin-trace trace > site/trace.json` を動かす。権限は例と同じ3つである。trace が失敗すると、ビルドも公開もしない。Pull Request のビルドは trace を動かさない。

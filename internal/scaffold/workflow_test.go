@@ -111,6 +111,8 @@ func TestSkipsTheWorkflowWithoutTheVersionOfARelease(t *testing.T) {
 // workflow runs on a push to main and on a schedule, with read permissions
 // only. It downloads the release binary of that version, writes the trace
 // to site/trace.json, and then builds the site. It publishes nothing.
+// CTR-TRC-010: the checkout fetches the whole git history, which the trace
+// reads, and keeps the token out of .git/config.
 func TestWritesTheWorkflowThatRebuildsTheSiteWithTheTrace(t *testing.T) {
 	root := t.TempDir()
 	runInitWithVersion(t, root, "PC", "", "v1.2.3")
@@ -128,6 +130,8 @@ func TestWritesTheWorkflowThatRebuildsTheSiteWithTheTrace(t *testing.T) {
 		"node-version-file: site/.node-version",
 		"run: npm --prefix site ci\n",
 		"run: npm --prefix site run build\n",
+		"with:\n          persist-credentials: false\n",
+		"          fetch-depth: 0\n      - name: Download cumin-trace\n",
 	} {
 		if !strings.Contains(workflow, want) {
 			t.Errorf("the workflow has no %q:\n%s", want, workflow)
