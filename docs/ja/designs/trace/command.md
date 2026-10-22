@@ -74,13 +74,14 @@ token の扱い (`CTR-TRC-007`):
 2. 要件文書を読み、書式検査 (`check.Find`) を適用する
 3. 書式のエラーがあれば、GitHub を呼ばずに終わる (`CTR-TRC-009`)
 4. リポジトリと token を確かめる。`requirement_label` が空なら `invalid requirement_label: want a non-empty string`、`GITHUB_REPOSITORY` が形に合わなければ `invalid GITHUB_REPOSITORY "<value>": want <owner>/<name>` のエラーにする
-5. GitHub を読み、対応づけて、JSON を標準出力に書く
+5. git の履歴から、IDごとに最後に変わった日時を読む (`CTR-TRC-010`)。shallow なリポジトリか、git のリポジトリでないときは、GitHub を呼ばずにエラーで終わる ([変わった日時](index.md#変わった日時はgit-のコマンドで履歴を読んで決める))
+6. GitHub を読み、対応づけて、JSON を標準出力に書く
 
 | コード | 場合 | 標準出力 | 標準エラー出力 |
 |---|---|---|---|
 | 0 | JSON を書いた | JSON | なし |
 | 1 | 書式のエラーがある | なし | 書式検査と同じエラーの行、続けて `cumin-trace: <N> error(s)` |
-| 2 | 引数の誤り、設定や要件文書を読めない、リポジトリが決まらない、token がない、GitHub を読めない | なし | `cumin-trace: <message>` |
+| 2 | 引数の誤り、設定や要件文書を読めない、リポジトリが決まらない、token がない、git の履歴が足りないか読めない、GitHub を読めない | なし | `cumin-trace: <message>` |
 
 - 書式のエラーの行は、`check` と同じ `<file>:<line>: <ID>: <message>` である ([エラーと出力](../check/errors.md))。`check` と違って標準エラー出力に書く。標準出力をファイルにリダイレクトしても、JSON でないものがファイルに入らないためである。
 - GitHub のエラーは、次のどれかとして出す。再試行しない。

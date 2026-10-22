@@ -9,8 +9,9 @@ package "cmd/cumin-trace" {
 
 package "internal/trace" #LightYellow {
   [service.go\nrun the trace,\nwrite the JSON] as service
-  [domain.go\nissue models, repository from origin,\nprogress, discrepancies (pure),\nexport keys first, then trace keys] as rules
+  [domain.go\nissue models, repository from origin,\nprogress, discrepancies, last changes (pure),\nexport keys first, then trace keys] as rules
   [convert.go\nplatform types to issue models] as convert
+  [history.go\nrun git, read the documents\nof each commit] as history
 }
 
 package "internal/platform" #LightYellow {
@@ -30,10 +31,11 @@ package "internal/check" {
 }
 
 package "internal/requirement" {
-  [read the requirement documents,\nListedIDs (IDs of an issue body)] as requirement
+  [read the requirement documents,\nParse (files of a commit),\nListedIDs (IDs of an issue body)] as requirement
 }
 
 cloud "GitHub GraphQL API" as api
+node "git" as git
 
 main --> service
 service --> settings
@@ -42,6 +44,10 @@ service --> check
 service --> rules
 service --> github
 service --> convert
+service --> history
+history --> requirement : Parse
+history --> rules : LastChanges
+history --> git : log, ls-tree, cat-file
 convert --> github : platform types
 convert --> rules : issue models
 rules --> requirement

@@ -14,6 +14,7 @@
   - `CTR-TRC-007` GitHub には書き込まない
   - `CTR-TRC-008` 結果の出力
   - `CTR-TRC-009` 書式の誤りがあるとき
+  - `CTR-TRC-010` 変更後の未起票 (いまは、変わった日時を読むところまで)
 - [コマンド](../../requirements/command/index.md)
   - `CTR-CMD-001` コマンドの一覧
   - `CTR-CMD-003` 引数の誤り
@@ -25,7 +26,7 @@
 
 ## 実装の状況
 
-いまのコードは、この設計のすべてを持つ。
+いまのコードは、`CTR-TRC-010` の規則と `changed_after_done` のほかは、この設計のすべてを持つ。
 
 | 部分 | 状況 |
 |---|---|
@@ -36,6 +37,8 @@
 | 進捗 (`CTR-TRC-004`) と子の進捗の数 (`CTR-TRC-005`)。`ProgressOf` と `setProgress` (`internal/trace/domain.go`) | 実装した |
 | sub-issue と Pull Request (`CTR-TRC-003`)、実装Issueの数 (`CountImplementation`) | 実装した |
 | 不整合 (`CTR-TRC-006`) と JSON の `discrepancies`。`Link` と `sortDiscrepancies` (`internal/trace/domain.go`) | 実装した |
+| git の履歴から、IDごとに最後に変わった日時を読む (`CTR-TRC-010`)。`lastChangesOf` (`internal/trace/history.go`) と `LastChanges` (`internal/trace/domain.go`)。履歴が足りないときのエラー | 実装した |
+| 変わった日時と要求Issueの閉じた日時を比べる規則 (`CTR-TRC-010`) と、JSON の `changed_after_done` | まだない。読んだ日時は、まだ出力に使わない |
 
 ## 全体像
 
@@ -45,7 +48,7 @@
 
 図の元ファイル: [trace-packages.puml](trace-packages.puml)
 
-書式検査を先に済ませ、エラーがなければ GitHub を読む (`CTR-TRC-009`)。
+書式検査を先に済ませ、エラーがなければ git の履歴を読み、そのあとで GitHub を読む (`CTR-TRC-009`、`CTR-TRC-010`)。
 
 ![要件と要求Issueの対応づけのシーケンス](trace-sequence.svg)
 
@@ -101,4 +104,19 @@ GraphQL の client は `internal/platform/github.go` に置き、その中で定
 - 理由: プラットフォームのパッケージは具体的な型を返し、機能ごとに自分のモデルへ変える。GraphQL の型はプラットフォームで止まり、機能の規則 (`domain.go`) は、プロバイダのパッケージにも `internal/platform` の型にも依存しない。ほかの機能も、あとで同じ client で GitHub を読める。
 - 採らなかった案: 共有のモデルを `internal/core` に置く。使うのは対応づけだけで、プロバイダを知らない土台ではない。
 - 採らなかった案: `internal/trace` が持つ interface。2つ目の実装か、テストの本当の必要が出るまで作らない。テストは偽の GitHub の後ろに本物の client を置く。interface は、あとで `internal/trace` の側に、`internal/platform` を変えずに足せる。
+- 細部: [パッケージとファイル](packages.md)
+
+### 変わった日時は、`git` のコマンドで履歴を読んで決める
+
+要件文書のディレクトリ (`requirements_dir`) に触れた commit を、古い順に読む。commit ごとに、その commit と最初の親の要件文書を `requirement.Parse` で読み、IDごとに比べる (`CTR-TRC-010`)。
+
+- 変わったとするのは、タイトル、本文、検証 (方法と説明) のどれかが親と違うとき、または親にそのIDがないときである。ファイルや行の位置は比べない。そのため、別のファイルや別の行への移動は変更にならない。
+- commit のメッセージに `Requirement-Unchanged: <ID>` の行があれば、その commit でのそのIDの変更は数えない。行の前後の空白は無視する。1つの commit に複数の行を書ける。
+- 変わった日時は、commit の日時 (`%cI`) である。author の日時ではない。rebase や squash merge で main に入った時刻に近いためである。
+- shallow なリポジトリ (`git rev-parse --is-shallow-repository` が `true`) では、`shallow git repository: fetch the whole history of the requirement documents (fetch-depth: 0)` のエラーで終わる。git のリポジトリでないときは、`no git repository: the trace reads the git history of the requirement documents` のエラーで終わる。どちらも終了コード 2 で、GitHub を呼ばない。
+- 履歴を読むのは、リポジトリと token を確かめたあと、GitHub を読む前である。
+- 理由: 新しいライブラリが要らない。`git` は、GitHub Actions のランナーにも手元にもある。比べる規則は純粋な関数 (`LastChanges`) にして、`git` を実行する部分 (`history.go`) と分ける。
+- 採らなかった案: Go の git ライブラリ。ライブラリを足すことになり、親 (#182) の制約で、足す前に Maintainer に聞く必要がある。
+- 採らなかった案: `git log -p` の差分の行から変更を探す。移動と変更の区別や、要件の範囲の判断が、要件文書の読み方と食い違う。
+- 範囲外: merge commit で取り込む履歴 ([先送りした要件](../../requirements/backlog.md))。merge commit は、親の1つと同じ内容なら `git log` が省く。
 - 細部: [パッケージとファイル](packages.md)

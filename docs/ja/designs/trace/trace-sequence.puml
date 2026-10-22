@@ -6,6 +6,8 @@ hide footbox
 participant "cmd/cumin-trace\nmain.go" as main
 participant "internal/trace\nservice.go" as service
 participant "internal/check\ndomain.go" as check
+participant "internal/trace\nhistory.go" as history
+participant "git" as git
 participant "internal/platform\ngithub.go" as github
 participant "GitHub\nGraphQL API" as api
 participant "internal/trace\ndomain.go" as rules
@@ -22,6 +24,23 @@ alt format errors
   note right of main : no GitHub call, no JSON
 else no format error
   service -> service : decide the repository\n(GITHUB_REPOSITORY, then origin),\ncheck the token
+  service -> history : lastChangesOf(root, dir, prefix)
+  history -> git : rev-parse --is-shallow-repository
+  alt shallow, or no git repository
+    history --> service : error
+    service --> main : error
+    main -> main : exit 2
+    note right of main : no GitHub call, no JSON
+  else whole history
+    history -> git : log --reverse -- <requirements_dir>
+    loop each commit and its first parent
+      history -> git : ls-tree, cat-file --batch
+      history -> history : requirement.Parse
+    end
+    history -> rules : LastChanges (pure compare)
+    rules --> history : time of the last change of each ID
+    history --> service : times
+  end
   service -> github : IssuesWithLabel(owner, name, label)
   loop pages of 100
     github -> api : query requirementIssues
