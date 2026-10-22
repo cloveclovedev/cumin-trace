@@ -61,9 +61,11 @@
 |---|---|---|---|---|
 | カテゴリ | `完了 <n> / <m>`。`m` はカテゴリの中の子を持たない要件の数、`n` はそのうち完了の数。進捗ごとの数 (`counts`) も持つ | なし | なし | なし |
 | 子を持つ要件 | `完了 <children.done> / <children.total>`。`state` は自分の `progress` (`not_filed`、`in_progress`、`done`)。`progress` が `null` (古い cumin-trace の `trace.json`) か、3 つの進捗のどれでもない値なら、`state` は `parent` | 子を持たない要件と同じ | 子を持たない要件と同じ | 子を持たない要件と同じ |
-| 子を持たない要件 | `未起票`、`進行中`、`完了` (`progress`)。`state` は `not_filed`、`in_progress`、`done` | not planned で閉じたものを除く要求Issueの番号 (`#<n>`) | その要求Issueの異なるマイルストーン。マイルストーンのない要求Issueがあれば `なし` を足す | `<closed> / <total>` (`implementation_issues`) と、各 sub-issue (開いているか閉じたか)。`total` が 0 なら出さない |
+| 子を持たない要件 | `未起票`、`進行中`、`完了` (`progress`)。`progress` が `not_filed` で `changed_after_done` が `true` なら `変更後の未起票`。`state` は `not_filed`、`in_progress`、`done` | not planned で閉じたものを除く要求Issueの番号 (`#<n>`) | その要求Issueの異なるマイルストーン。マイルストーンのない要求Issueがあれば `なし` を足す | `<closed> / <total>` (`implementation_issues`) と、各 sub-issue (開いているか閉じたか)。`total` が 0 なら出さない |
 
 進捗の色は、完了が `--sl-color-green`、進行中が `--sl-color-orange`、未起票が `--sl-color-gray-5` の輪である。子を持つ要件も、自分の進捗の色を持つ。`state` が `parent` の要件 (`progress` が `null` の古い `trace.json` か、3 つの進捗のどれでもない値) だけが、色のない枠である。色だけに頼らず、進捗は読み上げ用の文字 (`sr-only` か `aria-label`) でも持つ。子を持つ要件の読み上げ用の文字は、子の数 (`完了 <done> / <total>`) だけで、進捗の文字を重ねない。進捗は点とタイルの色が示す。色はすべて Starlight の変数で、ダークとライトのどちらのテーマでも同じ決まりで決める (`requirements.css`)。
+
+変更後の未起票 (`CTR-TRC-010`) は、ほかの未起票と見分けられるように示す。`tree()` は、`progress` が `not_filed` で `changed_after_done` が `true` の要件の行に `changed: true` を置く。ほかの行は `false` である。`changed_after_done` を持たない古い `trace.json` では、どの行も `false` で、ビルドは失敗しない。`changed` の行のタイル、一覧の行、その点は `data-changed="true"` を持ち、`--sl-color-red` の輪になる。輪の太さはほかの未起票の輪と同じで、色だけが違う。タイルの文字も同じ色である。読み上げ用の文字と進捗の文字は `変更後の未起票` である。
 
 ### タイルの地図
 
@@ -72,11 +74,12 @@
 - 実装Issueを持つ要件のタイルは、下に細い線を持ち、閉じた割合だけ塗る。
 - タイルは要件へのリンク (`requirementURL()`) である。表にない ID のタイルはリンクでない。
 - タイルの `title` と `aria-label` は、ID、タイトル、進捗 (子を持つ要件は子の数)、実装Issueの `<closed> / <total>` である。
-- 凡例は、完了、進行中、未起票と、タイルの下の線の意味である。
+- 凡例は、完了、進行中、未起票、変更後の未起票と、タイルの下の線の意味である。
 
 ### 要件の一覧
 
 - カテゴリごとに、見出しの行を置く。カテゴリの名前、カテゴリの ID、完了、進行中、未起票の割合の棒、`完了 <n> / <m>` である。
+- 凡例は、完了、進行中、未起票、変更後の未起票と、実装Issueの四角の意味である。
 - 要件ごとに1行。進捗の点、ID (要件へのリンク)、タイトル、要求Issueのリンクとそのマイルストーン、実装Issueの四角と `<closed> / <total>` を並べる。
 - タイトルは1行に収め、あふれた分を省略する。省略しないタイトルは `title` に置く。子を持つ要件は、タイトルのあとに子の数を置く。
 - 子の要件は、深さの分だけ字下げする。
@@ -169,7 +172,7 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 | `site/dist/dashboard/index.html` がある。各ページのサイドバーの最初のリンクの `href` が `<base>dashboard/` である | `CTR-DASH-001`、`CTR-DASH-005` |
 | `trace.json` が「読めない」とき、ページの本文が GitHub を読めなかった1文だけで、表がない | `CTR-DASH-006` |
 | 読めたとき、読んだ時刻の `<time>` の `datetime` が `read_at` と同じで、その文字が `japanTime()` の値と同じである | `CTR-DASH-006` |
-| 地図と一覧のカテゴリが `tree()` のカテゴリと `areaTitle()` の名前と同じである。タイルと一覧の行が `tree()` の要件の行と同じ順と値である。廃止した要件がない。表と `<details>` がない | `CTR-DASH-001` |
+| 地図と一覧のカテゴリが `tree()` のカテゴリと `areaTitle()` の名前と同じである。タイルと一覧の行が `tree()` の要件の行と同じ順と値 (変更後の未起票の `data-changed` を含む) である。廃止した要件がない。表と `<details>` がない | `CTR-DASH-001` |
 | 要件のリンクの行き先のページと `id` が出力にある。要求Issueと実装Issueのリンクが `issueURL()` と同じである | `CTR-DASH-005` |
 | 不整合の見出しが地図と一覧の間にある。各行の種類、要求Issueのリンク、ID とそのリンクが、`discrepancies()` と同じ順と値である。空なら不整合の見出しも行もない | `CTR-DASH-009` |
 | `site/dist/` に `trace.json` がない。サーバの関数がない (今の `CTR-SITE-008` の行) | `CTR-DASH-007` |
@@ -182,7 +185,8 @@ rm -f trace.json; (cd .. && cumin-trace trace > site/trace.json.tmp) && mv trace
 - 廃止した要件
 - `unknown_id` と `open_issue_for_deprecated` の不整合
 - ほかのリポジトリの sub-issue
+- `changed_after_done` が `true` の要件 (変更後の未起票)。ほかの要件は `changed_after_done` を持たず、古い `trace.json` の代わりになる
 
-`check.sh` は、fixture を `site/trace.json` に写して `check-site` を動かす。`check-site` が関数と同じ値を期待するだけでは、関数の決まりの誤りを見つけられない。そのため、`check.sh` は、サイドバーの確かめ方と同じく、`tree()` と `discrepancies()` の出力を、決まりから手で書いた固定の値と比べる。そのあと、`discrepancies` を空にした `trace.json` で、もう一度動かし、不整合の見出しがないことを確かめる。最後に、JSON でない `trace.json` を書いて、もう一度動かし、読めないときの行を確かめる。このリポジトリの `site.yml` は、Pull Request では `trace.json` なしでビルドするので、ファイルがないときの行を確かめる。公開する実行では、trace の出力で、読めたときの行を確かめる。
+`check.sh` は、fixture を `site/trace.json` に写して `check-site` を動かす。`check-site` が関数と同じ値を期待するだけでは、関数の決まりの誤りを見つけられない。そのため、`check.sh` は、サイドバーの確かめ方と同じく、`tree()` と `discrepancies()` の出力を、決まりから手で書いた固定の値と比べる。地図と一覧で `data-changed="true"` を持つのが、変更後の未起票の要件だけであることも確かめる。そのあと、`discrepancies` を空にした `trace.json` で、もう一度動かし、不整合の見出しがないことを確かめる。最後に、JSON でない `trace.json` を書いて、もう一度動かし、読めないときの行を確かめる。このリポジトリの `site.yml` は、Pull Request では `trace.json` なしでビルドするので、ファイルがないときの行を確かめる。公開する実行では、trace の出力で、読めたときの行を確かめる。
 
 `CTR-DASH-005` のクリックの行き先は、Maintainer が `demo` で見る。

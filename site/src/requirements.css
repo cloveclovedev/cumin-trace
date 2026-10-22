@@ -94,6 +94,13 @@
   box-shadow: inset 0 0 0 1.5px var(--sl-color-gray-5);
 }
 
+/* A requirement that is not filed because it changed after it was done
+   (changed_after_done) has a red ring, as wide as the other not filed rings. */
+.dashboard-dot[data-state="not_filed"][data-changed="true"],
+.dashboard-tile[data-state="not_filed"][data-changed="true"] {
+  box-shadow: inset 0 0 0 1.5px var(--sl-color-red);
+}
+
 .dashboard-dot[data-state="parent"],
 .dashboard-tile[data-state="parent"],
 .dashboard-bar [data-state="parent"] {
@@ -158,6 +165,13 @@
 :root[data-theme="light"] .dashboard a.dashboard-tile[data-state="not_filed"],
 :root[data-theme="light"] .dashboard-tile[data-state="not_filed"] {
   color: var(--sl-color-gray-3);
+}
+
+.dashboard a.dashboard-tile[data-state="not_filed"][data-changed="true"],
+.dashboard-tile[data-state="not_filed"][data-changed="true"],
+:root[data-theme="light"] .dashboard a.dashboard-tile[data-state="not_filed"][data-changed="true"],
+:root[data-theme="light"] .dashboard-tile[data-state="not_filed"][data-changed="true"] {
+  color: var(--sl-color-red);
 }
 
 .dashboard a.dashboard-tile[data-state="parent"],

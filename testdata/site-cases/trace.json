@@ -140,6 +140,21 @@
         }
       ],
       "implementation_issues": { "closed": 1, "total": 1 }
+    },
+    {
+      "id": "CTR-OLD-002",
+      "parent": null,
+      "title": "A requirement that changed after it was done",
+      "status": "active",
+      "file": "docs/ja/requirements/old.md",
+      "line": 11,
+      "progress": "not_filed",
+      "changed_after_done": true,
+      "children": null,
+      "requirement_issues": [
+        { "number": 19, "state": "closed", "state_reason": "completed", "milestone": "v0.1", "sub_issues": [] }
+      ],
+      "implementation_issues": { "closed": 0, "total": 0 }
     }
   ],
   "discrepancies": [
