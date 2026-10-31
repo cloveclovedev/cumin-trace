@@ -119,11 +119,11 @@ for (const path of documentPages) {
 
 // CTR-SITE-011: the sidebar of the page of the entry document starts with
 // the link to the dashboard page, then lists the pages of sidebar() in its
-// order, and each page of a document once. After the dashboard link, the top
-// level starts with the page of the entry document, then follows the order of
-// the links of the entry document. CTR-SITE-012: no item or group of the top
-// level is named after a part of docs_dir, unless a directory of the
-// documents has that name.
+// order, and each page of a document once, but the page of the entry
+// document, which the name of the site opens, not at all. After the dashboard
+// link, the top level follows the order of the links of the entry document.
+// CTR-SITE-012: no item or group of the top level is named after a part of
+// docs_dir, unless a directory of the documents has that name.
 {
   const entry = join(docs, "index.md");
   const html = page(settings.base) ?? "";
@@ -139,7 +139,8 @@ for (const path of documentPages) {
   for (const path of documentPages) {
     const url = decoded(`${settings.base}${relative(dist, dirname(path)).split(sep).join("/")}${dirname(path) === dist ? "" : "/"}`);
     const count = links.filter((item) => item.url === url).length;
-    if (count !== 1) problems.push(`${url}: the page shows ${count} times in the sidebar, want 1`);
+    const times = url === decoded(settings.base) ? 0 : 1;
+    if (count !== times) problems.push(`${url}: the page shows ${count} times in the sidebar, want ${times}`);
   }
   // The first item of each item of the top level: the link, or the first
   // link of the group.
@@ -152,14 +153,13 @@ for (const path of documentPages) {
   // The first item of the top level is the dashboard link, checked above.
   firsts.shift();
   if (existsSync(entry)) {
-    if (firsts[0] !== decoded(settings.base)) problems.push(`${settings.base}: the sidebar starts with ${firsts[0]}, want the page of the entry document`);
     const linked = [];
     for (const link of sourceLinks(readFileSync(entry, "utf8"))) {
       const target = linkTarget(settings, root, entry, link.href);
       const url = target.kind === "page" ? decoded(target.url.split("#")[0]) : undefined;
       if (url !== undefined && url !== decoded(settings.base) && !linked.includes(url)) linked.push(url);
     }
-    const order = firsts.slice(1).filter((url) => linked.includes(url));
+    const order = firsts.filter((url) => linked.includes(url));
     const wantOrder = linked.filter((url) => order.includes(url));
     if (order.length === 0 && linked.length > 0) problems.push(`${settings.base}: the top level of the sidebar has none of the links of the entry document`);
     if (order.join("\n") !== wantOrder.join("\n")) {

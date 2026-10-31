@@ -251,12 +251,30 @@ export function bodyLines(text) {
 // document that is no image, outside the frontmatter, the code blocks, and
 // the code spans.
 export function sourceLinks(text) {
+  return bodyLines(text).flatMap(lineLinks);
+}
+
+// lineLinks returns the destination and the text of each inline link of a
+// line that is no image, outside the code spans.
+function lineLinks(line) {
   const found = [];
+  const plain = line.replace(/`[^`]*`/g, (span) => span.replace(/[[\]()]/g, " "));
+  for (const match of plain.matchAll(/(?<!!)\[([^\]]*)\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)) {
+    found.push({ text: line.slice(match.index + 1, match.index + 1 + match[1].length), href: match[2] });
+  }
+  return found;
+}
+
+// sections returns the links of a document by its "##" ATX headings, in the
+// order of the document: first the links before the first such heading, with
+// no label, then the links below each heading, with the text of the heading
+// as the label. A deeper heading starts no section.
+function sections(text) {
+  const found = [{ label: undefined, links: [] }];
   for (const line of bodyLines(text)) {
-    const plain = line.replace(/`[^`]*`/g, (span) => span.replace(/[[\]()]/g, " "));
-    for (const match of plain.matchAll(/(?<!!)\[([^\]]*)\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)) {
-      found.push({ text: line.slice(match.index + 1, match.index + 1 + match[1].length), href: match[2] });
-    }
+    const heading = line.match(/^ {0,3}##(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/);
+    if (heading) found.push({ label: (heading[1] ?? "").replace(/`/g, "").trim(), links: [] });
+    else found[found.length - 1].links.push(...lineLinks(line));
   }
   return found;
 }
@@ -346,58 +364,84 @@ export function linkTarget(settings, root, file, href) {
 }
 
 // sidebar returns the items of the sidebar of Starlight in the reading order
-// (CTR-SITE-011): the page of the entry document, then a depth-first walk of
-// the links of each index.md. The index.md of a directory makes a group of
-// the pages below that directory. Each page shows once, where the walk first
-// places it. A page that the walk does not place goes, in path order, to the
-// end of the deepest group that holds it, or to the end of the top level.
-// The items name no directory above docs_dir (CTR-SITE-012).
+// (CTR-SITE-011). Each "##" heading of the entry document makes a group of
+// the top level. Each index.md first places its own links, then fills the
+// groups of the directories that it links to, from their index.md. A page or
+// a group that a link places shows the text of the link. Each page shows
+// once, where it is first placed. The entry document is not listed: the
+// name of the site at the top left opens it. A page that no index.md places
+// goes, in path order, to
+// the end of the deepest group that holds it, or to the end of the top
+// level. A group that holds only the page of its index.md shows as that
+// page (CTR-SITE-015). The items name no directory above docs_dir
+// (CTR-SITE-012).
 export function sidebar(settings, root) {
   const docs = join(root, settings.docsDir);
   const path = (file) => relative(docs, file).split(sep).join("/");
   const pages = markdownFiles(docs).map(path).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   const placed = new Set();
   const groups = new Map();
+  const indexes = new Map();
   const top = [];
+  // label returns the text of a link as a label, with no code span quotes.
+  const label = (link) => link.text.replace(/`/g, "").trim();
   // group returns a new group of the directory dir, with the page of its
-  // index.md first when one exists.
-  const group = (dir, label) => {
+  // index.md first when one exists. Its label is the text of the link, or the
+  // title of the index.md, or the name.
+  const group = (dir, name, text = "") => {
     const index = `${dir}/index.md`;
     const items = [];
+    const item = { label: name, items };
     if (pages.includes(index)) {
-      label = documentTitle(readFileSync(join(docs, index), "utf8"), join(docs, index));
+      item.label = documentTitle(readFileSync(join(docs, index), "utf8"), join(docs, index));
       items.push({ slug: pageID(index) });
+      indexes.set(item, pageID(index));
       placed.add(index);
     }
-    const item = { label, items };
+    if (text !== "") item.label = text;
     groups.set(dir, item);
     return item;
   };
-  // walk places the pages that the index.md of dir links to into items. A
-  // link outside dir is skipped.
-  const walk = (dir, items) => {
-    const index = dir === "" ? "index.md" : `${dir}/index.md`;
-    const file = join(docs, index);
-    for (const link of sourceLinks(readFileSync(file, "utf8"))) {
+  // place puts the pages that the links of the document file go to into
+  // items, and returns each new group with its directory, to fill after the
+  // links of the document. In the group of dir, a link outside dir is
+  // skipped.
+  const place = (file, links, dir, items) => {
+    const found = [];
+    for (const link of links) {
       const target = linkTarget(settings, root, file, link.href);
       if (target.kind !== "page") continue;
       const page = path(target.file);
       if (placed.has(page) || (dir !== "" && !page.startsWith(`${dir}/`))) continue;
       if (basename(page) === "index.md") {
         const sub = page.slice(0, -"/index.md".length);
-        const item = group(sub, sub);
+        const item = group(sub, sub, label(link));
         items.push(item);
-        walk(sub, item.items);
+        found.push([sub, item]);
       } else {
         placed.add(page);
-        items.push({ slug: pageID(page) });
+        items.push(label(link) === "" ? { slug: pageID(page) } : { slug: pageID(page), label: label(link) });
       }
+    }
+    return found;
+  };
+  // fill places the links of the index.md of each new group into the group.
+  const fill = (found) => {
+    for (const [dir, item] of found) {
+      const file = join(docs, dir, "index.md");
+      fill(place(file, sourceLinks(readFileSync(file, "utf8")), dir, item.items));
     }
   };
   if (pages.includes("index.md")) {
     placed.add("index.md");
-    top.push({ slug: pageID("index.md") });
-    walk("", top);
+    const file = join(docs, "index.md");
+    const found = [];
+    for (const section of sections(readFileSync(file, "utf8"))) {
+      const items = section.label === undefined ? top : [];
+      found.push(...place(file, section.links, "", items));
+      if (items !== top && items.length > 0) top.push({ label: section.label, items });
+    }
+    fill(found);
   }
   // The remaining pages, in path order, go to the deepest group that holds
   // them. A directory between that group and the page becomes a group.
@@ -416,7 +460,16 @@ export function sidebar(settings, root) {
     placed.add(page);
     items.push({ slug: pageID(page) });
   }
-  return top;
+  // collapse turns each group that holds only the page of its index.md into
+  // that page, with the label of the group.
+  const collapse = (items) =>
+    items.map((item) => {
+      if (item.items === undefined) return item;
+      item.items = collapse(item.items);
+      const only = item.items.length === 1 ? item.items[0] : undefined;
+      return only !== undefined && only.slug === indexes.get(item) ? { slug: only.slug, label: item.label } : item;
+    });
+  return collapse(top);
 }
 
 // links returns the elements "a" below the node, in the order of the document.

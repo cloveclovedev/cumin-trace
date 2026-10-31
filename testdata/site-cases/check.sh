@@ -154,10 +154,14 @@ if ! grep -q '>GitHub を読めなかったため、進捗を表示できませ�
 fi
 echo "the dashboard shows only the failed read with a trace.json that is no JSON, as wanted"
 rm "$work/site/trace.json"
-# CTR-SITE-011: the sidebar follows the links of the entry document, and the
-# pages that the walk does not place go to the end of their deepest group, in
-# path order.
-want='[{"slug":"index"},{"slug":"sidebar/zeta"},{"label":"Beta","items":[{"slug":"sidebar/beta"},{"slug":"sidebar/beta/one"},{"slug":"sidebar/beta/unlinked"}]},{"label":"Alpha","items":[{"slug":"sidebar/alpha"},{"slug":"sidebar/alpha/one"},{"slug":"sidebar/alpha/three"},{"slug":"sidebar/alpha/two"}]}]'
+# CTR-SITE-011, CTR-SITE-015: the sidebar follows the links of the entry
+# document, and the pages that no index.md places go to the end of their
+# deepest group, in path order. A placed page or group shows the text of its
+# link. The "##" heading of the entry document makes a group of the top
+# level. The entry document is not listed, also when it links to itself. The
+# entry document places the page of gamma before the index.md of gamma does,
+# so the group of gamma holds only its index.md and shows as that page.
+want='[{"slug":"sidebar/zeta","label":"Zeta"},{"label":"Beta","items":[{"slug":"sidebar/beta"},{"slug":"sidebar/beta/one","label":"One"},{"slug":"sidebar/beta/unlinked"}]},{"label":"Alpha by its link","items":[{"slug":"sidebar/alpha"},{"slug":"sidebar/alpha/one","label":"One"},{"slug":"sidebar/alpha/three"},{"slug":"sidebar/alpha/two"}]},{"label":"Sections","items":[{"slug":"sidebar/gamma","label":"Gamma by its link"},{"slug":"sidebar/gamma/one","label":"One of gamma"}]}]'
 got=$(cd "$work/site" && node --input-type=module -e '
 import { readSettings, root } from "./src/settings.mjs";
 import { sidebar } from "./src/requirements.mjs";
