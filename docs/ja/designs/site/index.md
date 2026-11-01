@@ -11,6 +11,7 @@
   - `CTR-SITE-004` 図の表示 ([ビルド](build.md))
   - `CTR-SITE-005` 手元でのプレビュー ([ファイルと設定](files.md))
   - `CTR-SITE-006` 要件の区切りの表示 ([ビルド](build.md))
+  - `CTR-SITE-016` 検証の表示 ([ビルド](build.md))
   - `CTR-SITE-007` 図の拡大 ([ビルド](build.md))
   - `CTR-SITE-008` 配信先で動く ([ファイルと設定](files.md))
   - `CTR-SITE-009` 文書だけから作る ([ビルド](build.md))
@@ -174,14 +175,16 @@ Starlight の `locales` に `root` の1つだけを置き、`lang` を `ja`、`l
 - 採らなかった案: キーを `title` にする。文書のタイトルと同じ言葉になる。
 - 細部: [ファイルと設定](files.md) の「設定」
 
-### すべてのページで、CSS だけで本文の幅と画像の角を変える
+### すべてのページで、CSS だけで本文の幅、画像の角、箇条書きの行の間を変える
 
-`requirements.css` が、すべてのページで、`:root` の `--sl-content-width` を `60rem` (既定は `45rem`) にする。本文の画像 (`.sl-markdown-content img`) の角を、`border-radius: 0.5rem` で丸める。要件の枠と同じ値である (`CTR-SITE-014`)。
+`requirements.css` が、すべてのページで、`:root` の `--sl-content-width` を `60rem` (既定は `45rem`) にする。本文の画像 (`.sl-markdown-content img`) の角を、`border-radius: 0.5rem` で丸める。要件の枠と同じ値である。箇条書きの項目の間の余白 (Starlight の既定は `0.25rem`) を `0` にする。項目の間に空行のある箇条書きでは、各項目が段落になり、Starlight は段落の下に `1.25rem` の余白を付ける。その余白と、項目の中の入れ子の箇条書きの前の余白も `0` にする (`CTR-SITE-014`)。
 
 - 理由: `CTR-SITE-014` は、サイトのすべてのページの本文を広げ、画像の角を丸めることを求める。ページを選ぶ決まりは要らない。Starlight は、本文の枠 (`.sl-container`) と本文の欄 (`.main-pane`) の両方の幅を `--sl-content-width` から決める。変数を変えれば、両方が同じに広がる。Starlight には角の丸みの変数がないので、値を書く。
 - 採らなかった案: 要件の枠 (`section.requirement`) を持つページだけを、CSS の `:has()` で選んで広げる。設計文書のページが狭いまま残り、`CTR-SITE-014` に合わない。
 - 採らなかった案: `.sl-container` の `max-width` だけを広げる。`.main-pane` の幅は変わらないので、画面の幅が 120rem ほどになるまで、本文はほとんど広がらない。
 - 採らなかった案: `--sl-content-width` を、自分自身の値から計算し直す (`calc(var(--sl-content-width) * 4 / 3)`)。CSS の変数の循環になり、無効になる。
+- 採らなかった案: プラグインで、箇条書きの項目の段落を外す。CSS だけで、空行のある箇条書きも詰まり、設計文書のページにも同じに効く。
+- Starlight の本文の CSS は cascade layer (`@layer starlight.content`) の中にある (`@astrojs/starlight` 0.42.6 の `style/markdown.css`)。layer の外の `requirements.css` の規則は、詳細度によらず layer の中の規則に勝つ (CSS の cascade layer の決まり)。
 - 細部: [ファイルと設定](files.md) の「テンプレートのファイル」
 
 ### workflow は変えない
