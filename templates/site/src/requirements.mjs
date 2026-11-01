@@ -288,7 +288,8 @@ function headingLevel(node) {
 // blocks returns the children of the root with each requirement in a
 // <section class="requirement">, from its heading to the next heading of the
 // same or a higher level. A child requirement nests in its parent. A
-// horizontal rule that ends a block is removed (CTR-SITE-006).
+// horizontal rule that ends a block is removed (CTR-SITE-006). The 検証
+// lines of a block go to a list of their own (CTR-SITE-016).
 export function blocks(children, isRequirement) {
   const top = [];
   const stack = [];
@@ -312,7 +313,65 @@ export function blocks(children, isRequirement) {
     }
   }
   trimRules(top);
+  boxVerifications(top);
   return top;
+}
+
+// textOf returns the text of a node and of the nodes below it.
+function textOf(node) {
+  if (node.type === "text") return node.value;
+  return (node.children ?? []).map(textOf).join("");
+}
+
+// isVerification reports whether the node is the list item of a 検証 line:
+// an item whose text starts with "検証:" (CTR-FMT-005).
+function isVerification(node) {
+  return node.type === "element" && node.tagName === "li" && /^\s*検証:/.test(textOf(node));
+}
+
+// withoutMarker returns a copy of the list item of a 検証 line without the
+// "検証:" at the start of its text.
+function withoutMarker(item) {
+  const copy = structuredClone(item);
+  const first = (node) =>
+    node.type === "text" ? (node.value.trim() === "" ? undefined : node) : (node.children ?? []).map(first).find((text) => text !== undefined);
+  const text = first(copy);
+  text.value = text.value.replace(/^\s*検証:\s*/, "");
+  return copy;
+}
+
+// boxVerifications moves the 検証 lines of each unordered list at the top of
+// each section, at any depth, into a box right after the list: a
+// <div class="requirement-verification"> with the word 検証 once and a list
+// of the lines without their "検証:". A list left with no item gives its
+// place to the box (CTR-SITE-016).
+function boxVerifications(children) {
+  for (const child of children) {
+    if (child.type !== "element" || child.tagName !== "section") continue;
+    boxVerifications(child.children);
+    for (let i = 0; i < child.children.length; i++) {
+      const list = child.children[i];
+      if (list.type !== "element" || list.tagName !== "ul") continue;
+      const lines = list.children.filter(isVerification);
+      if (lines.length === 0) continue;
+      const box = {
+        type: "element",
+        tagName: "div",
+        properties: { className: ["requirement-verification"] },
+        children: [
+          { type: "element", tagName: "span", properties: { className: ["requirement-verification-label"] }, children: [{ type: "text", value: "検証" }] },
+          { type: "element", tagName: "ul", properties: {}, children: lines.map(withoutMarker) },
+        ],
+      };
+      const rest = list.children.filter((item) => !isVerification(item));
+      if (rest.some((item) => item.type === "element")) {
+        child.children.splice(i, 1, { ...list, children: rest }, box);
+        i++;
+      } else {
+        child.children.splice(i, 1, box);
+      }
+    }
+  }
 }
 
 // trimRules removes the horizontal rule at the end of each section, at any

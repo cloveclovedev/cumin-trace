@@ -288,6 +288,12 @@ for (const entry of existsSync(requirements) ? readdirSync(requirements, { recur
   for (const match of html.matchAll(/<section class="requirement">(?!<h[1-6])/g)) {
     problems.push(`${relative(root, file)}: a block of a requirement starts with no heading, at ${match.index}`);
   }
+  // CTR-SITE-016: the boxes of the 検証 lines hold as many lines as the
+  // document has, and no list item outside them starts with "検証:".
+  const lines = bodyLines(readFileSync(file, "utf8")).filter((line) => /^[-*+][ \t]+検証:/.test(line)).length;
+  const boxed = [...html.matchAll(/<div class="requirement-verification">([\s\S]*?)<\/div>/g)].reduce((sum, m) => sum + (m[1].match(/<li[\s>]/g)?.length ?? 0), 0);
+  if (boxed !== lines) problems.push(`${relative(root, file)}: the boxes of the 検証 lines hold ${boxed} lines, want ${lines}`);
+  if (/<li>(?:\s|<p>)*検証:/.test(html)) problems.push(`${relative(root, file)}: a 検証 line is outside the box of the 検証 lines`);
 }
 
 // body returns the Markdown content of a page with no HTML comments: from the

@@ -4,8 +4,8 @@
 # Run it after `npm --prefix site ci`. The cases prove CTR-SITE-002 (the
 # title and the first heading), CTR-SITE-003 (the links to requirements),
 # CTR-SITE-008 (static files only), CTR-SITE-010 (the links between
-# documents), CTR-SITE-011 (the sidebar), CTR-SITE-012 (the UI language and the URLs), and CTR-SITE-013 (the copy is no git repository, so the prefix
-# names the site). With the trace of trace.json, they prove CTR-DASH-001
+# documents), CTR-SITE-011 (the sidebar), CTR-SITE-012 (the UI language and the URLs), CTR-SITE-013 (the copy is no git repository, so the prefix
+# names the site), and CTR-SITE-016 (the box of the 検証 lines). With the trace of trace.json, they prove CTR-DASH-001
 # (the requirements by category), CTR-DASH-005 (the links), CTR-DASH-006 (the
 # read time, or only the failed read), and CTR-DASH-009 (the discrepancies).
 set -eu

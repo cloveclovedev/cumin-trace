@@ -4,7 +4,11 @@
 
 The text of the requirement, with a reference to CTR-DM-001.
 
-検証: inspection
+- The first item of the body
+- The second item of the body
+
+- 検証: `inspection`
+- 検証: `demo` On a preview
 
 ---
 
