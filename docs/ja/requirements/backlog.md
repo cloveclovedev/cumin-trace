@@ -108,10 +108,18 @@ git の履歴にあるIDが、別のタイトルで使われていたら報告�
 
 ### 生成したファイルの更新
 
-`init` で書いたファイル (skill、テンプレート、図のスクリプト、check の workflow) を、新しいバージョンの cumin-trace に合わせて更新する。`init` は上書きしないので、今は、ファイルを手で書き換えるか、消してから新しいバージョンの `init` を実行する。check の workflow のバージョンも、同じように手で上げる。skill を Claude Code の plugin で配る形にすれば、skill とテンプレートは plugin の更新で済むので、配り方と一緒に決める。
+`init` で書いたファイル (skill、テンプレート、図のスクリプト、check の workflow) を、新しいバージョンの cumin-trace に合わせて更新する。`init` は上書きしないので、今は、ファイルを手で書き換えるか、消してから新しいバージョンの `init` を実行する。check の workflow のバージョンも、同じように手で上げる。skill は、cumin-works が指定した plugin を agent に渡せるようになったら、plugin で配る。テンプレートと workflow は plugin では配れないので、別の仕組みで更新する。
 
 - 後回しにした理由: v0.1 を使うリポジトリは少なく、手で直せる。workflow のバージョンを上げれば、古いテンプレートから書いた文書が新しい書式に合わないとき、書式検査が知らせる
-- 見直すきっかけ: skill の配り方を決めるとき。または、cumin-trace の更新を、使っているリポジトリに手で反映する手間が目立ってきたとき
+- 見直すきっかけ: cumin-works が、指定した plugin を agent に渡せるようになったとき (skill)。または、cumin-trace の更新を、使っているリポジトリに手で反映する手間が目立ってきたとき (テンプレートと workflow)
+
+調べたこと:
+
+- サイトは、Starlight の plugin を npm のパッケージにして配れる。プロダクトには `astro.config.mjs` と `content.config.mjs` の数行だけが残る。hast の plugin の名前にパッケージのバージョンを入れると、更新したときに Astro の content のキャッシュが消える (試作で確かめた)
+- npm で token なしに入れられ、Dependabot が上げられる公開先は、公開の npm registry だけである。Git の依存はサブディレクトリを指せず、GitHub Packages は公開のパッケージでも token が要る
+- workflow は reusable workflow にすれば、Dependabot が参照のバージョンを上げられる。`multi-ecosystem-groups` で npm と一緒に1つの Pull Request にまとめられる (未確認)。今の `gh release download` でバイナリを取る形は上げられない
+- Claude Code の plugin は、cumin-works が組み込みでない plugin を読み込んだ agent を止めるので、今は使えない。CLI の `--plugin-dir` で、指定した plugin だけをその実行に読み込める
+- skill から呼ぶ cumin-trace のバージョンは、skill に `go run …@<バージョン>` と書けば、リポジトリごとに揃えられる (未確認)
 
 ---
 
